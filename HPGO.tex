@@ -54,7 +54,7 @@
 \subsection {Profiling}
 \begin{itemize}
 	\item $L$: the total number of layers
-	\item $l$: the order of layers from $1$ to $L$
+	\item $l$: the \# of a layer, from $1$ to $L$
 	\item $T_l$: "the total computation time across the forward and backward passes for layer l on the target GPU"
 	\item $a_l$: "the size of the output activations of layer $l$ (and the size of input gradients in the backward pass) in bytes"
 	\item $w_l$: "the size of weight parameters for layer $l$ in bytes"
@@ -66,7 +66,9 @@
 \subsection {Environment}
 \begin{itemize}
 	\item $M$: number of Workers (GPUs) in total
-	\item 
+	\item $m$: the \# of a worker, from $1$ to $M$
+	\item $B_{i \rightarrow j}$ Theoretical Bandwidth limit from worker $i$ to worker $j$
+	\item $B(i,j,s)$: estimated actual bandwidth from worker $i$ to worker $j$, transferring $s$ bytes of data
 \end{itemize}
 
 \section* {Algorithm}
