@@ -71,57 +71,40 @@
 	\item $B(i,j,s)$: estimated actual bandwidth from worker $i$ to worker $j$, transferring $s$ bytes of data
 \end{itemize}
 
-\section* {Algorithm}
+\section* {Evaluation}
+Given an arbitrary partition, we evaluate the performance by number of samples per time unit.
 
+\subsection* {Data Parallelism}
+
+
+\subsection* {Synchronized Pipeline}
+
+\subsection* {Asynchronized Pipeline}
+
+\subsection* {Hybrid Parallelism}
+
+\section* {Algorithm}
+\texttt{\textcolor{blue}{
+LER0ever Internal Ref \\
+\newline
+\begin{tabular}{rl}
+%\texttt{\textcolor{blue}{ 
+Task ID: & CU\#2672zg \\
+CUT Link: & ry.sb/cut/2672zg \\
+Notion: & ry.sb/n/by-f4bcf0106acc40d88e62a2e7673b229f \\
+Draft: & internal.ry.sb/HPGO	
+%}}
+\end{tabular}
+}}
 \section* {Proof of Correctness}
 
 \section* {Complexity Analysis}
 
-\section*{Problem 2}
+\subsection* {First attempt: 
+$O(|B|^2M^2N^4)$}
+\subsection* {Second attempt:
+$\Theta(M!M^2N^4|B|^2)$}
 
-Answer to the problem goes here.
-
-\begin{enumerate}
-  \item
-   Problem 1 part 1 answer here.
-  \item
-    Problem 1 part 2 answer here.
-
-    Here is an example typesetting mathematics in \LaTeX
-\begin{equation*}
-    X(m,n) = \left\{\begin{array}{lr}
-        x(n), & \text{for } 0\leq n\leq 1\\
-        \frac{x(n-1)}{2}, & \text{for } 0\leq n\leq 1\\
-        \log_2 \left\lceil n \right\rceil \qquad & \text{for } 0\leq n\leq 1
-        \end{array}\right\} = xy
-\end{equation*}
-
-    \item Problem 1 part 3 answer here.
-
-    Here is an example of how you can typeset algorithms.
-    There are many packages to do this in \LaTeX.
-     
-    \lstset{caption={Caption for code}}
-    \lstset{label={lst:alg1}}
-     \begin{lstlisting}[style = Python]
-    from package import Class # Mesh required for..
-    
-    cinstance = Class.from_obj('class.obj')
-    cinstance.go()
-    \end{lstlisting}
-     
-  \item Problem 1 part 4 answer here.
-
-    Here is an example of how you can insert a figure.
-    \begin{figure}[!h]
-    \centering
-%    \includegraphics[width=0.3\linewidth]{heidi.jpg}
-    \caption{Heidi attacked by a string.}
-    \end{figure}
-\end{enumerate}
-
-
-\section*{Problem 3}
-% Rest of the work...
+PipeDream: $\sum_{k=1}^L O(N^3m_k6^2)$
 
 \end{document}
