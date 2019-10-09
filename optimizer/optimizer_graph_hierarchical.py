@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+# Copyleft (*) LER0ever
 
 from __future__ import print_function
 

@@ -68,6 +68,9 @@ double SyncPipeline::getSingleLength()
     }
 
     // Arrange microbatch 2 and onwards
+
+    // TODO:
+
     for (int i=1; i<mBatch; i++) {
 
     }
