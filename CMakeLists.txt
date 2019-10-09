@@ -81,23 +81,11 @@ target_link_libraries("HPGO"
 
 
 # TESTS
-add_executable("test_PEC"
-        "test-PEC.cc"
-        orchestration.h
-        orchestration.cc
-        "pipeline.h"
-        "pipeline.cc"
-        "syncpipeline.h"
-        "syncpipeline.cc"
-        "block.h"
-        "block.cc"
-        "duration.h"
-        "duration.cc"
-        "model.cc"
-        "model.h"
-        )
-add_executable("test_Orchestrate"
-        "test-orchestrate.cc"
+add_executable("test_main"
+        tests/catch.hpp
+        tests/test_main.cc
+        tests/test_PEC.cc
+        tests/test_orchestrate.cc
         orchestration.h
         orchestration.cc
         "pipeline.h"

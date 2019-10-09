@@ -1,10 +1,11 @@
 #include <iostream>
-#include "syncpipeline.h"
+#include <cmath>
+#include "../syncpipeline.h"
+#include "../orchestration.h"
+#include "catch.hpp"
 using namespace std;
 
-int main()
-{
-    cout << "test" << endl;
+TEST_CASE( "Global Orchestration Tests", "[GO]" ) {
     vector<double> F(4, 1);
     vector<double> B(4, 2);
     vector<double> OF(4, 33.333333);
@@ -17,7 +18,9 @@ int main()
         for (int j=0; j<blk[0][i].size(); j++)
             cout << "Block[0][" << i << "][" << j << "].end() = " << blk[0][i][j].getDuration().getEnd() << endl;
 
-    cout << "sp.getSingleLengthAnalytical() = " << sp.getSingleLengthAnalytical() << endl;
+    auto sl = sp.getSingleLengthAnalytical();
 
-    return 0;
+    cout << "sp.getSingleLengthAnalytical() = " << sl << endl;
+    REQUIRE(abs(sl - 32.0) < 0.01);
 }
+

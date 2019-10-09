@@ -42,6 +42,10 @@ TypeA Conductor::compute_partitioning(d2d compute_times, d2d activation_sizes, d
         }
     }
 
+    // TODO: zero-overhead backtracking
+    int min_m = 1;
+
+
     return A;
 }
 
