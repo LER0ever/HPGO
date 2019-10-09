@@ -14,6 +14,9 @@ sys.path.append("..")
 import graph
 import utils
 
+# DEBUG SWITCH
+HPGO_DEBUG = True
+
 def compute_partitioning(compute_times, activation_sizes, parameter_sizes,
                          output_activation_sizes, all_predecessor_ids,
                          num_machines, num_machines_within_machine,
@@ -283,6 +286,16 @@ def main(all_num_machines, profile_filename, network_bandwidths, memory_size,
         print("Solving optimization problem with %d machines with inter-machine bandwidth of %.2f GB/s" % (num_machines, network_bandwidth / 10**9))
         import numpy as np
         print(np.array(compute_times))
+        if HPGO_DEBUG:
+            print("compute_times", compute_times)
+            print("activation_sizes", activation_sizes)
+            print("parameter_sizes", parameter_sizes)
+            print("output_activation_sizes", output_activation_sizes)
+            print("all_predecessor_ids", all_predecessor_ids)
+            print("num_machines", num_machines)
+            print("num_machines_in_machine", num_machines_in_machine)
+            print("network_bandwidth", network_bandwidth)
+            print("final_level", (counter==len(network_bandwidths)))
         A = compute_partitioning(compute_times, activation_sizes, parameter_sizes,
                                  output_activation_sizes, all_predecessor_ids,
                                  num_machines, num_machines_in_machine,
