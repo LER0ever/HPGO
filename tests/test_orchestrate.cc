@@ -2,6 +2,8 @@
 #include <cmath>
 #include "../syncpipeline.h"
 #include "../orchestration.h"
+
+#include "test_config.h"
 #include "catch.hpp"
 using namespace std;
 
