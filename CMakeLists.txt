@@ -66,18 +66,30 @@ PYTHON_ADD_MODULE(HPGO
 target_include_directories(HPGO PUBLIC
     "/usr/local/include"
     "/usr/local/Cellar/python/3.7.4_1/Frameworks/Python.framework/Versions/3.7/include/python3.7m"
+	"E:/Code/C/vcpkg/installed/x86-windows/include"
+	"E:/Code/C/vcpkg/installed/x86-windows/include/python3.7"
 )
 
 target_link_directories("HPGO" PUBLIC
         "/usr/local/Cellar/boost-python3/1.71.0/lib"
-        "/usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib/python3.7/config-3.7m-darwin")
+        "/usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib/python3.7/config-3.7m-darwin"
+		"E:/Code/C/vcpkg/installed/x86-windows/lib"
+		)
 # message(${Boost_LIBRARIES})
-target_link_libraries("HPGO"
-    ${Boost_LIBRARIES}
-    "boost_python37"
-    python3.7m
-    dl
-)
+if (APPLE)
+	target_link_libraries("HPGO"
+		${Boost_LIBRARIES}
+		"boost_python37"
+		python3.7m
+		dl
+	)
+elseif (WIN32)
+	target_link_libraries("HPGO"
+		${Boost_LIBRARIES}
+		"boost_python37-vc140-mt"
+		python37
+	)
+endif()
 
 
 # TESTS
@@ -99,8 +111,6 @@ add_executable("test_main"
         "model.cc"
         "model.h"
         )
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=sign-conversion -Wconversion -Wno-sign-conversion")
 
 
 # add_executable(${PROJECT_NAME} "main.cc")

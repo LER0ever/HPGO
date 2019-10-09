@@ -1,6 +1,7 @@
 #include "syncpipeline.h"
 #include <algorithm>
 #include <iostream>
+#include <cassert>
 
 SyncPipeline::SyncPipeline()
 {

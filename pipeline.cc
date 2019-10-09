@@ -1,4 +1,5 @@
 #include "pipeline.h"
+#include <cassert>
 
 Pipeline::Pipeline()
 {
