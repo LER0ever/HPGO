@@ -8,6 +8,7 @@ Hybrid Parallelism Global Orchestration
 - Boost::System
 - Boost::Python
 - Python-Dev (3)
+- GraphViz
 - Catch2 (bundled)
 
 #### Compile

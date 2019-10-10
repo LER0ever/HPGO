@@ -3,6 +3,9 @@ build*
 cmake-build*
 .idea/
 *.txt.user
+*.user*
+.vscode
+*_partitioned
 
 ###### LaTeX
 *.pdf
