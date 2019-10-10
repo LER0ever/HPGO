@@ -16,15 +16,17 @@ class Conductor {
   void setModel(Model);
   void orchestrate();
 
+  TypeA compute_partitioning(d2d compute_times, d2d activation_sizes,
+                             d2d                 parameter_sizes,
+                             std::vector<double> output_activation_sizes,
+                             i2d all_predecessor_ids, int num_machines,
+                             int num_machines_within_machine, double bandwidth,
+                             bool final_level);
+
   // Debug Helper
   void printA(TypeA& A);
 
  private:
-  TypeA            compute_partitioning(d2d compute_times, d2d activation_sizes,
-                                        d2d parameter_sizes, d2d output_activation_sizes,
-                                        i2d all_predecessor_ids, int num_machines,
-                                        int num_machines_within_machine, double bandwidth,
-                                        bool final_level);
   std::vector<int> analyse_partititioning();
   Model            m;
 };

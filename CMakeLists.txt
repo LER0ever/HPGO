@@ -93,6 +93,7 @@ add_executable("test_main"
     tests/test_helper.cc
     tests/test_PEC.cc
     tests/test_orchestrate.cc
+    tests/test_dp.cc
 #    orchestration.h
 #    orchestration.cc
 #    pipeline.h
