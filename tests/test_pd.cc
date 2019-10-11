@@ -820,23 +820,40 @@ TEST_CASE("PipeDream Original Tests", "[GO]") {
   auto   parameter_sizes             = Python2DListToDouble2DVector(sParameterSizes);
   auto   output_activation_sizes     = PythonListToDoubleVector(sOutputActivationSizes);
   auto   all_predecessor_ids         = Python2DListToInt2DVector(sPredecessorIds);
-  int    num_machines                = 4;
+  int    num_machines                = 8;
   int    num_machines_within_machine = 1;
-  double bandwidth                   = 1000000000;
+  double bandwidth                   = 10000000000.0;
 
   everMsg(compute_times[39][39]);
   everMsg(parameter_sizes[39][39]);
 
+  // Compute Partitioning, assuming async pipeline
   Conductor C;
-  auto      A = C.compute_partitioning(compute_times, activation_sizes, parameter_sizes,
-                                  output_activation_sizes, all_predecessor_ids, num_machines,
-                                  num_machines_within_machine, bandwidth, true);
+  SECTION("Compute Partitioning in PipeDream solution space") {
+    auto A = C.PD_compute_partitioning(compute_times, activation_sizes, parameter_sizes,
+                                       output_activation_sizes, all_predecessor_ids, num_machines,
+                                       num_machines_within_machine, bandwidth, true);
+    // Compare result with PipeDream
+    REQUIRE(abs(get<0>(A[39][39][0]) - 0.000941) < EPSILON);
+    REQUIRE(abs(get<0>(A[39][39][3]) - 0.0125262) < EPSILON);
+    REQUIRE(abs(get<0>(A[0][0][0]) - 0.04692) < EPSILON);
+    REQUIRE(abs(get<0>(A[0][0][3]) - 0.01173) < EPSILON);
+
 #ifdef DBG
-  C.printA(A);
+    C.printA(A);
 #endif
-  //  compute_partitioning(d2d compute_times, d2d activation_sizes,
-  //                       d2d parameter_sizes, d2d output_activation_sizes,
-  //                       i2d all_predecessor_ids, int num_machines,
-  //                       int num_machines_within_machine, double bandwidth,
-  //                       bool final_level);
+  }
+
+  SECTION("Analyse Partitioning") {
+    auto A = C.PD_compute_partitioning(compute_times, activation_sizes, parameter_sizes,
+                                       output_activation_sizes, all_predecessor_ids, num_machines,
+                                       num_machines_within_machine, bandwidth, true);
+    auto splits = C.analyse_partititioning(A, 0, 40, bandwidth, num_machines);
+
+    cout << "Splits";
+    for (auto s : splits) {
+      cout << s << ", ";
+    }
+    cout << endl;
+  }
 }

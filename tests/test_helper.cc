@@ -262,6 +262,7 @@ TEST_CASE("Python List Conversion Tests", "[PY]") {
     auto vvd = Python2DListToDouble2DVector(s);
     REQUIRE(vvd.size() == 41);
     REQUIRE(abs(vvd[0][0] - 7168.0) < EPSILON);  // First element is 7168
+    REQUIRE(abs(vvd[vvd.size() - 2][vvd[vvd.size() - 2].size() - 1] - 16388000.0) < EPSILON);
     REQUIRE(abs(vvd[vvd.size() - 1][vvd[vvd.size() - 1].size() - 1] + 1) <
             EPSILON);  // Last element is -1
   }
@@ -323,5 +324,13 @@ TEST_CASE("Python List Conversion Tests", "[PY]") {
     //    everMsg(vvi[0][0]);
     //    everMsg(vvi[1][0]);
     REQUIRE(vvi[0].size() == 0);
+
+    for (int j=0; j<vvi.size(); j++) {
+      dout << j << ": ";
+      for (auto i: vvi[j]) {
+        dout << i << ", ";
+      }
+      dout <<endl;
+    }
   }
 }

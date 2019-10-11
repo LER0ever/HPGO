@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "duration.h"
+#include "graph.h"
 #include "model.h"
 #include "syncpipeline.h"
 
@@ -16,19 +17,20 @@ class Conductor {
   void setModel(Model);
   void orchestrate();
 
-  TypeA compute_partitioning(d2d compute_times, d2d activation_sizes,
-                             d2d                 parameter_sizes,
-                             std::vector<double> output_activation_sizes,
-                             i2d all_predecessor_ids, int num_machines,
-                             int num_machines_within_machine, double bandwidth,
-                             bool final_level);
+  TypeA PD_compute_partitioning(d2d compute_times, d2d activation_sizes, d2d parameter_sizes,
+                                std::vector<double> output_activation_sizes,
+                                i2d all_predecessor_ids, int num_machines,
+                                int num_machines_within_machine, double bandwidth,
+                                bool final_level);
+  std::vector<int> analyse_partititioning(TypeA A, int start, int end, double network_bandwidth,
+                                          int num_machines);
 
   // Debug Helper
   void printA(TypeA& A);
 
  private:
-  std::vector<int> analyse_partititioning();
-  Model            m;
+  Model m;
+  TypeA A;
 };
 
 #endif  // ORCHESTRATION_H

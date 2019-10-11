@@ -9,6 +9,27 @@ set (CMAKE_CXX_STANDARD 17)
 
 
 
+## Resource Files
+# This will be our group of resource files
+set(project_RESOURCE_FILES
+  README.md
+  HPGO.tex
+  .clang-format
+)
+
+# Set properties for this group of files
+set_source_files_properties(
+  ${project_RESOURCE_FILES}
+  PROPERTIES
+  HEADER_FILE_ONLY TRUE # Since it's just a text file, it doesn't need compiled
+  #MACOSX_PACKAGE_LOCATION Resource <- only do this if you need to copy the file!
+)
+
+# Bonus points unlocked :)
+source_group(
+  "Resources" FILES ${project_RESOURCE_FILES}
+)
+
 
 FIND_PACKAGE(PythonInterp)
 
@@ -93,7 +114,7 @@ add_executable("test_main"
     tests/test_helper.cc
     tests/test_PEC.cc
     tests/test_orchestrate.cc
-    tests/test_dp.cc
+    tests/test_pd.cc
 #    orchestration.h
 #    orchestration.cc
 #    pipeline.h
@@ -125,9 +146,12 @@ add_library(HPGO SHARED
     model.h
     helper.cc
     helper.h
+    graph.cc
+    graph.h
+    ${project_RESOURCE_FILES}
 )
 
 target_link_libraries(test_main HPGO)
 
-# add_executable(${PROJECT_NAME} "main.cc")
+
 

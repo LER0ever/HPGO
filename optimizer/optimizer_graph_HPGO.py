@@ -18,183 +18,6 @@ import utils
 # DEBUG SWITCH
 HPGO_DEBUG = True
 
-def compute_partitioning(compute_times, activation_sizes, parameter_sizes,
-                         output_activation_sizes, all_predecessor_ids,
-                         num_machines, num_machines_within_machine,
-                         bandwidth, final_level=True):
-    A = []
-    for i in range(len(compute_times)):
-        row_A = []
-        for j in range(len(compute_times[0])):
-            row_row_A = []
-            for m in range(num_machines):
-                row_row_A.append((None, None, None))
-            row_A.append(row_row_A)
-        A.append(row_A)
-
-    for i in range(len(compute_times)):
-        for j in range(i, len(compute_times[0])):
-            cum_compute_time = compute_times[i][j]
-            cum_activation_size = activation_sizes[i][j]
-            cum_parameter_size = parameter_sizes[i][j]
-            max_m = 1 if straight_pipeline else num_machines
-            for m in range(max_m):
-                stashed_data_size = math.ceil((num_machines - (m+1)) / (m+1)) * \
-                                              (cum_activation_size + cum_parameter_size)
-                if use_memory_constraint and stashed_data_size > memory_size:
-                    continue
-                data_parallel_communication_time = (4 * m * cum_parameter_size) / (bandwidth * (m+1))
-                data_parallel_communication_time /= num_machines_within_machine
-
-                if cum_compute_time is None:
-                    A[i][j][m] = (None, None, None)
-                else:
-                    A[i][j][m] = (sum([cum_compute_time,
-                                       data_parallel_communication_time]) / (m+1), None, (m+1))
-
-    min_machines = 1
-    max_i = len(compute_times) if not final_level else 1
-    for i in range(max_i):
-        for m in range(min_machines, num_machines):
-            for j in range(i+1, len(compute_times[0])):
-                (min_pipeline_time, optimal_split, optimal_num_machines) = A[i][j][m]
-                if use_fewer_machines and m > 0 and (
-                    min_pipeline_time is None or A[i][j][m-1][0] < min_pipeline_time):
-                    (min_pipeline_time, optimal_split, optimal_num_machines) = A[i][j][m-1]
-                for k in all_predecessor_ids[j]:
-                    if i > 0 and k in all_predecessor_ids[i-1]:
-                        continue
-                    max_m_prime = 2 if straight_pipeline else (m+1)
-                    for m_prime in range(1, max_m_prime):
-                        input_transfer_time = (2.0 * output_activation_sizes[k]) / \
-                            (bandwidth * m_prime)
-                        output_transfer_time = None
-                        if j < len(output_activation_sizes) -1:
-                            output_transfer_time = (2.0 *
-                                output_activation_sizes[j]) / (bandwidth * m_prime)
-
-                        last_stage_time = compute_times[k+1][j]
-                        if last_stage_time is None:
-                            continue
-                        last_stage_parameter_size = parameter_sizes[k+1][j]
-                        stashed_data_size = (activation_sizes[k+1][j]) + last_stage_parameter_size
-                        stashed_data_size *= math.ceil((num_machines - (m+1)) / m_prime)
-                        if use_memory_constraint and stashed_data_size > memory_size:
-                            continue
-                        last_stage_time = sum([last_stage_time,
-                                               ((4 * (m_prime - 1) *
-                                                last_stage_parameter_size) / (bandwidth * m_prime))])
-                        last_stage_time /= m_prime
-
-                        if A[i][k][m-m_prime][0] is None:
-                            continue
-                        pipeline_time = max(A[i][k][m-m_prime][0], last_stage_time)
-                        if activation_compression_ratio is not None:
-                            input_transfer_time /= activation_compression_ratio
-                            if output_transfer_time is not None:
-                                output_transfer_time /= activation_compression_ratio
-                            pipeline_time = max(pipeline_time, input_transfer_time)
-                            if output_transfer_time is not None:
-                                pipeline_time = max(pipeline_time, output_transfer_time)
-                        if min_pipeline_time is None or min_pipeline_time > pipeline_time:
-                            optimal_split = (k, m-m_prime)
-                            optimal_num_machines = m_prime
-                            min_pipeline_time = pipeline_time
-                A[i][j][m] = (min_pipeline_time, optimal_split, optimal_num_machines)
-
-    return A
-
-def analyze_partitioning(A, states, start, end, network_bandwidth, num_machines,
-                         activation_compression_ratio, print_configuration, verbose):
-    metadata = A[start][end-1][num_machines-1]
-    next_split = metadata[1]
-    remaining_machines_left = num_machines
-    splits = []
-    replication_factors = []
-    prev_split = end - 1
-    print("AP::Next Split", next_split)
-    while next_split is not None:
-        num_machines_used = metadata[2]
-        if verbose:
-            print("-------------------------------------")
-            print("Number of machines used: %d..." % num_machines_used)
-            print("Split between layers %d and %d..." % (next_split[0], next_split[0] + 1))
-            print("Split before antichain %s..." % (states[next_split[0]+1].antichain))
-        splits.append(next_split[0]+1)
-        compute_time = states[prev_split-1].compute_time - \
-            states[next_split[0]].compute_time
-        parameter_size = states[prev_split-1].parameter_size - \
-            states[next_split[0]].parameter_size
-
-        dp_communication_time = (4 * (num_machines_used - 1) * parameter_size) \
-            / (network_bandwidth * num_machines_used)
-        pp_communication_time_input = (
-            2.0 * states[next_split[0]].output_activation_size *
-            (1.0 / float(num_machines_used))) / network_bandwidth
-        pp_communication_time_output = (
-            2.0 * states[prev_split-1].output_activation_size *
-            (1.0 / float(num_machines_used))) / network_bandwidth
-        if activation_compression_ratio is not None:
-            pp_communication_time_input /= activation_compression_ratio
-            pp_communication_time_output /= activation_compression_ratio
-        if activation_compression_ratio is None:
-            pp_communication_time_input = 0.0
-            pp_communication_time_output = 0.0
-
-        compute_time /= num_machines_used
-        dp_communication_time /= num_machines_used
-
-        if verbose:
-            print(("Compute time = %f, Data-parallel communication time = %f, "
-                   "Pipeline-parallel communication time = %f...") % (
-                compute_time, dp_communication_time,
-                max(pp_communication_time_input, pp_communication_time_output)))
-        prev_split = splits[-1]
-        metadata = A[start][next_split[0]][next_split[1]]
-        next_split = metadata[1]
-        replication_factors.append(num_machines_used)
-        remaining_machines_left -= num_machines_used
-    if verbose:
-        print("-------------------------------------")
-        print("Number of machines used: %d..." % metadata[2])
-
-    num_machines_used = metadata[2]
-    remaining_machines_left -= num_machines_used
-    compute_time = states[prev_split-1].compute_time
-    parameter_size = states[prev_split-1].parameter_size
-    dp_communication_time = ((4 * (num_machines_used - 1) * parameter_size) /
-                             (network_bandwidth * num_machines_used))
-    compute_time /= num_machines_used
-    dp_communication_time /= num_machines_used
-
-    if verbose:
-        print("Compute time = %f, Data-parallel communication time = %f..." %
-              (compute_time, dp_communication_time))
-        print("-------------------------------------")
-    if print_configuration:
-        print("Number of machines in budget not used: %d..." %
-              remaining_machines_left)
-        print()
-        print("(Split start, split end) / compute time taken per stage "
-              "/ replication factor per stage:")
-    prev_split = start
-    splits.reverse()
-    splits.append(end)
-    replication_factors.append(num_machines_used)
-    replication_factors.reverse()
-    for i in range(len(splits)):
-        time = 0.0
-        if prev_split > 0:
-            time = states[splits[i]-1].compute_time - states[prev_split-1].compute_time
-        else:
-            time = states[splits[i]-1].compute_time
-        if print_configuration:
-            print((prev_split, splits[i]), time, replication_factors[i])
-        prev_split = splits[i]
-    if print_configuration:
-        print()
-    return splits[:-1]
-
 def main(all_num_machines, profile_filename, network_bandwidths, memory_size,
          straight_pipeline, use_memory_constraint, use_fewer_machines,
          activation_compression_ratio, output_directory,
@@ -311,9 +134,6 @@ def main(all_num_machines, profile_filename, network_bandwidths, memory_size,
         all_As.append(A)
     print(np.array(compute_times))
 
-    print("len(states)", len(states))
-    print(A[0][39][3])
-
     splits = [(0, len(states))]
     i = len(all_As) - 1
     while i >= 0:
@@ -323,16 +143,11 @@ def main(all_num_machines, profile_filename, network_bandwidths, memory_size,
         new_splits = []
         stage_id = 0
         for (start, end) in splits:
-            if HPGO_DEBUG:
-                print("Analyze Partitioning")
-                print(start, end)
-
             partial_splits = \
                 analyze_partitioning(all_As[i], states, start, end,
                                      network_bandwidths[i], all_num_machines[i],
                                      activation_compression_ratio,
                                      print_configuration, verbose)
-            print("Partial Splits", partial_splits)
             start_point = start
             for split in partial_splits:
                 new_splits.append((start_point, split))
