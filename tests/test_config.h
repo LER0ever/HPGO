@@ -5,7 +5,7 @@
 
 const double EPSILON = 0.0001;
 
-#define DBG
+//#define DBG
 
 #ifdef DBG
 #define dbg(x)                                           \

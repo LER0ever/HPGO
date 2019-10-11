@@ -822,7 +822,7 @@ TEST_CASE("PipeDream Original Tests", "[GO]") {
   auto   all_predecessor_ids         = Python2DListToInt2DVector(sPredecessorIds);
   int    num_machines                = 8;
   int    num_machines_within_machine = 1;
-  double bandwidth                   = 10000000000.0;
+  double bandwidth                   = 25 * 1000000000.0;
 
   everMsg(compute_times[39][39]);
   everMsg(parameter_sizes[39][39]);

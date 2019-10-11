@@ -25,9 +25,6 @@ TypeA Conductor::PD_compute_partitioning(d2d compute_times, d2d activation_sizes
     A.push_back(row_A);
   }
 
-  // DBG
-  for (auto vc : compute_times) { std::cout << "["; for (auto c :vc) { std::cout << c << ",";} std::cout << "]" << std::endl;}
-
   for (auto i = 0; i < compute_times.size(); i++) {
     for (auto j = i; j < compute_times[0].size(); j++) {
       double cur_compute_time    = compute_times[i][j];
@@ -58,7 +55,6 @@ TypeA Conductor::PD_compute_partitioning(d2d compute_times, d2d activation_sizes
         auto [min_pipeline_time, optimal_split, optimal_num_machines] = A[i][j][m];
         // TODO: use fewer machines check
         for (auto k : all_predecessor_ids[j]) {
-          std::cout << "DBG: K = " << k << std::endl;
           if (i > 0 &&
               std::find(all_predecessor_ids[i - 1].begin(), all_predecessor_ids[i - 1].end(), k) !=
                   all_predecessor_ids[i - 1].end())
@@ -72,17 +68,16 @@ TypeA Conductor::PD_compute_partitioning(d2d compute_times, d2d activation_sizes
             }
 
             double last_stage_time = compute_times[k + 1][j];
-            if (last_stage_time < -0.5) {std::cout << "Passed due to last_stage_time " << k+1 << "," << j <<std::endl;continue; } // = -1
+            if (last_stage_time < -0.5) continue;  // = -1
             double last_stage_parameter_size = parameter_sizes[k + 1][j];
             // TODO: Memory check, stashed data
             last_stage_time += (4 * (mp - 1) * last_stage_parameter_size) / (bandwidth * mp);
             last_stage_time /= mp;
 
-            if (std::get<0>(A[i][k][m - mp]) < -0.5) {std::cout << "Passed due to A[i][k][m - mp][0]" <<std::endl;   continue;}
+            if (std::get<0>(A[i][k][m - mp]) < -0.5) continue;
 
             double pipeline_time = std::max(std::get<0>(A[i][k][m - mp]), last_stage_time);
             if (min_pipeline_time < -0.5 || min_pipeline_time > pipeline_time) {
-              std::cout << "enter final if, K = " << k << std::endl;
               optimal_split        = std::make_pair(k, m - mp);
               optimal_num_machines = mp;
               min_pipeline_time    = pipeline_time;
@@ -109,7 +104,8 @@ std::vector<int> Conductor::analyse_partititioning(TypeA A, int start, int end,
   std::vector<int> replication_factors;
   int              prev_split = end - 1;
 
-  std::cout << "\033[33m" << next_split.first << ", " << next_split.second << "\033[0m" << std::endl;
+  std::cout << "\033[33m" << next_split.first << ", " << next_split.second << "\033[0m"
+            << std::endl;
 
   while (next_split.first != -1) {  // -1 means None
     int num_machines_used = std::get<2>(metadata);
@@ -131,6 +127,9 @@ std::vector<int> Conductor::analyse_partititioning(TypeA A, int start, int end,
   int num_machines_used = std::get<2>(metadata);
   remaining_machines_left -= num_machines_used;
 
+  std::cout << "\033[33m-------------------------------------\033[0m" << std::endl;
+  std::cout << "\033[33mnum_machines_used: " << num_machines_used << "\033[0m" << std::endl;
+
   prev_split = start;
   std::reverse(splits.begin(), splits.end());
   splits.push_back(end);
@@ -140,8 +139,9 @@ std::vector<int> Conductor::analyse_partititioning(TypeA A, int start, int end,
   std::cout << splits.size() << replication_factors.size() << std::endl;
 
   std::cout << "\033[33m====================================\033[0m" << std::endl;
-  for (int i=0; i<splits.size(); i++) {
-    std::cout << "\033[33m (" << (i == 0 ? 0 : splits[i-1] + 1) << " ~ " << splits[i]  << ") x " << replication_factors[i] << "\033[0m" << std::endl;
+  for (int i = 0; i < splits.size(); i++) {
+    std::cout << "\033[33m (" << (i == 0 ? 0 : splits[i - 1] + 1) << " ~ " << splits[i] << ") x "
+              << replication_factors[i] << "\033[0m" << std::endl;
   }
   std::cout << "\033[33m====================================\033[0m" << std::endl;
 
