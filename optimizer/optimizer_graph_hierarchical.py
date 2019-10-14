@@ -312,7 +312,7 @@ def main(all_num_machines, profile_filename, network_bandwidths, memory_size,
     print(np.array(compute_times))
 
     print("len(states)", len(states))
-    print(A[0][39][3])
+    # print(A[0][39][3])
 
     splits = [(0, len(states))]
     i = len(all_As) - 1
@@ -379,6 +379,7 @@ def main(all_num_machines, profile_filename, network_bandwidths, memory_size,
         data_parallel_total_time = sum(
             [data_parallel_total_time, data_parallel_communication_time]) / num_machines
         num_machines_in_machine = num_machines
+    print("num_machines void ", num_machines)
     pipeline_parallel_total_time = A[0][len(states)-1][num_machines-1][0]
 
     if verbose:

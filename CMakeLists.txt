@@ -59,52 +59,22 @@ else()
     message("Python not found")
 endif()
 
-PYTHON_ADD_MODULE(HPGO_PY
-        HPGO.h
-        HPGO.cc
-        orchestration.h
-        orchestration.cc
-        pipeline.h
-        pipeline.cc
-        syncpipeline.h
-        syncpipeline.cc
-        block.h
-        block.cc
-        duration.h
-        duration.cc
-        model.cc
-        model.h
-        )
-
-if(APPLE)
-    target_include_directories(HPGO_PY PUBLIC
-        "/usr/local/include"
-        "/usr/local/Cellar/python/3.7.4_1/Frameworks/Python.framework/Versions/3.7/include/python3.7m"
-    )
-    target_link_libraries("HPGO_PY"
-        ${Boost_LIBRARIES}
-        "boost_python37"
-        python3.7m
-        dl
-    )
-    target_link_directories("HPGO_PY" PUBLIC
-        "/usr/local/Cellar/boost-python3/1.71.0/lib"
-        "/usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib/python3.7/config-3.7m-darwin"
-    )
-elseif(WIN32)
-    target_include_directories(HPGO_PY PUBLIC
-        "E:/Code/C/vcpkg/installed/x86-windows/include"
-        "E:/Code/C/vcpkg/installed/x86-windows/include/python3.7"
-    )
-    target_link_libraries("HPGO_PY"
-        ${Boost_LIBRARIES}
-        "boost_python37-vc140-mt"
-        python37
-    )
-    target_link_directories("HPGO_PY" PUBLIC
-        "E:/Code/C/vcpkg/installed/x86-windows/lib"
-    )
-endif()
+#PYTHON_ADD_MODULE(HPGO_PY
+#        HPGO.h
+#        HPGO.cc
+#        orchestration.h
+#        orchestration.cc
+#        pipeline.h
+#        pipeline.cc
+#        syncpipeline.h
+#        syncpipeline.cc
+#        block.h
+#        block.cc
+#        duration.h
+#        duration.cc
+#        model.cc
+#        model.h
+#        )
 
 
 # TESTS
@@ -113,8 +83,10 @@ add_executable("test_main"
     tests/test_main.cc
     tests/test_helper.cc
     tests/test_PEC.cc
-    tests/test_orchestrate.cc
+    tests/test_orchestrate_manual.cc
+    tests/test_orchestrate_full.cc
     tests/test_pd.cc
+    tests/test_graph.cc
 #    orchestration.h
 #    orchestration.cc
 #    pipeline.h
@@ -150,6 +122,36 @@ add_library(HPGO SHARED
     graph.h
     ${project_RESOURCE_FILES}
 )
+
+if(APPLE)
+    target_include_directories(HPGO PUBLIC
+            "/usr/local/include"
+            "/usr/local/Cellar/python/3.7.4_1/Frameworks/Python.framework/Versions/3.7/include/python3.7m"
+            )
+    target_link_libraries("HPGO"
+            ${Boost_LIBRARIES}
+            "boost_python37"
+            python3.7m
+            dl
+            )
+    target_link_directories("HPGO" PUBLIC
+            "/usr/local/Cellar/boost-python3/1.71.0/lib"
+            "/usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib/python3.7/config-3.7m-darwin"
+            )
+elseif(WIN32)
+    target_include_directories(HPGO PUBLIC
+            "E:/Code/C/vcpkg/installed/x86-windows/include"
+            "E:/Code/C/vcpkg/installed/x86-windows/include/python3.7"
+            )
+    target_link_libraries("HPGO"
+            ${Boost_LIBRARIES}
+            "boost_python37-vc140-mt"
+            python37
+            )
+    target_link_directories("HPGO" PUBLIC
+            "E:/Code/C/vcpkg/installed/x86-windows/lib"
+            )
+endif()
 
 target_link_libraries(test_main HPGO)
 

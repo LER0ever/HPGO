@@ -820,9 +820,9 @@ TEST_CASE("PipeDream Original Tests", "[GO]") {
   auto   parameter_sizes             = Python2DListToDouble2DVector(sParameterSizes);
   auto   output_activation_sizes     = PythonListToDoubleVector(sOutputActivationSizes);
   auto   all_predecessor_ids         = Python2DListToInt2DVector(sPredecessorIds);
-  int    num_machines                = 8;
+  int    num_machines                = 4;
   int    num_machines_within_machine = 1;
-  double bandwidth                   = 25 * 1000000000.0;
+  double bandwidth                   = 1 * 1000000000.0;
 
   everMsg(compute_times[39][39]);
   everMsg(parameter_sizes[39][39]);
@@ -848,7 +848,7 @@ TEST_CASE("PipeDream Original Tests", "[GO]") {
     auto A = C.PD_compute_partitioning(compute_times, activation_sizes, parameter_sizes,
                                        output_activation_sizes, all_predecessor_ids, num_machines,
                                        num_machines_within_machine, bandwidth, true);
-    auto splits = C.analyse_partititioning(A, 0, 40, bandwidth, num_machines);
+    auto splits = C.PD_analyse_partititioning(A, 0, 40, bandwidth, num_machines);
 
     cout << "Splits";
     for (auto s : splits) {
