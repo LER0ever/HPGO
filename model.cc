@@ -1,30 +1,34 @@
 #include "model.h"
 
-Layer::Layer() {}
+State::State() {}
 
-Layer::Layer(int id, double compTime, double activationSize, double paramSize) {
-  this->id             = id;
-  this->compTime       = compTime;
-  this->activationSize = activationSize;
-  this->paramSize      = paramSize;
-}
-
-Layer::Layer(int id, std::string sType, double compTime, double activationSize,
-             double paramSize) {
-  this->id             = id;
-  this->compTime       = compTime;
-  this->activationSize = activationSize;
-  this->paramSize      = paramSize;
-  this->sType          = sType;
+State::State(int ID, std::string Name, std::string Desc, double CompTime, double ActivationSize,
+             double OutputActivationSize, double ParamSize) {
+  this->ID                   = ID;
+  this->Name                 = Name;
+  this->Desc                 = Desc;
+  this->CompTime            = CompTime;
+  this->ActivationSize       = ActivationSize;
+  this->OutputActivationSize = OutputActivationSize;
+  this->ParamSize            = ParamSize;
 }
 
 Model::Model() {}
 
-Model::Model(int nLayers, std::vector<double> compTime,
-             std::vector<double> activationSize,
-             std::vector<double> paramSize) {
-  for (int i = 0; i < nLayers; i++) {
-    this->Layers.push_back(
-        Layer(i, compTime[i], activationSize[i], paramSize[i]));
+Model::Model(int globalBatchSize, pyo pyStates) {
+  this->GlobalBatchSize = globalBatchSize;
+  try {
+    for (int i = 0; i < py::len(pyStates); i++) {
+      pyo state = pyStates[i];
+      this->States.push_back(State(i, py::extract<std::string>(state.attr("node_id")),
+                                   py::extract<std::string>(state.attr("node_desc")),
+                                   py::extract<double>(state.attr("compute_time")),
+                                   py::extract<double>(state.attr("activation_size")),
+                                   py::extract<double>(state.attr("output_activation_size")),
+                                   py::extract<double>(state.attr("parameter_size"))));
+    }
+  } catch (...) {
+    PyErr_Print();
+    PyErr_Clear();
   }
 }

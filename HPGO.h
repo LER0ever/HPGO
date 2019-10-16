@@ -7,6 +7,9 @@
 using triple = std::tuple<double, std::pair<int, int>, double>;
 using TypeA  = std::vector<std::vector<std::vector<triple> > >;
 
+
+// Public API, WIP
+
 class HPGO {
  public:
 

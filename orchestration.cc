@@ -3,12 +3,37 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <iostream>
 
 void Conductor::setModel(Model m) { this->m = m; }
 
 void Conductor::orchestrate(std::vector<int> all_num_machines, std::vector<double> all_bandwidths,
                             std::string profile_filename) {
+  orchestrate_single(all_num_machines, all_bandwidths, profile_filename, 1, 0);
+  // this is currently a hack
+  // TODO: replace this with a full Max-Flow Min-Cut based algorithm
+  assert(all_num_machines.size() == 2);
+  int total_num_machines = 1;
+  for (auto nm : all_num_machines) total_num_machines *= nm;
+  for (int i = 2; i < floor(total_num_machines / 2.0 + 0.5); i++) {
+    std::vector<int> new_num_machines;
+    std::vector<double> new_bandwidths;
+    if (i < all_num_machines[0]) {
+      new_bandwidths.push_back(all_bandwidths[1]);
+      new_num_machines.push_back(i);
+      std::cout << "DPU = " << i << std::endl;
+      orchestrate_single(new_num_machines, new_bandwidths, profile_filename, total_num_machines / i,
+                         all_bandwidths[0]);
+    } else {
+      std::cout << "Apprently I did not handle this case :(" << std::endl;
+    }
+  }
+}
+
+void Conductor::orchestrate_single(std::vector<int>    all_num_machines,
+                                   std::vector<double> all_bandwidths, std::string profile_filename,
+                                   int replica, double dp_bandwidth) {
   assert(all_num_machines.size() == all_bandwidths.size());
 
   auto g                       = Graph(profile_filename);
@@ -40,11 +65,12 @@ void Conductor::orchestrate(std::vector<int> all_num_machines, std::vector<doubl
   }
 
   std::vector<std::pair<int, int>> splits;
+  int                              stage_id = 0;
   splits.push_back(std::make_pair(0, compute_times[0].size()));  // TODO: change to len(states)
   for (int i = As.size() - 1; i >= 0; i--) {
     std::cout << "Level " << i + 1 << std::endl;
     std::vector<std::pair<int, int>> new_splits;
-    int                              stage_id = 0;
+
     for (auto s : splits) {
       int start = s.first;
       int end   = s.second;
@@ -76,24 +102,46 @@ void Conductor::orchestrate(std::vector<int> all_num_machines, std::vector<doubl
 
   // TODO: write graph
 
+  // TODO: this is currently a rough estimation
+  // Accurate modeling to be moved to model.cc, syncpipeline.cc, device.cc and block.cc
   pyo    states     = g.getStates();
   double total_time = py::extract<double>(states[py::len(states) - 1].attr("compute_time"));
   double total_parameter_size =
       py::extract<double>(states[py::len(states) - 1].attr("parameter_size"));
   double data_parallel_total_time = total_time;
-  num_machines_in_machine         = 1;
+  std::cout << "dp original total = " << data_parallel_total_time << std::endl;
+  num_machines_in_machine = 1;
   for (int e = 0; e < all_num_machines.size(); e++) {
     auto   num_machines = all_num_machines[e];
     auto   bandwidth    = all_bandwidths[e];
-    double data_parallel_communication_time =
-        ((4 * (num_machines - 1) * total_parameter_size) / (bandwidth * num_machines)) /
-        num_machines_in_machine;
-    data_parallel_total_time =
-        (data_parallel_total_time + data_parallel_communication_time) / num_machines;
-    num_machines_in_machine = num_machines;
+    double data_parallel_communication_time;
+    //    if (replica > 1) {
+    //      data_parallel_communication_time = ((2 * (num_machines - 1) * total_parameter_size) /
+    //                                          (dp_bandwidth * num_machines)) /
+    //                                         num_machines_in_machine;
+    //    } else {
+    data_parallel_communication_time = ((2 * (num_machines - 1) * total_parameter_size) /
+                                        (bandwidth * num_machines * (num_machines / 2))) /
+                                       num_machines_in_machine;
+    //    }
+
+    data_parallel_total_time = (data_parallel_total_time + data_parallel_communication_time);
+    num_machines_in_machine  = num_machines;
   }
   double pipeline_parallel_total_time =
       std::get<0>(A[0][len(states) - 1][all_num_machines[all_num_machines.size() - 1] - 1]);
+  auto estbb = pipeline_parallel_total_time * (stage_id - 1);
+  for (auto nm : all_num_machines) pipeline_parallel_total_time *= nm;
+  pipeline_parallel_total_time = pipeline_parallel_total_time / stage_id + estbb;
+
+  if (replica > 1) {
+    double pipeline_dp_communication_time =
+        ((2 * (replica - 1) * total_parameter_size) / (dp_bandwidth * replica * (replica / 2))) /
+        num_machines_in_machine;
+    pipeline_parallel_total_time += pipeline_dp_communication_time;
+  }
+
+  std::cout << "This speedup calculation is currently NOT correct" << std::endl;
   std::cout << "HPGO: " << pipeline_parallel_total_time << " DP: " << data_parallel_total_time
             << std::endl
             << "HPGO Solution Speedup over DP: "
@@ -171,6 +219,9 @@ TypeA Conductor::compute_partitioning(d2d compute_times, d2d activation_sizes, d
             if (std::get<0>(A[i][k][m - mp]) < -0.5) continue;
 
             double pipeline_time = std::max(std::get<0>(A[i][k][m - mp]), last_stage_time);
+            pipeline_time = std::max(pipeline_time, input_transfer_time);
+            if (output_transfer_time > -0.5) pipeline_time = std::max(pipeline_time, output_transfer_time);
+
             if (min_pipeline_time < -0.5 || min_pipeline_time > pipeline_time) {
               optimal_split        = std::make_pair(k, m - mp);
               optimal_num_machines = mp;
@@ -205,10 +256,11 @@ std::vector<int> Conductor::analyse_partititioning(TypeA A, int start, int end,
     int num_machines_used = std::get<2>(metadata);
 
     // FIX: redundant print
-    std::cout << "\033[33m-------------------------------------\033[0m" << std::endl;
-    std::cout << "\033[33mnum_machines_used: " << num_machines_used << "\033[0m" << std::endl;
-    std::cout << "\033[33msplit between: " << next_split.first << " and " << next_split.first + 1
-              << "\033[0m" << std::endl;
+    //    std::cout << "\033[33m-------------------------------------\033[0m" << std::endl;
+    //    std::cout << "\033[33mnum_machines_used: " << num_machines_used << "\033[0m" << std::endl;
+    //    std::cout << "\033[33msplit between: " << next_split.first << " and " << next_split.first
+    //    + 1
+    //              << "\033[0m" << std::endl;
 
     splits.push_back(next_split.first + 1);
     prev_split = splits[splits.size() - 1];
@@ -234,8 +286,8 @@ std::vector<int> Conductor::analyse_partititioning(TypeA A, int start, int end,
 
   std::cout << "\033[33m====================================\033[0m" << std::endl;
   for (int i = 0; i < splits.size(); i++) {
-    std::cout << "\033[33m (" << (i == 0 ? 0 : splits[i - 1] + 1) << " ~ " << splits[i] << ") x "
-              << replication_factors[i] << "\033[0m" << std::endl;
+    std::cout << "\033[33m (" << (i == 0 ? prev_split : splits[i - 1] + 1) << " ~ " << splits[i]
+              << ") x " << replication_factors[i] << "\033[0m" << std::endl;
   }
   std::cout << "\033[33m====================================\033[0m" << std::endl;
 
@@ -248,6 +300,7 @@ TypeA Conductor::PD_compute_partitioning(d2d compute_times, d2d activation_sizes
                                          i2d all_predecessor_ids, int num_machines,
                                          int num_machines_within_machine, double bandwidth,
                                          bool final_level) {
+  std::cout << "\033[33mFn PD_compute_partitioning is buggy and deprecated\033[0m" << std::endl;
   TypeA A;
 
   // Initialization
@@ -333,6 +386,7 @@ TypeA Conductor::PD_compute_partitioning(d2d compute_times, d2d activation_sizes
 
 std::vector<int> Conductor::PD_analyse_partititioning(TypeA A, int start, int end,
                                                       double network_bandwidth, int num_machines) {
+  std::cout << "\033[33mFn PD_analyse_partitioning is buggy and deprecated\033[0m" << std::endl;
   std::cout << "\033[33mEnter PipeDream Analyse Partitioning\033[0m" << std::endl;
   auto             metadata                = A[start][end - 1][num_machines - 1];
   auto             next_split              = std::get<1>(metadata);

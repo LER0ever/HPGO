@@ -17,6 +17,8 @@ class Conductor {
   void setModel(Model);
   void orchestrate(std::vector<int> all_num_machines, std::vector<double> all_bandwidths,
                    std::string profile_filename);
+  void orchestrate_single(std::vector<int> all_num_machines, std::vector<double> all_bandwidths,
+                   std::string profile_filename, int replica, double dp_bandwidth);
 
   TypeA PD_compute_partitioning(d2d compute_times, d2d activation_sizes, d2d parameter_sizes,
                                 std::vector<double> output_activation_sizes,

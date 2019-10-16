@@ -3,29 +3,38 @@
 
 #include <string>
 #include <vector>
+#include "graph.h"
 
-class Layer {
+class State {
  public:
-  Layer();
-  Layer(int, double, double, double);
-  Layer(int, std::string, double, double, double);
+  State();
+  State(int ID, std::string Name, std::string Desc, double CompTime, double ActivationSize,
+        double OutputActivationSize, double ParamSize);
 
- private:
-  int         id;
-  std::string sType;
-  double      compTime;
-  double      activationSize;
-  double      outputActivationSize;
-  double      paramSize;
+  int         ID;
+  std::string Name;
+  std::string Desc;
+  std::string Type;  // UNUSED
+  double      CompTime;
+  double      ForwardCompTime;   // UNUSED
+  double      BackwardCompTime;  // UNUSED
+  double      ActivationSize;
+  double      OutputActivationSize;
+  double      ParamSize;
+  int         StageID;
+  int         depth;
+  int         height;
 };
 
 class Model {
  public:
   Model();
-  Model(int, std::vector<double>, std::vector<double>, std::vector<double>);
+  Model(int, pyo);
 
- private:
-  std::vector<Layer> Layers;
+  std::vector<State> States;
+  int                GlobalBatchSize;
+  int                ProfileBatchSize;
+  bool               AllowAsync;
 };
 
 #endif  // MODEL_H

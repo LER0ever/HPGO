@@ -13,7 +13,6 @@ set (CMAKE_CXX_STANDARD 17)
 # This will be our group of resource files
 set(project_RESOURCE_FILES
   README.md
-  HPGO.tex
   .clang-format
 )
 
@@ -87,6 +86,7 @@ add_executable("test_main"
     tests/test_orchestrate_full.cc
     tests/test_pd.cc
     tests/test_graph.cc
+    tests/test_model.cc
 #    orchestration.h
 #    orchestration.cc
 #    pipeline.h
@@ -116,6 +116,8 @@ add_library(HPGO SHARED
     duration.cc
     model.cc
     model.h
+    device.cc
+    device.h
     helper.cc
     helper.h
     graph.cc
