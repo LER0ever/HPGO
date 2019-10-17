@@ -89,6 +89,9 @@ def prepare(profile_filename, verbose=False):
         compute_times.append(compute_times_row)
         activation_sizes.append(activation_sizes_row)
         parameter_sizes.append(parameter_sizes_row)
+    # for i in range(len(states)):
+    #     print(i, compute_times[i][i])
+    #     this would give you the layer-wise compute time
     return gr, states, compute_times, activation_sizes, parameter_sizes, output_activation_sizes, all_predecessor_ids
 
 

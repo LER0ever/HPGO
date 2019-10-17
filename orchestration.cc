@@ -17,7 +17,7 @@ void Conductor::orchestrate(std::vector<int> all_num_machines, std::vector<doubl
   int total_num_machines = 1;
   for (auto nm : all_num_machines) total_num_machines *= nm;
   for (int i = 2; i < floor(total_num_machines / 2.0 + 0.5); i++) {
-    std::vector<int> new_num_machines;
+    std::vector<int>    new_num_machines;
     std::vector<double> new_bandwidths;
     if (i < all_num_machines[0]) {
       new_bandwidths.push_back(all_bandwidths[1]);
@@ -26,7 +26,7 @@ void Conductor::orchestrate(std::vector<int> all_num_machines, std::vector<doubl
       orchestrate_single(new_num_machines, new_bandwidths, profile_filename, total_num_machines / i,
                          all_bandwidths[0]);
     } else {
-      std::cout << "Apprently I did not handle this case :(" << std::endl;
+      std::cout << "Apparently I did not handle this case :(" << std::endl;
     }
   }
 }
@@ -219,8 +219,9 @@ TypeA Conductor::compute_partitioning(d2d compute_times, d2d activation_sizes, d
             if (std::get<0>(A[i][k][m - mp]) < -0.5) continue;
 
             double pipeline_time = std::max(std::get<0>(A[i][k][m - mp]), last_stage_time);
-            pipeline_time = std::max(pipeline_time, input_transfer_time);
-            if (output_transfer_time > -0.5) pipeline_time = std::max(pipeline_time, output_transfer_time);
+            pipeline_time        = std::max(pipeline_time, input_transfer_time);
+            if (output_transfer_time > -0.5)
+              pipeline_time = std::max(pipeline_time, output_transfer_time);
 
             if (min_pipeline_time < -0.5 || min_pipeline_time > pipeline_time) {
               optimal_split        = std::make_pair(k, m - mp);
