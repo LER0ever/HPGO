@@ -15,6 +15,7 @@ class DeviceLevel {
 class Device {
  public:
   double      ComputePower;
+  double      Memory;
   std::string DeviceName;
   int         LocalRank;
   bool        IsOccupied;

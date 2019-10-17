@@ -32,3 +32,12 @@ Model::Model(int globalBatchSize, pyo pyStates) {
     PyErr_Clear();
   }
 }
+
+void Model::Normalize() {
+  double factor = (double)this->GlobalBatchSize / (double)this->ProfileBatchSize;
+  for (auto s : this->States) {
+    s.CompTime *= factor;
+    s.ActivationSize *= factor;
+    s.OutputActivationSize *= factor;
+  }
+}

@@ -3,9 +3,9 @@ Hybrid Parallelism Global Orchestration
 
 ## Build
 #### Prerequisite
-- a C++17 compiler
+- a C++17 compiler (GCC >= 7, Clang >= 5, MSVC >= 2017)
 - CMake > 2.8
-- Boost::System
+- Boost::System (tested on 1.71)
 - Boost::Python
 - Python-Dev (3)
 - GraphViz

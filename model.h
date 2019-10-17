@@ -30,6 +30,7 @@ class Model {
  public:
   Model();
   Model(int, pyo);
+  void Normalize();
 
   std::vector<State> States;
   int                GlobalBatchSize;
