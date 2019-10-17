@@ -34,10 +34,18 @@ class Layer {
   double      ParamSize;
 };
 
+struct Metadata {
+  std::vector<std::vector<double>> compute_times;
+  std::vector<std::vector<double>> activation_sizes;
+  std::vector<std::vector<double>> parameter_sizes;
+  std::vector<double>              output_activation_sizes;
+  std::vector<std::vector<int>>    all_predecessor_ids;
+};
+
 class Model {
  public:
   Model();
-  Model(int, pyo);
+  Model(int, Graph);
   void Normalize();
   void SetLayerStats(std::vector<std::vector<double>> compute_times,
                      std::vector<std::vector<double>> activation_sizes,
@@ -46,6 +54,7 @@ class Model {
 
   std::vector<State> States;
   std::vector<Layer> Layers;
+  Metadata           Meta;
   int                GlobalBatchSize;
   int                ProfileBatchSize;
   bool               AllowAsync;

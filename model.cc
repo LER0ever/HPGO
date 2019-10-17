@@ -14,8 +14,9 @@ State::State(int ID, std::string Name, double CompTime, double ActivationSize,
 
 Model::Model() {}
 
-Model::Model(int globalBatchSize, pyo pyStates) {
+Model::Model(int globalBatchSize, Graph g) {
   this->GlobalBatchSize = globalBatchSize;
+  pyo pyStates          = g.getStates();
   try {
     for (int i = 0; i < py::len(pyStates); i++) {
       pyo state = pyStates[i];
@@ -29,6 +30,11 @@ Model::Model(int globalBatchSize, pyo pyStates) {
     PyErr_Print();
     PyErr_Clear();
   }
+  this->Meta.compute_times           = g.compute_times;
+  this->Meta.activation_sizes        = g.activation_sizes;
+  this->Meta.parameter_sizes         = g.parameter_sizes;
+  this->Meta.output_activation_sizes = g.output_activation_sizes;
+  this->Meta.all_predecessor_ids     = g.all_predecessor_ids;
 }
 
 void Model::Normalize() {
@@ -44,7 +50,7 @@ void Model::SetLayerStats(std::vector<std::vector<double>> compute_times,
                           std::vector<std::vector<double>> activation_sizes,
                           std::vector<std::vector<double>> parameter_sizes,
                           std::vector<double>              output_activation_sizes) {
-  for (int i = 0; i < compute_times.size() - 1; i++) {
+  for (int i = 0; i < compute_times[0].size(); i++) {
     this->Layers.push_back(Layer(i, compute_times[i][i], activation_sizes[i][i],
                                  parameter_sizes[i][i], output_activation_sizes[i]));
   }
