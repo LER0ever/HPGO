@@ -1,8 +1,8 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-#include "../helper.h"
-#include "../orchestration.h"
+#include "../orchestration/orchestration.h"
+#include "../utils/helper.h"
 
 #include "catch.hpp"
 #include "test_config.h"

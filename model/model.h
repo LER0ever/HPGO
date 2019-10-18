@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "graph.h"
+#include "../input/graph.h"
 
 class State {
  public:

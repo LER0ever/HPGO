@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
-#include "../orchestration.h"
-#include "../syncpipeline.h"
+#include "../orchestration/orchestration.h"
+#include "../parallelism/pipeline/syncpipeline.h"
 
 #include "catch.hpp"
 #include "test_config.h"

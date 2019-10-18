@@ -2,10 +2,10 @@
 #define ORCHESTRATION_H
 
 #include <vector>
-#include "duration.h"
-#include "graph.h"
-#include "model.h"
-#include "syncpipeline.h"
+#include "../input/graph.h"
+#include "../model/model.h"
+#include "../parallelism/pipeline/duration.h"
+#include "../parallelism/pipeline/syncpipeline.h"
 
 using triple = std::tuple<double, std::pair<int, int>, int>;
 using TypeA  = std::vector<std::vector<std::vector<triple> > >;

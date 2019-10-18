@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-#include "../graph.h"
+#include "../input/graph.h"
 
 #include "catch.hpp"
 #include "test_config.h"

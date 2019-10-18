@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-#include "../model.h"
+#include "../model/model.h"
 
 #include "catch.hpp"
 #include "test_config.h"

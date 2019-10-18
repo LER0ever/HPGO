@@ -11,6 +11,8 @@ cmake-build*
 *.pdf
 !profiler/**/*.pdf
 *.bz
+*.aux
+*.gz
 
 ###### C++
 # Prerequisites

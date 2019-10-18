@@ -1,5 +1,5 @@
 #include "orchestration.h"
-#include "graph.h"
+#include "../input/graph.h"
 
 #include <algorithm>
 #include <cassert>
@@ -15,13 +15,13 @@ void Conductor::orchestrate(std::vector<int> all_num_machines, std::vector<doubl
   assert(all_num_machines.size() == 2);
   int total_num_machines = 1;
   for (auto nm : all_num_machines) total_num_machines *= nm;
-  for (int i = 2; i < floor(total_num_machines / 2.0 + 0.5); i++) {
+  for (int i = 2; i <= floor(total_num_machines / 2.0 + 0.5); i++) {
     std::vector<int>    new_num_machines;
     std::vector<double> new_bandwidths;
-    if (i < all_num_machines[0]) {
+    if (i <= all_num_machines[0]) {
       new_bandwidths.push_back(all_bandwidths[1]);
       new_num_machines.push_back(i);
-      std::cout << "DPU = " << i << std::endl;
+      std::cout << std::endl << "DPU = " << i << std::endl;
       orchestrate_single(new_num_machines, new_bandwidths, total_num_machines / i,
                          all_bandwidths[0]);
     } else {
@@ -75,9 +75,9 @@ void Conductor::orchestrate_single(std::vector<int>    all_num_machines,
       std::cout << "Analyze Partitioning (" << start << ", " << end << ")" << std::endl;
       auto partial_splits =
           analyse_partititioning(As[i], start, end, all_bandwidths[i], all_num_machines[i]);
-      std::cout << "Partial Splits: ";
-      for (auto ps : partial_splits) std::cout << ps << " ";
-      std::cout << std::endl;
+      //      std::cout << "Partial Splits: ";
+      //      for (auto ps : partial_splits) std::cout << ps << " ";
+      //      std::cout << std::endl;
 
       int start_point = start;
       for (auto ps : partial_splits) {
@@ -94,7 +94,7 @@ void Conductor::orchestrate_single(std::vector<int>    all_num_machines,
       }
       stage_id += 1;
     }
-    std::cout << "Total stage # = " << stage_id << std::endl;
+    std::cout << "Total stage # = " << stage_id - 1 << std::endl;  // Fix Offset
     splits = new_splits;
   }
 
@@ -107,30 +107,28 @@ void Conductor::orchestrate_single(std::vector<int>    all_num_machines,
   double total_parameter_size =
       py::extract<double>(states[py::len(states) - 1].attr("parameter_size"));
   double data_parallel_total_time = total_time;
-  std::cout << "dp original total = " << data_parallel_total_time << std::endl;
+  //  std::cout << "dp original total = " << data_parallel_total_time << std::endl;
   num_machines_in_machine = 1;
   for (int e = 0; e < all_num_machines.size(); e++) {
     auto   num_machines = all_num_machines[e];
     auto   bandwidth    = all_bandwidths[e];
     double data_parallel_communication_time;
-    //    if (replica > 1) {
-    //      data_parallel_communication_time = ((2 * (num_machines - 1) * total_parameter_size) /
-    //                                          (dp_bandwidth * num_machines)) /
-    //                                         num_machines_in_machine;
-    //    } else {
-    data_parallel_communication_time = ((2 * (num_machines - 1) * total_parameter_size) /
-                                        (bandwidth * num_machines * (num_machines / 2))) /
-                                       num_machines_in_machine;
-    //    }
+    if (replica > 1) {
+      data_parallel_communication_time = ((2 * (num_machines - 1) * total_parameter_size) /
+                                          (dp_bandwidth * num_machines * (num_machines / 2))) /
+                                         num_machines_in_machine;
+    } else {
+      data_parallel_communication_time = ((2 * (num_machines - 1) * total_parameter_size) /
+                                          (bandwidth * num_machines /* * (num_machines / 2)*/)) /
+                                         num_machines_in_machine;
+    }
 
     data_parallel_total_time = (data_parallel_total_time + data_parallel_communication_time);
     num_machines_in_machine  = num_machines;
   }
   double pipeline_parallel_total_time =
       std::get<0>(A[0][len(states) - 1][all_num_machines[all_num_machines.size() - 1] - 1]);
-  auto estbb = pipeline_parallel_total_time * (stage_id - 1);
-  for (auto nm : all_num_machines) pipeline_parallel_total_time *= nm;
-  pipeline_parallel_total_time = pipeline_parallel_total_time / stage_id + estbb;
+  pipeline_parallel_total_time *= 2 * (stage_id - 1);
 
   if (replica > 1) {
     double pipeline_dp_communication_time =
@@ -140,10 +138,10 @@ void Conductor::orchestrate_single(std::vector<int>    all_num_machines,
   }
 
   std::cout << "This speedup calculation is currently NOT correct" << std::endl;
-  std::cout << "HPGO: " << pipeline_parallel_total_time << " DP: " << data_parallel_total_time
-            << std::endl
+  std::cout << "Normalized HPGO: " << pipeline_parallel_total_time
+            << " DP: " << data_parallel_total_time << std::endl
             << "HPGO Solution Speedup over DP: "
-            << data_parallel_total_time / pipeline_parallel_total_time << std::endl;
+            << pipeline_parallel_total_time / data_parallel_total_time << std::endl;
 }
 
 TypeA Conductor::compute_partitioning(d2d compute_times, d2d activation_sizes, d2d parameter_sizes,
@@ -272,8 +270,8 @@ std::vector<int> Conductor::analyse_partititioning(TypeA A, int start, int end,
   int num_machines_used = std::get<2>(metadata);
   remaining_machines_left -= num_machines_used;
 
-  std::cout << "\033[33m-------------------------------------\033[0m" << std::endl;
-  std::cout << "\033[33mnum_machines_used: " << num_machines_used << "\033[0m" << std::endl;
+  //  std::cout << "\033[33m-------------------------------------\033[0m" << std::endl;
+  //  std::cout << "\033[33mnum_machines_used: " << num_machines_used << "\033[0m" << std::endl;
 
   prev_split = start;
   std::reverse(splits.begin(), splits.end());
@@ -281,7 +279,7 @@ std::vector<int> Conductor::analyse_partititioning(TypeA A, int start, int end,
   replication_factors.push_back(num_machines_used);
   std::reverse(replication_factors.begin(), replication_factors.end());
 
-  std::cout << splits.size() << replication_factors.size() << std::endl;
+  //  std::cout << splits.size() << replication_factors.size() << std::endl;
 
   std::cout << "\033[33m====================================\033[0m" << std::endl;
   for (int i = 0; i < splits.size(); i++) {

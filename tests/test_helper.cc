@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-#include "../helper.h"
+#include "../utils/helper.h"
 
 #include "catch.hpp"
 #include "test_config.h"
