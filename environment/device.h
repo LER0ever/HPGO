@@ -1,24 +1,20 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <string>
 #include <vector>
 
-class DeviceLevel {
- public:
-  int                      Level;
-  double                   Bandwidth;  // inter device bandwidth within the same level, bytes / sec
-  std::vector<DeviceLevel> SubLevels;
-  bool                     IsLastLevel;
-  Device                   Device;  // for the last level
-};
-
-class Device {
- public:
-  double      ComputePower;
-  double      Memory;
-  std::string DeviceName;
-  int         LocalRank;
-  bool        IsOccupied;
+struct Device {
+  Device();
+  Device(std::vector<int>, std::vector<double>);
+  std::vector<Device> SubDevices;
+  int                 Level;
+  double              ComputePower;
+  double              Memory;
+  std::string         DeviceName;
+  int                 Rank;
+  bool                IsOccupied;
+  bool                IsLastLevel;
 };
 
 #endif  // DEVICE_H

@@ -86,6 +86,7 @@ add_executable("test_main"
         tests/test_pd.cc
         tests/test_graph.cc
         tests/test_model.cc
+        tests/test_device.cc
         #    orchestration.h
         #    orchestration.cc
         #    pipeline.h
