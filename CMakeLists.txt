@@ -113,10 +113,18 @@ add_library(HPGO SHARED
         parallelism/pipeline/block.cc
         parallelism/pipeline/duration.h
         parallelism/pipeline/duration.cc
+        parallelism/data-parallel/data-parallel.cc
+        parallelism/data-parallel/data-parallel.h
+        parallelism/split-concat/split-concat.cc
+        parallelism/split-concat/split-concat.h
         model/model.cc
         model/model.h
         environment/device.cc
         environment/device.h
+        environment/network.cc
+        environment/network.h
+        environment/nvlink.cc
+        environment/nvlink.h
         utils/helper.cc
         utils/helper.h
         input/graph.cc
