@@ -1,169 +1,251 @@
-cmake_minimum_required(VERSION 2.8)
 
-project(HPGO)
+# 
+# CMake options
+# 
 
-if (APPLE)
-    set(CMAKE_MACOSX_RPATH ON)
-endif (APPLE)
-set(CMAKE_CXX_STANDARD 17)
+# CMake version
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
+#
+# Configure CMake environment
+#
 
-## Resource Files
-# This will be our group of resource files
-set(project_RESOURCE_FILES
-        README.md
-        .clang-format
-        )
+# Register general cmake commands
+include(cmake/Custom.cmake)
 
-# Set properties for this group of files
-set_source_files_properties(
-        ${project_RESOURCE_FILES}
-        PROPERTIES
-        HEADER_FILE_ONLY TRUE # Since it's just a text file, it doesn't need compiled
-        #MACOSX_PACKAGE_LOCATION Resource <- only do this if you need to copy the file!
-)
+# Set policies
+set_policy(CMP0054 NEW) # ENABLE CMP0054: Only interpret if() arguments as variables or keywords when unquoted.
+set_policy(CMP0042 NEW) # ENABLE CMP0042: MACOSX_RPATH is enabled by default.
+set_policy(CMP0063 NEW) # ENABLE CMP0063: Honor visibility properties for all target types.
+set_policy(CMP0077 NEW) # ENABLE CMP0077: option() honors normal variables
 
-# Bonus points unlocked :)
-source_group(
-        "Resources" FILES ${project_RESOURCE_FILES}
-)
+# Include cmake modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+include(GenerateExportHeader)
 
-FIND_PACKAGE(PythonInterp)
+set(WriterCompilerDetectionHeaderFound NOTFOUND)
+# This module is only available with CMake >=3.1, so check whether it could be found
+# BUT in CMake 3.1 this module doesn't recognize AppleClang as compiler, so just use it as of CMake 3.2
+if (${CMAKE_VERSION} VERSION_GREATER "3.2")
+    include(WriteCompilerDetectionHeader OPTIONAL RESULT_VARIABLE WriterCompilerDetectionHeaderFound)
+endif()
 
-if (PYTHONINTERP_FOUND)
-    if (UNIX AND NOT APPLE)
-        if (PYTHON_VERSION_MAJOR EQUAL 3)
-            FIND_PACKAGE(Boost COMPONENTS python${PYTHON_VERSION_SUFFIX})
-            FIND_PACKAGE(PythonInterp 3)
-            FIND_PACKAGE(PythonLibs 3 REQUIRED)
-        else ()
-            FIND_PACKAGE(Boost COMPONENTS python)
-            FIND_PACKAGE(PythonInterp)
-            FIND_PACKAGE(PythonLibs REQUIRED)
-        endif ()
-    else ()
-        if (PYTHON_VERSION_MAJOR EQUAL 3)
-            FIND_PACKAGE(Boost COMPONENTS python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
-            FIND_PACKAGE(PythonInterp 3)
-            FIND_PACKAGE(PythonLibs 3 REQUIRED)
-        else ()
-            FIND_PACKAGE(Boost COMPONENTS python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
-            FIND_PACKAGE(PythonInterp)
-            FIND_PACKAGE(PythonLibs REQUIRED)
-        endif ()
-    endif ()
-else ()
-    message("Python not found")
-endif ()
-
-#PYTHON_ADD_MODULE(HPGO_PY
-#        HPGO.h
-#        HPGO.cc
-#        orchestration.h
-#        orchestration.cc
-#        pipeline.h
-#        pipeline.cc
-#        syncpipeline.h
-#        syncpipeline.cc
-#        block.h
-#        block.cc
-#        duration.h
-#        duration.cc
-#        model.cc
-#        model.h
-#        )
+# Include custom cmake modules
+include(cmake/Coverage.cmake)
+include(cmake/GenerateTemplateExportHeader.cmake)
+include(cmake/GetGitRevisionDescription.cmake)
+include(cmake/HealthCheck.cmake)
 
 
-# TESTS
-add_executable("test_main"
-        tests/catch.hpp
-        tests/test_main.cc
-        tests/test_helper.cc
-        tests/test_PEC.cc
-        tests/test_orchestrate_manual.cc
-        tests/test_orchestrate_full.cc
-        tests/test_pd.cc
-        tests/test_graph.cc
-        tests/test_model.cc
-        tests/test_device.cc
-        #    orchestration.h
-        #    orchestration.cc
-        #    pipeline.h
-        #    pipeline.cc
-        #    syncpipeline.h
-        #    syncpipeline.cc
-        #    block.h
-        #    block.cc
-        #    duration.h
-        #    duration.cc
-        #    model.cc
-        #    model.h
-        #    helper.cc
-        #    helper.h
-        )
+# 
+# Project description and (meta) information
+# 
 
-add_library(HPGO SHARED
-        orchestration/orchestration.h
-        orchestration/orchestration.cc
-        parallelism/pipeline/pipeline.h
-        parallelism/pipeline/pipeline.cc
-        parallelism/pipeline/syncpipeline.h
-        parallelism/pipeline/syncpipeline.cc
-        parallelism/pipeline/block.h
-        parallelism/pipeline/block.cc
-        parallelism/pipeline/duration.h
-        parallelism/pipeline/duration.cc
-        parallelism/data-parallel/data-parallel.cc
-        parallelism/data-parallel/data-parallel.h
-        parallelism/split-concat/split-concat.cc
-        parallelism/split-concat/split-concat.h
-        model/model.cc
-        model/model.h
-        environment/device.cc
-        environment/device.h
-        environment/network.cc
-        environment/network.h
-        environment/nvlink.cc
-        environment/nvlink.h
-        utils/helper.cc
-        utils/helper.h
-        input/graph.cc
-        input/graph.h
-        ${project_RESOURCE_FILES}
-        )
+# Get git revision
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+string(SUBSTRING "${GIT_SHA1}" 0 12 GIT_REV)
+if(NOT GIT_SHA1)
+    set(GIT_REV "0")
+endif()
 
-if (APPLE)
-    target_include_directories(HPGO PUBLIC
-            "/usr/local/include"
-            "/usr/local/Cellar/python/3.7.4_1/Frameworks/Python.framework/Versions/3.7/include/python3.7m"
-            )
-    target_link_libraries("HPGO"
-            ${Boost_LIBRARIES}
-            "boost_python37"
-            python3.7m
-            dl
-            )
-    target_link_directories("HPGO" PUBLIC
-            "/usr/local/Cellar/boost-python3/1.71.0/lib"
-            "/usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib/python3.7/config-3.7m-darwin"
-            )
-elseif (WIN32)
-    target_include_directories(HPGO PUBLIC
-            "E:/Code/C/vcpkg/installed/x86-windows/include"
-            "E:/Code/C/vcpkg/installed/x86-windows/include/python3.7"
-            )
-    target_link_libraries("HPGO"
-            ${Boost_LIBRARIES}
-            "boost_python37-vc140-mt"
-            python37
-            )
-    target_link_directories("HPGO" PUBLIC
-            "E:/Code/C/vcpkg/installed/x86-windows/lib"
-            )
-endif ()
+# Meta information about the project
+set(META_PROJECT_NAME        "HPGO")
+set(META_PROJECT_DESCRIPTION "Hybrid Parallelism Global Orchestration")
+set(META_AUTHOR_ORGANIZATION "LER0ever")
+set(META_AUTHOR_DOMAIN       "https://rongyi.io")
+set(META_AUTHOR_MAINTAINER   "hi@rongyi.io")
+set(META_VERSION_MAJOR       "0")
+set(META_VERSION_MINOR       "8")
+set(META_VERSION_PATCH       "0")
+set(META_VERSION_REVISION    "${GIT_REV}")
+set(META_VERSION             "${META_VERSION_MAJOR}.${META_VERSION_MINOR}.${META_VERSION_PATCH}")
+set(META_NAME_VERSION        "${META_PROJECT_NAME} v${META_VERSION} (${META_VERSION_REVISION})")
+set(META_CMAKE_INIT_SHA      "${GIT_REV}")
 
-target_link_libraries(test_main HPGO)
+string(MAKE_C_IDENTIFIER ${META_PROJECT_NAME} META_PROJECT_ID)
+string(TOUPPER ${META_PROJECT_ID} META_PROJECT_ID)
 
 
+# 
+# Project configuration options
+# 
 
+# Project options
+option(BUILD_SHARED_LIBS      "Build shared instead of static libraries."              ON)
+option(OPTION_SELF_CONTAINED  "Create a self-contained install with all dependencies." ON)
+option(OPTION_BUILD_TESTS     "Build tests."                                           ON)
+option(OPTION_BUILD_DOCS      "Build documentation."                                   OFF)
+option(OPTION_BUILD_EXAMPLES  "Build examples."                                        OFF)
+option(OPTION_ENABLE_COVERAGE "Add coverage information."                              OFF)
+
+set(CMAKE_BUILD_TYPE Debug)
+
+# 
+# Declare project
+# 
+
+# Generate folders for IDE targets (e.g., VisualStudio solutions)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set(IDE_FOLDER "")
+
+# Declare project
+project(${META_PROJECT_NAME} C CXX)
+
+# Set output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+
+# Create version file
+file(WRITE "${PROJECT_BINARY_DIR}/VERSION" "${META_NAME_VERSION}")
+
+
+#
+# Project Health Check Setup
+#
+
+# Add cmake-init template check cmake targets
+add_check_template_target(${META_CMAKE_INIT_SHA})
+
+# Configure health check tools
+enable_cppcheck(ON)
+enable_clang_tidy(ON)
+enable_coverage(${OPTION_ENABLE_COVERAGE})
+
+
+# 
+# Compiler settings and options
+# 
+
+include(cmake/CompileOptions.cmake)
+
+
+# 
+# Deployment/installation setup
+# 
+
+# Get project name
+set(project ${META_PROJECT_NAME})
+
+# Check for system dir install
+set(SYSTEM_DIR_INSTALL FALSE)
+if("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr" OR "${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
+    set(SYSTEM_DIR_INSTALL TRUE)
+endif()
+
+# Installation paths
+if(UNIX AND SYSTEM_DIR_INSTALL)
+    # Install into the system (/usr/bin or /usr/local/bin)
+    set(INSTALL_ROOT      "share/${project}")       # /usr/[local]/share/<project>
+    set(INSTALL_CMAKE     "share/${project}/cmake") # /usr/[local]/share/<project>/cmake
+    set(INSTALL_EXAMPLES  "share/${project}")       # /usr/[local]/share/<project>
+    set(INSTALL_DATA      "share/${project}")       # /usr/[local]/share/<project>
+    set(INSTALL_BIN       "bin")                    # /usr/[local]/bin
+    set(INSTALL_SHARED    "lib")                    # /usr/[local]/lib
+    set(INSTALL_LIB       "lib")                    # /usr/[local]/lib
+    set(INSTALL_INCLUDE   "include")                # /usr/[local]/include
+    set(INSTALL_DOC       "share/doc/${project}")   # /usr/[local]/share/doc/<project>
+    set(INSTALL_SHORTCUTS "share/applications")     # /usr/[local]/share/applications
+    set(INSTALL_ICONS     "share/pixmaps")          # /usr/[local]/share/pixmaps
+    set(INSTALL_INIT      "/etc/init")              # /etc/init (upstart init scripts)
+else()
+    # Install into local directory
+    set(INSTALL_ROOT      ".")                      # ./
+    set(INSTALL_CMAKE     "cmake")                  # ./cmake
+    set(INSTALL_EXAMPLES  ".")                      # ./
+    set(INSTALL_DATA      ".")                      # ./
+    set(INSTALL_BIN       ".")                      # ./
+    set(INSTALL_SHARED    "lib")                    # ./lib
+    set(INSTALL_LIB       "lib")                    # ./lib
+    set(INSTALL_INCLUDE   "include")                # ./include
+    set(INSTALL_DOC       "doc")                    # ./doc
+    set(INSTALL_SHORTCUTS "misc")                   # ./misc
+    set(INSTALL_ICONS     "misc")                   # ./misc
+    set(INSTALL_INIT      "misc")                   # ./misc
+endif()
+
+# Set runtime path
+set(CMAKE_SKIP_BUILD_RPATH            FALSE) # Add absolute path to all dependencies for BUILD
+set(CMAKE_BUILD_WITH_INSTALL_RPATH    FALSE) # Use CMAKE_INSTALL_RPATH for INSTALL
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE) # Do NOT add path to dependencies for INSTALL
+
+if(NOT SYSTEM_DIR_INSTALL)
+    # Find libraries relative to binary
+    if(APPLE)
+        set(CMAKE_INSTALL_RPATH "@loader_path/../../../${INSTALL_LIB}")
+    else()
+        set(CMAKE_INSTALL_RPATH "$ORIGIN/${INSTALL_LIB}")       
+    endif()
+endif()
+
+
+# 
+# Project modules
+# 
+
+
+# Generate version-header
+configure_file(version.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/${META_PROJECT_NAME}/${META_PROJECT_NAME}-version.h @ONLY)
+
+# Libraries
+set(IDE_FOLDER "")
+add_subdirectory(HPGO)
+
+# Examples
+set(IDE_FOLDER "Examples")
+add_subdirectory(cmd)
+
+# Tests
+if(OPTION_BUILD_TESTS AND NOT MINGW)
+    set(IDE_FOLDER "Tests")
+    add_subdirectory(tests)
+endif()
+
+# 
+# Deployment
+# 
+
+# Deploy generated headers
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/${META_PROJECT_NAME} DESTINATION include COMPONENT dev)
+
+# add_subdirectory(source)
+add_subdirectory(docs)
+add_subdirectory(deploy)
+
+
+file(
+  COPY ${PROJECT_SOURCE_DIR}/graph
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/
+  USE_SOURCE_PERMISSIONS
+  )
+
+file(
+  COPY ${PROJECT_SOURCE_DIR}/utils
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/
+  USE_SOURCE_PERMISSIONS
+  )
+
+file(
+  COPY ${PROJECT_SOURCE_DIR}/profiler
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/
+  USE_SOURCE_PERMISSIONS
+  )
+
+# 
+# Deployment (global project files)
+# 
+
+# Install version file
+install(FILES "${PROJECT_BINARY_DIR}/VERSION" DESTINATION ${INSTALL_ROOT} COMPONENT runtime)
+
+# Install cmake find script for the project
+install(FILES ${META_PROJECT_NAME}-config.cmake DESTINATION ${INSTALL_ROOT} COMPONENT dev)
+
+# Install the project meta files
+install(FILES AUTHORS   DESTINATION ${INSTALL_ROOT} COMPONENT runtime)
+install(FILES LICENSE   DESTINATION ${INSTALL_ROOT} COMPONENT runtime)
+install(FILES README.org DESTINATION ${INSTALL_ROOT} COMPONENT runtime)
+
+# Install runtime data
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/data DESTINATION ${INSTALL_DATA} COMPONENT runtime)

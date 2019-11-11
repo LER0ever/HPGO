@@ -1,0 +1,21 @@
+node1 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node2 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node3 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node4 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node5 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node6 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node7 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node8 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node9 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node10 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+node11 -- dummy -- forward_compute_time=1.0, backward_compute_time=1.5, activation_size=1644167168.000, parameter_size=7168.000
+	node10 -- node11
+	node9 -- node10
+	node8 -- node9
+	node1 -- node2
+	node3 -- node4
+	node2 -- node3
+	node5 -- node6
+	node4 -- node5
+	node7 -- node8
+	node6 -- node7

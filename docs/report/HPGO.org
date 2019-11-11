@@ -1,0 +1,92 @@
+#+TITLE: HPGO Report
+#+AUTHOR: LER0ever <hi@rongyi.io>
+#+DESCRIPTION: the draft report of the algorithm
+* Notations
+** Profiling
+   - $L$: the total number of layers
+   - $l$: the # of a layer, from $1$ to $M$
+   - $T_l$: "the total computation time across the forward and backward passes for layer l on the target GPUs"
+   - $a_l$: "the size of the output activations of layer $l$ (and the size of input gradients in the backward pass) in bytes"
+   - $w_l$: "the size of weight parameters for layer $l$ in bytes"
+   - $PBS$: Profiling Batch Size
+** Model
+   - $GBS$: the Global Batch Size for training
+   - (optional) $allow_async$: if the model can be trained in a non-BSP fashion
+** Environment
+   - $M$: number of Workers (GPUs) in total
+   - $m$: the # of a workers, from $1$ to $M$
+   - $B_{i \rightarrow j}$: Theoretical Bandwidth limit from worker $i$ to worker $j$
+   - $(i,j,b)$: estimated actual bandwidth from worker $i$ to worker $j$, transferring $b$ bytes of data (normally an S curve)
+** HPGO Result
+   - $S$: the model is partitioned into $S$ stages
+   - $R_s$: for stage $s$ $(0 \le s < S)$, it is replcaited $R_s$ times using Split-Concat
+   - $R_p$: the number of Pipelines in the outermost Data Parallel configuration
+   - $L_s = \{...\}$: all the consecutive layers in stage $s$
+   - $T_s$: the total computational time for stage $s$, calculated as $\sum_{l \in L_s} {t_l}$
+   - $A_s$: the total activation output for stage $s$, calculated as the activation for the last layer in that stage
+   - $W_s$: the total parameter size for stage $s$, calculated as $\sum_{l \in L_s} w_l$
+     
+* Parallelisms
+
+Given an arbitrary model, the algorithm will try to partition the model into different distinct stages. Those stages can then be replicated to make sure the pipeline won't be slowed down by stragglers. And we then replicate the entire pipeline to scale further if needed. 
+
+Replicated Stages inside a pipeline are implemented in a Split-Concat fashion, where the original input tensors are splitted before the stage and concatted afterwards. 
+
+Replicated Pipelines are achieved through traditional Data Parallelism, with each stages of the pipeline synchronizing their weights independently.
+
+** Split-Concat
+   
+   This happens when the $i$-th stage needs to receive data (mainly activations) from the previous stage ($i-1$)th. 
+
+   Assume the $i$-th stage has $m_i$ workers and the ($i-1$)th stage has $m_{i-1}$ workers. Then the size of activations needed to be transfer is the same as the same stage with no replica. 
+
+   So if every worker of stage $i-1$  has the same inter-worker bandwidth with any of those of stage $i$, the time estimated to transfer the activations is $A_{s-1} / B_{i-1 \to i}(A_{s-1})$
+
+   On the other hand if the bandwidth between these two stages are not uniform, we can still calculate the estimated transfer time by tracing the communication route between any two workers.
+   We know that the $R_{i-1}$ workers of stage ($i-1$) need to transfer $A_{s-1}$ bytes of data to $R_i$ workers of stage $i$, this is normally achieved by splitting the original Activation tensors into $R_i$ pieces on each of the $R_{i-1}$ workers. So the overall estimated transfer time should be 
+   $$max_{x=0}^{R_{i-1}}\ max_{y=0}^{R_i}\ \left\{\begin{array}{lr}
+   \frac{(A_{s-1}/(R_{i-1} \times R_i))}{B_{x \to y}(A_{s-1}/(R_{i-1} \times R_i))}
+   \end{array}\right\}$$
+   In the real-world scenario with 2-level networking setup (one being inter-machine ethernet, the other being NVLink within machines), this is essentially the time taken by transferring one of the above slice through ethernet, as transferring the same size of data through NVLink is several magnitudes faster: 
+   $$(A_{s-1}/(R_{i-1} \times R_i)) / B_{eth}(A_{s-1}/(R_{i-1}\times R_i))$$
+
+** Data Parallelism
+
+   Data Parallelism is used only at the very outer level of system to further scale the pipelines. Each stage in the inner pipeline does DP AllReduce with the same stage of all other pipelines. Let's say we have a 8 stage pipeline, extended with DP 8 times, then stage 1 of each pipeline do AllReduce's together. 
+
+   All the AllReduce operations are deferred to the very end of each pipeline, after all the micro-batches in the pipeline. This is similar to what one would get from Gradient Accumulation. The amount of parameters needed to do a single AllReduce is equal to all the weights combined in that stage: $W_s = \sum_{l \in L_s} w_l$
+
+   Therefore the total weights needed to communicate is $\frac{2*W_s * (R_P-1)}{R_P}$, yielding the estimated time for doing one AllReduce operation is
+   $$\frac{2 \times W_s \times (R_P-1)}{R_P \times B_{slowest}(2 \times W_s \times  \frac{R_P-1}{R_P})}$$
+   where we take the slowest network bandwidth across all the AllReduce nodes for time estimation. 
+
+** Synchronous Pipelines
+*** Synchronous Pipelines, w/out networks
+    #+CAPTION: Synchronous Pipeline w/out networks
+    #+NAME:   fig:HPGO-Pipeline-no-network
+    [[../images/HPGO-Pipeline-no-network.png]]
+*** Synchronous Pipelines, w/ networks
+    #+CAPTION: Synchronous Pipeline, where networks are possible bottlenecks
+    #+NAME:   fig:HPGO-Pipeline
+    [[../images/HPGO-Pipeline.png]]
+*** Pipeline Length Calculation
+    for now we are using a simple approach to estimate the length of a pipeline for every step
+    
+    \begin{gather}
+        PL=\max_{0 \le i < S,\ i\ \%\ 2 == 0} \\\{
+        (mBatch \times (FW[Q] + BW[Q]) + \sum_{k=0}^{Q-1}{(FW[k] + BW[k])}) \\- \sum_{s=0}^i BW[s] + \frac{2 \times W_i \times (R_P-1)}{R_P \times B_{slowest}(2 \times W_i \times \frac{R_P-1}{R_P})} \}
+    \end{gather}
+
+** Asynchronous Pipelines
+
+* HPGO v0.8
+** Single Pipeline Arrangement
+   Assume we already have the optimal device placement, meaning that if a stage is arrange we immediately know which GPU it should run on. 
+** Device Placement
+   
+** Dynamic Programming
+** Proof of Correctness
+** Space-Time Complexity
+
+* Future Improvements
+

@@ -1,0 +1,45 @@
+#+TITLE: HPGO README
+#+DESCRIPTION: 
+#+AUTHOR: LER0ever <hi@rongyi.io>
+
+* HPGO
+  Hybrid Parallelism Global Orchestration
+  
+#+BEGIN_SRC text
+THIS VERSION DOES NOT BUILD YET!!!
+#+END_SRC
+
+** Algorithm
+   [[file:docs/report/HPGO.org][HPGO Algorithm Description]]
+   
+** Build
+   
+*** Prerequisites
+
+    - a C++17 compiler (GCC >= 7, Clang >= 5, MSVC >= 2017)
+    - CMake > 2.8
+    - Boost::System (tested on 1.71)
+    - Boost::Python
+    - Python-Dev (3)
+    - GraphViz
+    - Google Tests (bundled)
+
+*** Compile
+
+    #+BEGIN_SRC bash
+    mkdir build
+    cd build
+    cmake ..
+    make -j
+    #+END_SRC
+
+*** Test
+
+    #+BEGIN_SRC bash
+    # run all the unit tests
+    ./HPGO-test
+    #+END_SRC
+
+** License
+
+   All Python code in this project comes from PipeDream, a Microsoft Research project, open source under MIT License.
