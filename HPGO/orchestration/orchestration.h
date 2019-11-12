@@ -15,7 +15,7 @@
 using d2d = std::vector<std::vector<double>>;
 using i2d = std::vector<std::vector<int>>;
 using ll  = std::vector<bool>;
-using EA  = std::tuple<double, std::pair<int, int>, int, std::set<int>>;
+using EA  = std::tuple<double, std::pair<int, int>, int, ll, std::set<int>>;
 using TA  = std::vector<std::vector<std::vector<std::unordered_map<ll, EA>>>>;
 
 class HPGO_API Conductor {
@@ -24,15 +24,20 @@ class HPGO_API Conductor {
   void setGraph(Graph);
   void setDevices(Devices);
   void setProfileFilename(std::string);
-  void orchestrate(int num_machines, std::vector<int> seps);
+  void orchestrate();
 
+  TA compute_spa(int spa_size, Devices d);
+  TA compute_partitioning();
   TA compute_partitioning(d2d compute_times, d2d activation_sizes, d2d parameter_sizes,
-                          std::vector<double> output_activation_sizes, i2d all_predecessor_ids,
-                          int num_machines);
-  std::pair<std::vector<int>, std::vector<int>> analyse_partititioning(TA A, int end, int num_machines);
+                          std::vector<double> output_activation_sizes, i2d all_predecessor_ids);
+  std::pair<std::vector<int>, std::vector<int>> analyse_partititioning(TA A, int end,
+                                                                       int num_machines);
+  std::vector<std::tuple<int, int, int, std::set<int>>> analyse_partitioning(TA A, int end, int num_machines);
 
   // Debug Helper
   void printA(TA& A);
+  void printA();
+  TA getA();
 
  private:
   Model       m;

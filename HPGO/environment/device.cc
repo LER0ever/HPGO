@@ -192,7 +192,7 @@ bool Devices::is_cross_machine(std::set<int> wids) {
     max_id = *std::max_element(wids.begin(), wids.end());
   int l=0;
   for (auto r: this->seps) {
-    if (l <= min_id && min_id <= r && l <= max_id && max_id <= r) return false;
+    if (l <= min_id && min_id < r && l <= max_id && max_id < r) return false;
     l = r;
   }
 
