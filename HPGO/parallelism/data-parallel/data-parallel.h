@@ -7,5 +7,6 @@
 #include <set>
 
 HPGO_API double DataParallel(Devices d, std::set<int> wids, double size);
+HPGO_API double DPSpeedup(Devices d, double compute, double allreduce);
 
 #endif

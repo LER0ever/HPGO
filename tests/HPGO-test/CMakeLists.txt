@@ -27,6 +27,8 @@ set(sources
     test_PEC.cc
     test_pd.cc
     test_self_contained.cc
+    test_splitconcat.cc
+    test_dataparallel.cc
 )
 
 

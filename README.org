@@ -40,6 +40,74 @@ THIS VERSION DOES NOT BUILD YET!!!
     ./HPGO-test
     #+END_SRC
 
+** Project Structure
+
+*** Unit Testing
+    Unit tests for HPGO can be found under the folder ~./tests/~.
+
+*** Style Guide
+    This project uses Clang-Format, the configuration of which can be found in [[./.clang-format][./.clang-format]]. 
+    
+*** Folder Structure
+    Output of command ~tree -L 3 -d -I "__pycache__|build|cmake-build-debug|auto"~
+    
+#+BEGIN_SRC text
+├── HPGO
+│   ├── environment
+│   ├── input
+│   ├── model
+│   ├── orchestration
+│   ├── parallelism
+│   │   ├── data-parallel
+│   │   ├── pipeline
+│   │   └── split-concat
+│   ├── source
+│   └── utils
+├── cmake
+├── cmd
+├── codegeneration
+├── contrib
+├── deploy
+│   ├── packages
+│   └── ubuntu-ppa
+│       └── debian
+├── docs
+│   ├── api-docs
+│   ├── images
+│   ├── manual
+│   │   └── HPGO.prv
+│   ├── presentation
+│   │   └── dist
+│   └── report
+├── graph
+│   └── test_graphs
+├── optimizer
+│   ├── gnmt_partitioned
+│   ├── scripts
+│   ├── templates
+│   └── vgg16_partitioned
+├── profiler
+│   ├── image_classification
+│   │   ├── models
+│   │   ├── profiles
+│   │   ├── sparsity
+│   │   └── utils
+│   ├── torchmodules
+│   │   ├── torchgraph
+│   │   ├── torchlogger
+│   │   ├── torchprofiler
+│   │   └── torchsummary
+│   └── translation
+│       ├── profiles
+│       └── seq2seq
+├── tests
+│   ├── HPGO-test
+│   └── googletest
+│       ├── ci
+│       ├── googlemock
+│       └── googletest
+└── utils
+#+END_SRC
 ** License
 
    All Python code in this project comes from PipeDream, a Microsoft Research project, open source under MIT License.

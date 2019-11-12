@@ -61,4 +61,6 @@ TEST_F(DeviceTest, IsCrossMachineTest) {
   EXPECT_EQ(d.is_cross_machine(set<int>{1,2,3,4}, set<int>{9,10,11,12}), true);
   EXPECT_EQ(d.is_cross_machine(set<int>{1,2,3,4}, set<int>{5,6,7,8}), false);
   EXPECT_EQ(d.is_cross_machine(set<int>{1,2,3,4}, set<int>{5,6,7,8,9}), true);
+  d = Devices(3, vector<int>{2,3});
+  EXPECT_EQ(d.is_cross_machine(set<int>{1,2,3}), true);
 }
