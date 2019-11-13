@@ -53,7 +53,6 @@ set(export_file          "include/${target}/${target}_export.h")
 set(template_export_file "include/${target}/${target}_api.h")
 set(export_macro         "${target_id}_API")
 
-
 # 
 # Sources
 # 

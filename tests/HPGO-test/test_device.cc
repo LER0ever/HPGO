@@ -56,6 +56,34 @@ TEST_F(DeviceTest, DeviceBitsetOperations_15_1) {
   cout << endl;
 }
 
+void print2DBitNext(vector<vector<BNRet>> ret)
+{
+  for (auto sbn: ret) {
+    for (auto bn : sbn) {
+      cout << "[";
+      for (auto wid : get<2>(bn)) cout << wid << " ";
+      cout << "] ";
+    }
+    cout << endl;
+  }
+}
+
+TEST_F(DeviceTest, DeviceBitsetOperations_DP) {
+  Devices d = Devices(16, vector<int>{8, 16});
+  cout << "Request 1 * 3 GPUs" << endl;
+  auto ret = d.bitnext(d.dbs, 1, 3);
+  print2DBitNext(ret);
+  cout << "Request 2 * 3 GPUs" << endl;
+  ret = d.bitnext(d.dbs, 2, 3);
+  print2DBitNext(ret);
+  cout << "Request 4 * 4 GPUs" << endl;
+  ret = d.bitnext(d.dbs, 4, 4);
+  print2DBitNext(ret);
+  cout << "Request 3 * 5 GPUs" << endl;
+  ret = d.bitnext(d.dbs, 3, 5);
+  print2DBitNext(ret);
+}
+
 TEST_F(DeviceTest, IsCrossMachineTest) {
   Devices d = Devices(16, vector<int>{8, 16});
   EXPECT_EQ(d.is_cross_machine(set<int>{1,2,3,4}, set<int>{9,10,11,12}), true);

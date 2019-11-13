@@ -30,6 +30,7 @@ struct HPGO_API Devices {
   std::vector<int>   seps;
   std::vector<BNRet> bitnext(int);
   std::vector<BNRet> bitnext(std::vector<bool>, int);
+  std::vector<std::vector<BNRet>> bitnext(std::vector<bool>, int, int);
   bool is_cross_machine(std::set<int>, std::set<int>);
   bool is_cross_machine(std::set<int>);
 };

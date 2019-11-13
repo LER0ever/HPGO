@@ -169,6 +169,29 @@ std::vector<BNRet> Devices::bitnext(std::vector<bool> bs, int need) {
   return res;
 }
 
+std::vector<std::vector<BNRet>> Devices::bitnext(std::vector<bool> bs, int need, int replica)
+{
+  auto SingleBN = this->bitnext(bs, need);
+  std::vector<std::vector<BNRet>> res;
+  if (replica == 1) {
+    for (auto sbn : SingleBN) {
+      res.push_back(std::vector<BNRet>{sbn});
+    }
+    return res;
+  }
+  for (auto sbn : SingleBN) {
+    auto cur_bs = std::get<1>(sbn);
+    auto cur_wids = std::get<2>(sbn);
+    auto subres = bitnext(cur_bs, need, replica-1);
+    for (auto sr : subres) {
+      auto newsr = sr;
+      newsr.push_back(sbn);
+      res.push_back(newsr);
+    }
+  }
+  return res;
+}
+
 bool Devices::is_cross_machine(std::set<int> from, std::set<int> to) {
   // FIXME: this is a stupid O(N^3) traversal
   // NOTE: fixed using a heuristic, check later
