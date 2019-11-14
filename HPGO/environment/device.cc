@@ -1,4 +1,5 @@
 #include "device.h"
+#include <algorithm>
 #include <cassert>
 #include <map>
 
