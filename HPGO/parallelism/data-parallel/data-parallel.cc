@@ -10,7 +10,6 @@ double DataParallel(Devices d, std::set<int> wids, double size) {
   } else {
     return size * 2.0 * factor / B_NVLINK / (wids.size() / 2);
   }
-  return 0.0;
 }
 
 double DPSpeedup(Devices d, double compute, double allreduce) {

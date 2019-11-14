@@ -18,7 +18,7 @@ TEST_F(DataParallelTest, TransferTimeCalculation) {
   Devices d = Devices(3, vector<int>{2, 3});
 
   double dp_time = DataParallel(d, set<int>{0, 1, 2}, 1000000000);
-  EXPECT_LE(abs(dp_time - 0.05333), EPSILON);
+  EXPECT_LE(abs(dp_time - 4.0/9), EPSILON);
 }
 
 TEST_F(DataParallelTest, SpeedupCalculation) {
