@@ -8,14 +8,20 @@ double DataParallel(Devices d, std::set<int> wids, double size) {
   if (bCross) {
     return size * 2.0 * factor / B_ETHERNET;
   } else {
+    // TODO: here inner node nvlink bandwidth need to adapt to
+    // the NCCL Ring Length. e.g., 2card-45GB/s, 4card-80GB/s,
+    // and 8card-130GB/s. Current method of estimation is rough.
     return size * 2.0 * factor / B_NVLINK / (wids.size()/2);
   }
-  return 0.0;
 }
 
+// TODO: It seems better to take 1/(1+Q) as the DATA PARALLEL
+// efficiency estimation for 1) align with our SIMULATOR; 2)
+// current method is weak strong while strong scale is more
+// common in DP.
 HPGO_API double DPSpeedup(Devices d, double compute, double allreduce)
 {
-  int num_machines = d.G;
+  int num_machines = d.G; // actually this means NUM_OF_CARDS
   double single_machine_time = compute;
   double dp_multi_machine_time = compute / (double)num_machines + allreduce;
 

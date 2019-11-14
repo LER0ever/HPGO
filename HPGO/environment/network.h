@@ -3,8 +3,8 @@
 
 // TODO: hardcode for now
 const double GIGA       = 1000000000;
-const double B_ETHERNET = 3 * GIGA;
-const double B_NVLINK   = 25 * GIGA;
+const double B_ETHERNET = 3 * GIGA;  // NCCL
+const double B_NVLINK   = 25 * GIGA; // TODO: need to be more accurate
 
 class Network {
  public:
