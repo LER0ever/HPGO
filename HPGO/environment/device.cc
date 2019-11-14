@@ -185,9 +185,27 @@ std::vector<std::vector<BNRet>> Devices::bitnext(std::vector<bool> bs, int need,
     auto subres = bitnext(cur_bs, need, replica-1);
     for (auto sr : subres) {
       auto newsr = sr;
-      newsr.push_back(sbn);
+      newsr.insert(newsr.begin(), sbn);
       res.push_back(newsr);
     }
+  }
+  return res;
+}
+
+std::vector<BNRet> Devices::bnmerge(std::vector<std::vector<BNRet>> BNRpRet)
+{
+  std::vector<BNRet> res;
+  std::map<std::set<int>, BNRet> exist;
+  for (auto possible_bnret : BNRpRet) {
+    std::vector<bool> bs = std::get<1>(possible_bnret[possible_bnret.size()-1]);
+    std::set<int> wids;
+    for (auto bnr : possible_bnret) {
+      wids.merge(std::get<2>(bnr));
+    }
+    exist.insert_or_assign(wids, std::make_tuple(-1, bs, wids));
+  }
+  for (auto it = exist.begin(); it != exist.end(); ++it) {
+    res.push_back(it->second);
   }
   return res;
 }
@@ -203,7 +221,7 @@ bool Devices::is_cross_machine(std::set<int> from, std::set<int> to) {
 
   int l = 0;
   for (auto r : this->seps) {
-    if (l <= a && a <= r && l <= b && b <= r) return false;
+    if (l <= a && a < r && l <= b && b < r) return false;
     l = r;
   }
 
