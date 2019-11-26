@@ -63,7 +63,7 @@ set_target_properties(${target}
 target_include_directories(${target}
     PRIVATE
     ${DEFAULT_INCLUDE_DIRECTORIES}
-	${PROJECT_SOURCE_DIR}/../
+	  ${PROJECT_SOURCE_DIR}/../
     ${PROJECT_BINARY_DIR}/HPGO/include
     ${PROJECT_BINARY_DIR}/include
 )

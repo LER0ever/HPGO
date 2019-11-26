@@ -16,7 +16,7 @@ import graph
 import utils
 
 # DEBUG SWITCH
-HPGO_DEBUG = True
+HPGO_DEBUG = False
 
 def compute_partitioning(compute_times, activation_sizes, parameter_sizes,
                          output_activation_sizes, all_predecessor_ids,

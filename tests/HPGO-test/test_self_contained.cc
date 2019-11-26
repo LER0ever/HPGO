@@ -21,9 +21,9 @@ class AlgoSelfContainedTest : public testing::Test {
 TEST_F(AlgoSelfContainedTest, ASCMain) {
   // Hardcode VGG data
   cout << "Reading Profiling Graph TXT..." << endl;
-  Graph g = Graph("./profiler/image_classification/profiles/vgg19/graph.txt");
-  Model m = Model(1024, 32, g);
-  auto mt = m.Meta;
+  Graph g  = Graph("./profiler/image_classification/profiles/vgg19/graph.txt");
+  Model m  = Model(1024, 32, 32, g);
+  auto  mt = m.Meta;
   // m.SetLayerStats(g.compute_times, g.activation_sizes, g.parameter_sizes,
   //                 g.output_activation_sizes);
   for (auto l : m.Layers) {
@@ -50,18 +50,19 @@ TEST_F(AlgoSelfContainedTest, ASCMain) {
   Devices d = Devices(3, std::vector<int>{2, 3});
 
   Conductor C;
-  C.setProfileFilename("./profiler/image_classification/profiles/vgg19/graph.txt");
+  C.setProfileFilename("./profiler/image_classification/profiles/vgg19/graph.txt", 1024, 32, 32);
   C.setDevices(d);
   C.orchestrate();
   // C.orchestrate(16, vector<int>{16});
 
-  auto A = C.compute_partitioning(mt.compute_times, mt.activation_sizes, mt.parameter_sizes, mt.output_activation_sizes, mt.all_predecessor_ids);
+  auto A = C.compute_partitioning(mt.compute_times, mt.activation_sizes, mt.parameter_sizes,
+                                  mt.output_activation_sizes, mt.all_predecessor_ids);
   C.printA(A);
 
   // auto A = C.compute_spa(3, sd);
   // C.printA(A);
-  auto res = C.analyse_partitioning(A[1], g.compute_times[0].size(), 3,1);
-  for (int i=0; i<res.size(); i++){
+  auto res = C.analyse_partitioning(A[1], g.compute_times[0].size(), 3, 1);
+  for (int i = 0; i < res.size(); i++) {
     cout << "(" << get<0>(res[i]) << " ~ " << get<1>(res[i]) << ") x " << get<2>(res[i]) << " @ [";
     auto wids = get<3>(res[i]);
     for (auto s : wids) cout << " " << s;
@@ -72,9 +73,10 @@ TEST_F(AlgoSelfContainedTest, ASCMain) {
 TEST_F(AlgoSelfContainedTest, ASCMain_MultiLevel) {
   // Hardcode VGG data
   cout << "Reading Profiling Graph TXT..." << endl;
-  Graph g = Graph("./profiler/translation/profiles/gnmt/graph.txt");
-  Model m = Model(1024, 32, g);
-  auto mt = m.Meta;
+//  Graph g  = Graph("./profiler/image_classification/profiles/vgg19/graph.txt");
+  Graph g  = Graph("./profiler/image_classification/profiles/vgg19/graph.txt");
+  Model m  = Model(480, 32, 32, g);
+  auto  mt = m.Meta;
   // m.SetLayerStats(g.compute_times, g.activation_sizes, g.parameter_sizes,
   //                 g.output_activation_sizes);
   for (auto l : m.Layers) {
@@ -101,22 +103,30 @@ TEST_F(AlgoSelfContainedTest, ASCMain_MultiLevel) {
   Devices d = Devices(16, std::vector<int>{8, 16});
 
   Conductor C;
-  C.setProfileFilename("./profiler/translation/profiles/gnmt/graph.txt");
+  C.setProfileFilename("./profiler/image_classification/profiles/vgg19/graph.txt", 480, 32, 32);
   C.setDevices(d);
   C.orchestrate();
   // C.orchestrate(16, vector<int>{16});
 
-  auto A = C.compute_partitioning(2, 8);
-  C.printSA(A);
+  // int  rp = 4;
+  // int spa = 4;
+  // auto A  = C.compute_partitioning(spa, rp);
+  // C.printSA(A);
 
   // auto A = C.compute_spa(3, sd);
   // C.printA(A);
 
-  auto res = C.analyse_partitioning(A, g.compute_times[0].size(), 2, 8);
-  for (int i=0; i<res.size(); i++){
-    cout << "(" << get<0>(res[i]) << " ~ " << get<1>(res[i]) << ") x " << get<2>(res[i]) << " @ [";
-    auto wids = get<3>(res[i]);
-    for (auto s : wids) cout << " " << s;
-    cout << " ]" << endl;
-  }
+  // auto res = C.analyse_partitioning(A, g.compute_times[0].size(), spa, rp);
+  // for (int i = 0; i < res.size(); i++) {
+  //   cout << "(" << get<0>(res[i]) << " ~ " << get<1>(res[i]) << ") x " << get<2>(res[i]) << " @ [";
+  //   auto wids = get<3>(res[i]);
+  //   for (auto s : wids) cout << " " << s;
+  //   cout << " ]" << endl;
+  // }
+
+  // ll ph;
+  // for (int i = 0; i < d.G * rp; i++) ph.push_back(true);  // FIXME: this placeholder is not correct
+  // C.printSA(A);
+
+  // cout << SyncPipelineSpeedup(m, d, rp, 1.58728, res) << endl;
 }
