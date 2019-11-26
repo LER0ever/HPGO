@@ -9,7 +9,7 @@ double SplitConcat(Devices d, std::set<int> from, std::set<int> to, double size)
     // find all cards from different machines
     std::set<int> cross_machine_cards;
     for (auto s : from) {
-      if (!d.is_cross_machine(std::set<int>{s}, to)) {
+      if (d.is_cross_machine(std::set<int>{s}, to)) {
         cross_machine_cards.insert(s);
       }
     }
