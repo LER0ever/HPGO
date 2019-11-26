@@ -65,6 +65,7 @@ set(src "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(headers
     ${src}/orchestration/orchestration.h
+    ${src}/orchestration/threadpool.h
     ${src}/parallelism/pipeline/pipeline.h
     ${src}/parallelism/pipeline/syncpipeline.h
     ${src}/parallelism/pipeline/block.h
@@ -77,6 +78,7 @@ set(headers
     ${src}/environment/nvlink.h
     ${src}/utils/helper.h
     ${src}/input/graph.h
+    ${src}/config.h
 )
 
 set(sources

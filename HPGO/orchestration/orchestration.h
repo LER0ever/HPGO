@@ -18,13 +18,14 @@ using ll  = std::vector<bool>;
 using EA  = std::tuple<double, std::pair<int, int>, int, ll, std::set<int>>;
 using TA  = std::vector<std::vector<std::vector<std::unordered_map<ll, EA>>>>;
 using SA = std::vector<std::vector<std::unordered_map<ll, EA>>>;
+using MA = std::unordered_map<int, SA>;
 
 class HPGO_API Conductor {
  public:
   void setModel(Model);
   void setGraph(Graph);
   void setDevices(Devices);
-  void setProfileFilename(std::string);
+  void setProfileFilename(std::string, int, int, int);
   void orchestrate();
 
   /* TA compute_spa(int spa_size, Devices d); */
@@ -40,6 +41,7 @@ class HPGO_API Conductor {
   void printSA(SA& A);
   void printA();
   TA getA();
+  Graph getGraph();
 
  private:
   Model       m;

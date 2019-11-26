@@ -311,7 +311,7 @@ void HierarchicalConductor::setProfileFilename(std::string fn) {
   this->profile_filename = fn;
   Graph g                = Graph(fn);
   this->setGraph(g);
-  Model m = Model(512, 128, g);
+  Model m = Model(1024, 32, 32, g);
   this->setModel(m);  // TODO: interface for global batch size
 }
 void HierarchicalConductor::setModel(Model m) { this->m = m; }
