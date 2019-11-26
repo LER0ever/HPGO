@@ -1,7 +1,9 @@
 #include <HPGO/environment/device.h>
 #include <HPGO/input/graph.h>
 #include <HPGO/orchestration/orchestration.h>
+#include <HPGO/orchestration/threadpool.h>
 #include <HPGO/parallelism/data-parallel/data-parallel.h>
+#include <HPGO/parallelism/pipeline/syncpipeline.h>
 #include <HPGO/parallelism/split-concat/split-concat.h>
 #include <HPGO/utils/helper.h>
 
@@ -13,7 +15,7 @@
 // NOTE: consider removing std global scope
 using namespace std;
 
-#define DEBUG
+// #define DEBUG
 
 void Conductor::orchestrate() {
   ll  empty;
@@ -28,9 +30,64 @@ void Conductor::orchestrate() {
   for (auto s : n_wids) cout << s << " ";
   double total_communication_time = DataParallel(d, n_wids, total_parameter_sizes);
   cout << "total_dp_communication_time:" << total_communication_time << endl;
-  cout << "Current DP Time: " << total_compute_time + total_communication_time << endl;
-  cout << "DP Theoretical Speedup: "
+  cout << "Current Single Machine Time: " << total_compute_time + total_communication_time << endl;
+  cout << "Current DP+GA Time: " << total_compute_time / (double)num_machines + total_communication_time << endl;
+  cout << "DP Theoretical Speedup (Strong): "
        << DPSpeedup(this->d, total_compute_time, total_communication_time) << endl;
+  cout << "DP Theoretical Speedup (Weak): "
+       << DPSpeedupWeak(this->d, total_compute_time, total_communication_time) << endl;
+
+  map<double, std::vector<std::tuple<int, int, int, std::set<int>>>, greater <double> > res_hybrid; 
+  for (int i = 2; i <= num_machines; i++) {
+    int rp = num_machines / i;
+    cout << "--------\n"
+         << "Searching in matrix A for rp = " << rp << " spa = " << i << endl;
+    auto A = compute_partitioning(i, rp);
+    // printSA(A);
+    ll ph;
+    for (int j = 0; j < i * rp; j++)
+      ph.push_back(true);  // FIXME: this placeholder is not correct
+    double pipeline_time = get<0>(A[mt.compute_times[0].size() - 1][i - 1][ph]);
+    if (pipeline_time < 0.05) {
+      cout << "ppl time error" << endl;
+      cout << "accessed A " << mt.compute_times[0].size() - 1 << " " << i - 1;
+      for (auto b : ph) cout << b;
+      cout << endl;
+      printSA(A);
+      return;
+    }
+    auto res =
+        analyse_partitioning(A, mt.compute_times[0].size(), i, rp);
+    auto res_speedup = SyncPipelineSpeedup(m, d, rp, pipeline_time, res) ;
+    for (int i = 0; i < res.size(); i++) {
+      cout << "(" << get<0>(res[i]) << " ~ " << get<1>(res[i]) << ") x " << get<2>(res[i])
+           << " @ [";
+      auto wids = get<3>(res[i]);
+      for (auto s : wids) cout << " " << s;
+      cout << " ]" << endl;
+    }
+    cout << "Speedup: " << res_speedup << endl;
+    res_hybrid[res_speedup] = res;
+  }
+
+  int top = 3;
+  cout << "=========================================" << endl;
+  cout << "Top " << top << " hybrid parallelism solutions" << endl;
+  for (auto it = res_hybrid.begin(); it != res_hybrid.end(); it++) {
+    cout << "Solution Speedup: " << (*it).first << endl;
+    cout << "Arrangement:" << endl;
+    auto res = (*it).second;
+    for (int i = 0; i < res.size(); i++) {
+      cout << "(" << get<0>(res[i]) << " ~ " << get<1>(res[i]) << ") x " << get<2>(res[i])
+           << " @ [";
+      auto wids = get<3>(res[i]);
+      for (auto s : wids) cout << " " << s;
+      cout << " ]" << endl;
+    }
+    cout << "----------------" << endl;
+    top --;
+    if (top < 1) break;
+  }
 }
 
 SA Conductor::compute_partitioning(int spa_size, int rp) {
@@ -52,7 +109,9 @@ SA Conductor::compute_partitioning(int spa_size, int rp) {
     }
     A.push_back(row_row_A);
   }
+#ifdef DEBUG
   cout << "Initialization Done" << endl;
+#endif
 
   // NOTE: temporary placeholder
   ll ph, empty;
@@ -84,12 +143,12 @@ SA Conductor::compute_partitioning(int spa_size, int rp) {
              << endl;
 #endif
         A[j][m][ph]       = make_tuple(std::max((cur_compute_time) / (m + 1) / rp,
-                                              0.0 /*cur_parameter_size * 1 / B_ETHERNET*/) +
-                                         DataParallel(d, n_wids, cur_parameter_size),
-                                     make_pair(-1, -1), m + 1, empty, set<int>{});
+                                          0.0 /*cur_parameter_size * 1 / B_ETHERNET*/) +
+                                     DataParallel(d, n_wids, cur_parameter_size),
+                                 make_pair(-1, -1), m + 1, empty, set<int>{});
         A[j][m][n_bitset] = make_tuple(std::max((cur_compute_time) / (m + 1) / rp, 0.0) +
-                                               DataParallel(d, n_wids, cur_parameter_size),
-                                           make_pair(-1, -1), m + 1, empty, n_wids);
+                                           DataParallel(d, n_wids, cur_parameter_size),
+                                       make_pair(-1, -1), m + 1, empty, n_wids);
 
         // try to init -1 for everything
         // A[j][m][ph]       = make_tuple(-1, make_pair(-1, -1), -1, set<int>{});
@@ -98,9 +157,11 @@ SA Conductor::compute_partitioning(int spa_size, int rp) {
     }
   }
 
+#ifdef DEBUG
   cout << "DP Assignment Done" << endl;
+#endif
 
-#define DEBUGBS
+  // #define DEBUGBS
   int min_m = 1;
   fri(m, min_m, num_machines) {  // NOTE: iterate over m available machines
     frs(j, 1, compute_times[0].size()) {
@@ -172,11 +233,10 @@ SA Conductor::compute_partitioning(int spa_size, int rp) {
               // last_stage_time += (4 * (mp - 1) * last_stage_parameter_size) / (bandwidth * mp);
               last_stage_time /= (mp * rp);
 
-              if (A[k][m - mp].find(ph) == A[k][m - mp].end() ||
-                  get<0>(A[k][m - mp][ph]) < -0.5)
+              if (A[k][m - mp].find(ph) == A[k][m - mp].end() || get<0>(A[k][m - mp][ph]) < -0.5)
                 continue;
 
-              double pipeline_time = max(get<0>(A[k][m - mp][ph]), last_stage_time);
+              double pipeline_time = max(get<0>(A[k][m - mp][bs.first]), last_stage_time);
               pipeline_time        = max(pipeline_time, input_transfer_time);
               if (output_transfer_time > -0.5)  // NOTE: nevern triggered due to comments above
                 pipeline_time = max(pipeline_time, output_transfer_time);
@@ -193,8 +253,7 @@ SA Conductor::compute_partitioning(int spa_size, int rp) {
               }
 
               if (A[j][m].find(n_bitset) == A[j][m].end() ||
-                  pipeline_time <
-                      get<0>(A[j][m][n_bitset])) {  // abusing the short-circuit here
+                  pipeline_time < get<0>(A[j][m][n_bitset])) {  // abusing the short-circuit here
                 A[j][m][n_bitset] =
                     make_tuple(pipeline_time, make_pair(k, m - mp), mp, prev_bs, n_wids);
               }
@@ -205,8 +264,8 @@ SA Conductor::compute_partitioning(int spa_size, int rp) {
           }
         }
       }
-      A[j][m][ph] =
-          make_tuple(min_pipeline_time, optimal_split, optimal_num_machines, last_from, set<int>{});
+      A[j][m][ph] = make_tuple(min_pipeline_time, optimal_split, optimal_num_machines, last_from,
+                               last_machines);
     }
   }
   return A;
@@ -398,8 +457,9 @@ std::vector<std::tuple<int, int, int, set<int>>> Conductor::analyse_partitioning
   ll                                               ph;
   for (int i = 0; i < num_machines * rp; i++)
     ph.push_back(true);  // FIXME: this placeholder is not correct
-
+#ifdef DEBUG
   std::cout << "\033[33mEnter HPGO Analyse Partitioning\033[0m" << std::endl;
+#endif
   auto             metadata                = A[end - 1][num_machines - 1][ph];
   auto             next_split              = std::get<1>(metadata);
   auto             last_machines           = std::get<4>(metadata);
@@ -409,14 +469,16 @@ std::vector<std::tuple<int, int, int, set<int>>> Conductor::analyse_partitioning
   std::vector<int> replication_factors;
   int              prev_split = end - 1;
 
+#ifdef DEBUG
   std::cout << "\033[33m" << next_split.first << ", " << next_split.second << "\033[0m"
             << std::endl;
+#endif
 
   while (next_split.first != -1) {  // -1 means None
     int num_machines_used = std::get<2>(metadata);
 
-    res.push_back(make_tuple(prev_split, next_split.first + 1, num_machines_used, last_machines));
-    prev_split = get<1>(res[res.size() - 1]);
+    res.push_back(make_tuple(next_split.first + 1, prev_split, num_machines_used, last_machines));
+    prev_split = get<0>(res[res.size() - 1]);
 
     metadata      = A[next_split.first][next_split.second][last_from];
     next_split    = std::get<1>(metadata);
@@ -424,8 +486,10 @@ std::vector<std::tuple<int, int, int, set<int>>> Conductor::analyse_partitioning
     last_machines = std::get<4>(metadata);
     replication_factors.push_back(num_machines_used);
     remaining_machines_left -= num_machines_used;
+#ifdef DEBUG
     std::cout << "\033[33m" << next_split.first << ", " << next_split.second << "\033[0m"
               << std::endl;
+#endif
   }
 
   int num_machines_used = std::get<2>(metadata);
@@ -516,8 +580,7 @@ void Conductor::printSA(SA& A) {
           cout << b;
         }
         cout << "\t :: \t";
-        auto [min_pipeline_time, optimal_split, optimal_num_machines, last_from, wids] =
-          bs.second;
+        auto [min_pipeline_time, optimal_split, optimal_num_machines, last_from, wids] = bs.second;
         cout << "[" << min_pipeline_time << ", \t(" << optimal_split.first << ", "
              << optimal_split.second << "), \t" << optimal_num_machines << ", \t(";
         for (auto b : last_from) cout << b;
@@ -564,16 +627,17 @@ void Conductor::printA() { printA(this->A); }
 
 TA Conductor::getA() { return this->A; }
 
-void Conductor::setProfileFilename(std::string fn) {
+void Conductor::setProfileFilename(std::string fn, int gbs, int pbs, int mbs) {
   this->profile_filename = fn;
   Graph g                = Graph(fn);
   this->setGraph(g);
-  Model m = Model(1024, 32, g);  // FIXME: hardcoded gbs and pbs
+  Model m = Model(gbs, pbs, mbs, g);  // FIXME: hardcoded gbs and pbs
   // m.Normalize();
   // m.SetLayerStats(g.compute_times, g.activation_sizes, g.parameter_sizes,
   //                 g.output_activation_sizes);
   this->setModel(m);  // TODO: interface for global batch size
 }
-void Conductor::setModel(Model m) { this->m = m; }
-void Conductor::setGraph(Graph g) { this->g = g; }
-void Conductor::setDevices(Devices d) { this->d = d; }
+void  Conductor::setModel(Model m) { this->m = m; }
+void  Conductor::setGraph(Graph g) { this->g = g; }
+void  Conductor::setDevices(Devices d) { this->d = d; }
+Graph Conductor::getGraph() { return this->g; }

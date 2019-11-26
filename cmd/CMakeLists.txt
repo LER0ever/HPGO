@@ -58,7 +58,8 @@ set_target_properties(${target}
 target_include_directories(${target}
     PRIVATE
     ${DEFAULT_INCLUDE_DIRECTORIES}
-    ${PROJECT_BINARY_DIR}/source/include
+	  ${PROJECT_SOURCE_DIR}/
+    ${PROJECT_BINARY_DIR}/HPGO/include
     ${PROJECT_BINARY_DIR}/include
 )
 
@@ -102,6 +103,7 @@ target_compile_options(${target}
 target_link_libraries(${target}
     PRIVATE
     ${DEFAULT_LINKER_OPTIONS}
+    ${META_PROJECT_NAME}::HPGO
 )
 
 

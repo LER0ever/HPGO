@@ -15,10 +15,10 @@ State::State(int ID, std::string Name, double CompTime, double ActivationSize,
 
 Model::Model() {}
 
-Model::Model(int globalBatchSize, int profileBatchSize, Graph g) {
+Model::Model(int globalBatchSize, int profileBatchSize, int minMicroBatchSize, Graph g) {
   this->GlobalBatchSize   = globalBatchSize;
   this->ProfileBatchSize  = profileBatchSize;
-  this->MinMicroBatchSize = 128;  // FIXME: Hardcoded
+  this->MinMicroBatchSize = minMicroBatchSize;  // FIXME: Hardcoded
   pyo pyStates            = g.getStates();
   try {
     for (int i = 0; i < py::len(pyStates); i++) {

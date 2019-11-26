@@ -11,7 +11,7 @@ class ModelTest : public testing::Test {};
 
 TEST_F(ModelTest, TestModelConstruction) {
   Graph g = Graph("./profiler/image_classification/profiles/vgg16/graph.txt");
-  Model m = Model(512, 128, g);
+  Model m = Model(512, 128, 32, g);
   for (auto l : m.States) {
     cout << "State #" << l.ID << ", " << l.Name << ", C=" << l.CompTime
          << ", A=" << l.ActivationSize << ", OA=" << l.OutputActivationSize << ", P=" << l.ParamSize

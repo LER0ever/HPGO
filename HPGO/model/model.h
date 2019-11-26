@@ -46,7 +46,7 @@ struct Metadata {
 class HPGO_API Model {
  public:
   Model();
-  Model(int, int, Graph);
+  Model(int, int, int, Graph);
 
   std::vector<State> States;
   std::vector<Layer> Layers;

@@ -1,0 +1,6 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define SPLIT_CONCAT_STRICT_CROSS_MACHINE_CHECK
+
+#endif // CONFIG_H
