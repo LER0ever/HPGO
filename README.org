@@ -29,7 +29,7 @@ THIS VERSION DOES NOT BUILD YET!!!
     #+BEGIN_SRC bash
     mkdir build
     cd build
-    cmake ..
+    cmake [-DBOOST_ROOT=/path/to/boost/] ..
     make -j
     #+END_SRC
 

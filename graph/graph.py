@@ -464,7 +464,9 @@ class Graph(object):
         gr = Graph()
         graph_str_lines = graph_str.strip().split('\n')
         for graph_str_line in graph_str_lines:
-            if not graph_str_line.startswith('\t'):
+            if not graph_str_line.strip(): # ignore empty line
+              continue
+            if not graph_str_line.startswith((' ', '\t')):
                 node = Node.from_str(graph_str_line.strip())
                 gr.nodes[node.node_id] = node
             else:
