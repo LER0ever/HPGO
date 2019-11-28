@@ -29,9 +29,9 @@ void Conductor::orchestrate() {
   auto n_wids = get<2>(d.bitnext(empty, num_machines)[0]);
   for (auto s : n_wids) cout << s << " ";
   double total_communication_time = DataParallel(d, n_wids, total_parameter_sizes);
-  cout << "total_dp_communication_time:" << total_communication_time << endl;
-  cout << "Current Single Machine Time: " << total_compute_time + total_communication_time << endl;
-  cout << "Current DP+GA Time: " << total_compute_time / (double)num_machines + total_communication_time << endl;
+  cout << "total_dp_communication_time:" << total_communication_time << " s." << endl;
+  cout << "Current Computation Time: " << total_compute_time << " s." << endl;
+  cout << "Current DP+GA Time: " << total_compute_time / (double)num_machines + total_communication_time << " s." << endl;
   cout << "DP Theoretical Speedup (Strong): "
        << DPSpeedup(this->d, total_compute_time, total_communication_time) << endl;
   cout << "DP Theoretical Speedup (Weak): "
