@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
   // m.SetLayerStats(g.compute_times, g.activation_sizes, g.parameter_sizes,
   //                 g.output_activation_sizes);
   for (auto l : m.Layers) {
-    cout << "Layer #" << l.ID << ", " << l.Name << ", C=" << l.CompTime
+    cout << "Layer #" << l.ID << ", " << l.Desc << ", C=" << l.CompTime
          << ", A=" << l.ActivationSize << ", OA=" << l.OutputActivationSize << ", P=" << l.ParamSize
          << endl;
   }

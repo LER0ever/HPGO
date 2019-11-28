@@ -9,11 +9,12 @@
 class State {
  public:
   State();
-  State(int ID, std::string Name, double CompTime, double ActivationSize,
-        double OutputActivationSize, double ParamSize);
+  State(int ID, std::string Name, std::string NodeDesc, double CompTime,
+        double ActivationSize, double OutputActivationSize, double ParamSize);
 
   int         ID;
   std::string Name;
+  std::string NodeDesc;
   double      CompTime;
   double      ActivationSize;
   double      OutputActivationSize;
@@ -23,7 +24,7 @@ class State {
 
 class Layer {
  public:
-  Layer(int ID, double CompTime, double ActivationSize, double OutputActivationSize,
+  Layer(int ID, std::string NodeDesc, double CompTime, double ActivationSize, double OutputActivationSize,
         double ParamSize);
 
   int         ID;

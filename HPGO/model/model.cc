@@ -3,10 +3,11 @@
 
 State::State() {}
 
-State::State(int ID, std::string Name, double CompTime, double ActivationSize,
-             double OutputActivationSize, double ParamSize) {
+State::State(int ID, std::string Name, std::string NodeDesc, double CompTime,
+             double ActivationSize, double OutputActivationSize, double ParamSize) {
   this->ID                   = ID;
   this->Name                 = Name;
+  this->NodeDesc             = NodeDesc;
   this->CompTime             = CompTime;
   this->ActivationSize       = ActivationSize;
   this->OutputActivationSize = OutputActivationSize;
@@ -18,12 +19,13 @@ Model::Model() {}
 Model::Model(int globalBatchSize, int profileBatchSize, int minMicroBatchSize, Graph g) {
   this->GlobalBatchSize   = globalBatchSize;
   this->ProfileBatchSize  = profileBatchSize;
-  this->MinMicroBatchSize = minMicroBatchSize;  // FIXME: Hardcoded
+  this->MinMicroBatchSize = minMicroBatchSize;
   pyo pyStates            = g.getStates();
   try {
     for (int i = 0; i < py::len(pyStates); i++) {
       pyo state = pyStates[i];
       this->States.push_back(State(i, py::extract<std::string>(state.attr("node_id")),
+                                   py::extract<std::string>(state.attr("node_desc")),
                                    py::extract<double>(state.attr("compute_time")),
                                    py::extract<double>(state.attr("activation_size")),
                                    py::extract<double>(state.attr("output_activation_size")),
@@ -71,14 +73,15 @@ void Model::setLayerStats(std::vector<std::vector<double>> compute_times,
                           std::vector<std::vector<double>> parameter_sizes,
                           std::vector<double>              output_activation_sizes) {
   for (int i = 0; i < compute_times[0].size(); i++) {
-    this->Layers.push_back(Layer(i, compute_times[i][i], activation_sizes[i][i],
+    this->Layers.push_back(Layer(i, this->States[i].NodeDesc, compute_times[i][i], activation_sizes[i][i],
                                  parameter_sizes[i][i], output_activation_sizes[i]));
   }
 }
 
-Layer::Layer(int ID, double CompTime, double ActivationSize, double ParamSize,
-             double OutputActivationSize) {
+Layer::Layer(int ID, std::string NodeDesc, double CompTime, double ActivationSize,
+             double ParamSize, double OutputActivationSize) {
   this->ID                   = ID;
+  this->Desc                 = NodeDesc,
   this->CompTime             = CompTime;
   this->ActivationSize       = ActivationSize;
   this->OutputActivationSize = OutputActivationSize;
