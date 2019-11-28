@@ -39,9 +39,9 @@ int main(int argc, char* argv[])
   double total_compute_times    = mt.compute_times[0][mt.compute_times[0].size() - 1];
   double total_parameter_sizes  = mt.parameter_sizes[0][mt.parameter_sizes[0].size() - 1];
   double total_activation_sizes = mt.activation_sizes[0][mt.activation_sizes[0].size() - 1];
-  cout << "Total Computational Time: " << total_compute_times << endl;
-  cout << "Total Parameter Size: " << total_parameter_sizes << endl;
-  cout << "Total Activation Size: " << total_activation_sizes << endl;
+  cout << "Total Computational Time: " << total_compute_times << " s."<< endl;
+  cout << "Total Parameter Size: " << total_parameter_sizes << " Bytes." << endl;
+  cout << "Total Activation Size: " << total_activation_sizes << " Bytes" << endl;
 
   frs(i, 0, mt.all_predecessor_ids.size()) {
     cout << i << ": ";
