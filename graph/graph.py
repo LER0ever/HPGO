@@ -424,7 +424,8 @@ class Graph(object):
         antichain_dag = Graph()
         antichain_id = 0
         antichain = [self.sources()[0].node_id]
-        source_node = AntichainNode("antichain_%d" % antichain_id, self.augment_antichain(antichain))
+        source_node = AntichainNode("antichain_%d" % antichain_id, self.augment_antichain(antichain),
+            self.nodes[antichain[0]].node_desc)
         antichain_dag.source = source_node
         antichain_queue = [antichain]
         antichain_mapping = {tuple(sorted(antichain)): source_node}
@@ -439,7 +440,8 @@ class Graph(object):
                 next_antichain_key = tuple(sorted(next_antichain))
                 if next_antichain_key not in antichain_mapping:
                     antichain_id += 1
-                    next_antichain_node = AntichainNode("antichain_%d" % antichain_id, self.augment_antichain(next_antichain))
+                    next_antichain_node = AntichainNode("antichain_%d" % antichain_id, self.augment_antichain(next_antichain),
+                        self.nodes[next_antichain[0]].node_desc)
                     antichain_mapping[next_antichain_key] = next_antichain_node
                 antichain_dag.add_edge(antichain_mapping[antichain_key],
                                        antichain_mapping[next_antichain_key])
@@ -464,7 +466,9 @@ class Graph(object):
         gr = Graph()
         graph_str_lines = graph_str.strip().split('\n')
         for graph_str_line in graph_str_lines:
-            if not graph_str_line.startswith('\t'):
+            if not graph_str_line.strip(): # ignore empty line
+              continue
+            if not graph_str_line.startswith((' ', '\t')):
                 node = Node.from_str(graph_str_line.strip())
                 gr.nodes[node.node_id] = node
             else:

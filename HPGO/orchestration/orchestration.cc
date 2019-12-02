@@ -29,15 +29,16 @@ void Conductor::orchestrate() {
   auto n_wids = get<2>(d.bitnext(empty, num_machines)[0]);
   for (auto s : n_wids) cout << s << " ";
   double total_communication_time = DataParallel(d, n_wids, total_parameter_sizes);
-  cout << "total_dp_communication_time:" << total_communication_time << endl;
-  cout << "Current Single Machine Time: " << total_compute_time + total_communication_time << endl;
-  cout << "Current DP+GA Time: " << total_compute_time / (double)num_machines + total_communication_time << endl;
+  cout << "total_dp_communication_time:" << total_communication_time << " s." << endl;
+  cout << "Current Computation Time: " << total_compute_time << " s." << endl;
+  cout << "Current DP+GA Time: "
+       << total_compute_time / (double)num_machines + total_communication_time << " s." << endl;
   cout << "DP Theoretical Speedup (Strong): "
        << DPSpeedup(this->d, total_compute_time, total_communication_time) << endl;
   cout << "DP Theoretical Speedup (Weak): "
        << DPSpeedupWeak(this->d, total_compute_time, total_communication_time) << endl;
 
-  map<double, std::vector<std::tuple<int, int, int, std::set<int>>>, greater <double> > res_hybrid; 
+  map<double, std::vector<std::tuple<int, int, int, std::set<int>>>, greater<double>> res_hybrid;
   for (int i = 2; i <= num_machines; i++) {
     int rp = num_machines / i;
     cout << "--------\n"
@@ -45,8 +46,7 @@ void Conductor::orchestrate() {
     auto A = compute_partitioning(i, rp);
     // printSA(A);
     ll ph;
-    for (int j = 0; j < i * rp; j++)
-      ph.push_back(true);  // FIXME: this placeholder is not correct
+    for (int j = 0; j < i * rp; j++) ph.push_back(true);  // FIXME: this placeholder is not correct
     double pipeline_time = get<0>(A[mt.compute_times[0].size() - 1][i - 1][ph]);
     if (pipeline_time < 0.05) {
       cout << "ppl time error" << endl;
@@ -56,9 +56,8 @@ void Conductor::orchestrate() {
       printSA(A);
       return;
     }
-    auto res =
-        analyse_partitioning(A, mt.compute_times[0].size(), i, rp);
-    auto res_speedup = SyncPipelineSpeedup(m, d, rp, pipeline_time, res) ;
+    auto res         = analyse_partitioning(A, mt.compute_times[0].size(), i, rp);
+    auto res_speedup = SyncPipelineSpeedup(m, d, rp, pipeline_time, res);
     for (int i = 0; i < res.size(); i++) {
       cout << "(" << get<0>(res[i]) << " ~ " << get<1>(res[i]) << ") x " << get<2>(res[i])
            << " @ [";
@@ -85,7 +84,7 @@ void Conductor::orchestrate() {
       cout << " ]" << endl;
     }
     cout << "----------------" << endl;
-    top --;
+    top--;
     if (top < 1) break;
   }
 }
