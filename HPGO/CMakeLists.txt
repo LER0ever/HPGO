@@ -6,8 +6,8 @@
 # find_package(THIRDPARTY REQUIRED)
 SET(Python_ADDITIONAL_VERSIONS 3 3.6 3.7)
 # TODO: Hard-coded here, kindly set to your own configuration
-SET(PYTHON_LIBRARY /usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib/libpython3.7.dylib)
-SET(PYTHON_INCLUDE_DIR /usr/local/Cellar/python/3.7.4_1/Frameworks/Python.framework/Versions/3.7/include/python3.7m)
+SET(PYTHON_LIBRARY /usr/lib/x86_64-linux-gnu/libpython3.6m.so)
+SET(PYTHON_INCLUDE_DIR /usr/include/python3.6m)
 
 FIND_PACKAGE(PythonInterp)
 
