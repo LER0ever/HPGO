@@ -30,10 +30,7 @@ class HPGO_API Conductor {
 
   /* TA compute_spa(int spa_size, Devices d); */
   SA compute_partitioning(int spa_size, int rp);
-  TA compute_partitioning(d2d compute_times, d2d activation_sizes, d2d parameter_sizes,
                           std::vector<double> output_activation_sizes, i2d all_predecessor_ids);
-  std::pair<std::vector<int>, std::vector<int>> analyse_partititioning(TA A, int end,
-                                                                       int num_machines);
   std::vector<std::tuple<int, int, int, std::set<int>>> analyse_partitioning(SA A, int end, int num_machines, int rp);
 
   // Debug Helper

@@ -149,6 +149,10 @@ double SyncPipelineSpeedup(Model m, Devices d, int rp, double pipeline_time,
     cout << "profiled at " << profile_cut_activations
          << ", after normalization: " << cut_activations << ", time needed: "
          << SplitConcat(d, std::get<3>(p[0]), std::get<3>(p[1]), cut_activations) << endl;
+    cout << "outputing two stage computation times:" << endl;
+    for (int i=0; i<2; i++) {
+      cout << "Stage " << i << " : " << compute_times[std::get<0>(p[i])][std::get<1>(p[i])] << " / " << std::get<2>(p[i]) << endl;
+    }
   }
 #endif
 

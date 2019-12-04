@@ -21,8 +21,8 @@ class AlgoSelfContainedTest : public testing::Test {
 TEST_F(AlgoSelfContainedTest, ASCMain) {
   // Hardcode VGG data
   cout << "Reading Profiling Graph TXT..." << endl;
-  Graph g  = Graph("./profiler/image_classification/profiles/vgg19/graph.txt");
-  Model m  = Model(1024, 32, 32, g);
+  Graph g  = Graph("./profiler/image_classification/profiles/amoebanet/graph.txt");
+  Model m  = Model(64, 32, 32, g);
   auto  mt = m.Meta;
   // m.SetLayerStats(g.compute_times, g.activation_sizes, g.parameter_sizes,
   //                 g.output_activation_sizes);
@@ -47,27 +47,23 @@ TEST_F(AlgoSelfContainedTest, ASCMain) {
     cout << endl;
   }
 
-  Devices d = Devices(3, std::vector<int>{2, 3});
+  Devices d = Devices(2, std::vector<int>{1, 2});
 
   Conductor C;
-  C.setProfileFilename("./profiler/image_classification/profiles/vgg19/graph.txt", 1024, 32, 32);
+  C.setProfileFilename("./profiler/image_classification/profiles/amoebanet/graph.txt",64, 32, 32);
   C.setDevices(d);
   C.orchestrate();
-  // C.orchestrate(16, vector<int>{16});
 
-  auto A = C.compute_partitioning(mt.compute_times, mt.activation_sizes, mt.parameter_sizes,
-                                  mt.output_activation_sizes, mt.all_predecessor_ids);
-  C.printA(A);
+  auto A = C.compute_partitioning(2, 1);
+  C.printSA(A);
 
-  // auto A = C.compute_spa(3, sd);
-  // C.printA(A);
-  auto res = C.analyse_partitioning(A[1], g.compute_times[0].size(), 3, 1);
-  for (int i = 0; i < res.size(); i++) {
-    cout << "(" << get<0>(res[i]) << " ~ " << get<1>(res[i]) << ") x " << get<2>(res[i]) << " @ [";
-    auto wids = get<3>(res[i]);
-    for (auto s : wids) cout << " " << s;
-    cout << " ]" << endl;
-  }
+  // auto res = C.analyse_partitioning(A, g.compute_times[0].size(), 2, 1);
+  // for (int i = 0; i < res.size(); i++) {
+  //   cout << "(" << get<0>(res[i]) << " ~ " << get<1>(res[i]) << ") x " << get<2>(res[i]) << " @ [";
+  //   auto wids = get<3>(res[i]);
+  //   for (auto s : wids) cout << " " << s;
+  //   cout << " ]" << endl;
+  // }
 }
 
 TEST_F(AlgoSelfContainedTest, ASCMain_MultiLevel) {
