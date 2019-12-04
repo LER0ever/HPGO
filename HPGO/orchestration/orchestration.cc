@@ -8,6 +8,7 @@
 #include <HPGO/utils/helper.h>
 
 #include <algorithm>
+#include <map>
 #include <cassert>
 #include <cmath>
 #include <iostream>

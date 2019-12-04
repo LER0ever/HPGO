@@ -269,7 +269,7 @@ class Graph(object):
     def check_fidelity(self, other):
         self_aggregate = self.aggregate()
         other_aggregate = other.aggregate()
-        for i in xrange(len(self_aggregate)):
+        for i in range(len(self_aggregate)):
             assert(0.9999 <= (self_aggregate[i] / other_aggregate[i]) <= 1.0001)
 
     def check_isomorphism(self, other):
