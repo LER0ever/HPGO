@@ -29,6 +29,7 @@ set(sources
     test_self_contained.cc
     test_splitconcat.cc
     test_dataparallel.cc
+    test_amb_issue.cc
 )
 
 

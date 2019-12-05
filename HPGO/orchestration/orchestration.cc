@@ -8,10 +8,10 @@
 #include <HPGO/utils/helper.h>
 
 #include <algorithm>
-#include <map>
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <map>
 
 // NOTE: consider removing std global scope
 using namespace std;
@@ -45,11 +45,13 @@ void Conductor::orchestrate() {
     cout << "--------\n"
          << "Searching in matrix A for rp = " << rp << " spa = " << i << endl;
     auto A = compute_partitioning(i, rp);
-    // printSA(A);
+#ifdef DEBUG
+    printSA(A);
+#endif
     ll ph;
     for (int j = 0; j < i * rp; j++) ph.push_back(true);  // FIXME: this placeholder is not correct
     double pipeline_time = get<0>(A[mt.compute_times[0].size() - 1][i - 1][ph]);
-    if (pipeline_time < 0.05) {
+    if (pipeline_time < 0.001) {
       cout << "ppl time error" << endl;
       cout << "accessed A " << mt.compute_times[0].size() - 1 << " " << i - 1;
       for (auto b : ph) cout << b;

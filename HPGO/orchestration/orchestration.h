@@ -28,9 +28,7 @@ class HPGO_API Conductor {
   void setProfileFilename(std::string, int, int, int);
   void orchestrate();
 
-  /* TA compute_spa(int spa_size, Devices d); */
   SA compute_partitioning(int spa_size, int rp);
-                          std::vector<double> output_activation_sizes, i2d all_predecessor_ids);
   std::vector<std::tuple<int, int, int, std::set<int>>> analyse_partitioning(SA A, int end, int num_machines, int rp);
 
   // Debug Helper

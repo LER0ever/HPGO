@@ -136,6 +136,16 @@ class Graph(object):
                         subgraph.add_edge(self.nodes[node1_id], node2)
         return subgraph
 
+    def flattened_graph(self):
+        nodes = self.sources() # Start exploration with the input graph's source node.
+        new_gr = Graph() # Create new graph, that will be returned.
+        topo = self.topological_sort()
+        new_gr.add_node(topo[0])
+        for i in range(1, len(topo)):
+            new_gr.add_node(topo[i])
+            new_gr.add_edge(topo[i-1], topo[i])
+        return new_gr
+
     def compress_branch_helper(self, node, new_node_id):
         if len(self.in_edges[node.node_id]) > 1:
             return None, node
