@@ -1,0 +1,27 @@
+node1 -- Input -- forward_compute_time=0.610, backward_compute_time=0.000, activation_size=4816896.0, parameter_size=0.000
+node2 -- stem -- forward_compute_time=0.400, backward_compute_time=0.560, activation_size=50466816.0, parameter_size=3456.000
+node3 -- cell_stem_0 -- forward_compute_time=3.610, backward_compute_time=9.070, activation_size=38535168.0, parameter_size=245760.000
+node4 -- cell_stem_1 -- forward_compute_time=3.300, backward_compute_time=8.650, activation_size=38535168.0, parameter_size=1327104.000
+node5 -- cell_0 -- forward_compute_time=5.660, backward_compute_time=13.550, activation_size=102760448.0, parameter_size=8388608.000
+node6 -- cell_1 -- forward_compute_time=5.630, backward_compute_time=15.200, activation_size=102760448.0, parameter_size=11796480.000
+node7 -- reduction_cell_0 -- forward_compute_time=5.890, backward_compute_time=16.430, activation_size=38535168.0, parameter_size=31195136.000
+node8 -- cell_2 -- forward_compute_time=5.630, backward_compute_time=14.640, activation_size=51380224.0, parameter_size=45088768.000
+node9 -- cell_3 -- forward_compute_time=7.190, backward_compute_time=16.430, activation_size=51380224.0, parameter_size=53477376.000
+node10 -- reduction_cell_1 -- forward_compute_time=7.290, backward_compute_time=16.590, activation_size=19267584.0, parameter_size=124780544.000
+node11 -- cell_4 -- forward_compute_time=7.060, backward_compute_time=18.400, activation_size=12845056.0, parameter_size=180355072.000
+node12 -- cell_5 -- forward_compute_time=7.710, backward_compute_time=21.850, activation_size=12845056.0, parameter_size=213909504.000
+node13 -- final_layer -- forward_compute_time=0.430, backward_compute_time=0.600, activation_size=8008.0, parameter_size=32804772.000
+node14 -- softmax_loss -- forward_compute_time=0.200, backward_compute_time=0.030, activation_size=0.0, parameter_size=0.000
+	node1 -- node2
+	node2 -- node3
+	node3 -- node4
+	node4 -- node5
+	node5 -- node6
+	node6 -- node7
+	node7 -- node8
+	node8 -- node9
+	node9 -- node10
+	node10 -- node11
+	node11 -- node12
+	node12 -- node13
+	node13 -- node14
