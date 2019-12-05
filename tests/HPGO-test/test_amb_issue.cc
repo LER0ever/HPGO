@@ -8,11 +8,6 @@
 #include "test_config.h"
 
 using namespace std;
-// using ll     = vector<bool>;
-// using triple = tuple<double, pair<int, int>, int>;
-// using TypeA  = vector<vector<vector<triple>>>;
-// using d2d    = vector<vector<double>>;
-// using i2d    = vector<vector<int>>;
 
 class AmoebaNetTest : public testing::Test {
  public:
