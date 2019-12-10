@@ -1,5 +1,6 @@
 use std::cmp::{max, min};
 use std::collections::{BTreeSet, HashMap};
+use std::iter::FromIterator;
 
 #[derive(Debug, Clone)]
 pub struct ReturnDevices {
@@ -15,6 +16,7 @@ pub enum AllocationStrategy {
     AppendFirst,
     ScatterFirst,
     GapsFirst,
+    Fusion,
 }
 
 #[derive(Debug)]
@@ -206,7 +208,7 @@ impl Devices {
         return t_ret;
     }
 
-    pub fn next_cards_with_replica(
+    fn next_cards_with_replica_helper(
         &self,
         bs: Vec<bool>,
         need: u32,
@@ -222,13 +224,51 @@ impl Devices {
         }
         for sr in single_round_result {
             let cur_bs = sr.occupied.clone();
-            let sub_sr = self.next_cards_with_replica(cur_bs, need, replica-1);
+            let sub_sr = self.next_cards_with_replica_helper(cur_bs, need, replica - 1);
             for ssr in sub_sr {
                 let mut new_ssr = ssr;
                 new_ssr.insert(0, sr.clone());
                 res.push(new_ssr);
             }
         }
+        return res;
+    }
+
+    pub fn next_cards_with_replica(
+        &self,
+        bs: Vec<bool>,
+        need: u32,
+        replica: u32,
+    ) -> Vec<ReturnDevices> {
+        let mut res: Vec<ReturnDevices> = vec![];
+        let mut exist: HashMap<BTreeSet<u32>, ReturnDevices> = HashMap::new();
+        let separate_result = self.next_cards_with_replica_helper(bs, need, replica);
+        for s in separate_result {
+            let mut dim_bs: Vec<bool> = vec![];
+            let mut dim_gids: Vec<u32> = vec![];
+            for ydim_s in s {
+                dim_bs = ydim_s.occupied;
+                dim_gids.extend(&ydim_s.gids);
+            }
+            // NOTE: the following two lines are extremely ugly and a uttermost disrespect to the Rust Core team
+            // But fsck mate I don't want to deal with borrow checker and ownership anymore
+            let gids: BTreeSet<u32> = BTreeSet::from_iter(dim_gids.iter().cloned());
+            let gids_signature: BTreeSet<u32> = BTreeSet::from_iter(dim_gids.iter().cloned());
+            let sub_bs = dim_bs;
+            exist.insert(
+                gids_signature,
+                ReturnDevices {
+                    strategy: AllocationStrategy::Fusion,
+                    occupied: sub_bs,
+                    gids: gids,
+                },
+            );
+        }
+
+        for (_k, v) in exist {
+            res.push(v);
+        }
+
         return res;
     }
 }
