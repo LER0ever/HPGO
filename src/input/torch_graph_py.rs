@@ -5,7 +5,7 @@ pub const TORCH_GRAPH_PY: &'static str = r#"
 import graphviz
 import os
 
-print("after two imports, Hello Rust")
+print("[python] after two imports, Hello Rust")
 
 class Graph(object):
     def __init__(self, node=None):
@@ -695,10 +695,10 @@ from collections import OrderedDict
 import sys
 
 def prepare(profile_filename, verbose=False):
-    print("into prepare", profile_filename)
+    print("[python] into prepare", profile_filename)
     gr = Graph.from_str(open(profile_filename, 'r').read())
 
-    print("read file done, Hello Rust")
+    print("[python] read file done, Hello Rust")
 
     # Zero out all metadata associated with inputs in graph, since the optimizer
     # shouldn't really get a choice with where to place the input (should always

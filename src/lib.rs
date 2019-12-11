@@ -45,3 +45,4 @@ extern crate pyo3;
 pub mod environment;
 pub mod input;
 pub mod model;
+pub mod parallelism;

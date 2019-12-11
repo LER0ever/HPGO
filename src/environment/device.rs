@@ -21,10 +21,10 @@ pub enum AllocationStrategy {
 
 #[derive(Debug)]
 pub struct Devices {
-    num_machines: u32,
-    num_gpus: u32,
-    occupied: Vec<bool>,
-    seps: Vec<u32>,
+    pub num_machines: u32,
+    pub num_gpus: u32,
+    pub occupied: Vec<bool>,
+    pub seps: Vec<u32>,
 }
 
 impl Devices {
@@ -41,7 +41,7 @@ impl Devices {
         }
     }
 
-    pub fn is_cross_machine_from_to(&self, from: BTreeSet<u32>, to: BTreeSet<u32>) -> bool {
+    pub fn is_cross_machine_from_to(&self, from: &BTreeSet<u32>, to: &BTreeSet<u32>) -> bool {
         let min_from = from.iter().min().expect("min_from error");
         let max_from = from.iter().max().expect("max_from error");
         let min_to = to.iter().min().expect("min_to error");
@@ -62,7 +62,7 @@ impl Devices {
         true
     }
 
-    pub fn is_cross_machine_within(&self, gids: BTreeSet<u32>) -> bool {
+    pub fn is_cross_machine_within(&self, gids: &BTreeSet<u32>) -> bool {
         let min_id = gids.iter().min().expect("min_id error");
         let max_id = gids.iter().max().expect("max_id error");
 

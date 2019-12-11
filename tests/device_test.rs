@@ -9,7 +9,7 @@ fn test_new_device() {
 /// test helper to perform cross_machine test with (from, to)
 fn t_from_to(d: &device::Devices, from: &[u32], to: &[u32], val: bool) {
     assert_eq!(
-        d.is_cross_machine_from_to(from.iter().cloned().collect(), to.iter().cloned().collect()),
+        d.is_cross_machine_from_to(&from.iter().cloned().collect(), &to.iter().cloned().collect()),
         val
     );
 }
@@ -17,7 +17,7 @@ fn t_from_to(d: &device::Devices, from: &[u32], to: &[u32], val: bool) {
 /// test helper to perform cross_machine test within (gids)
 fn t_within(d: &device::Devices, gids: &[u32], val: bool) {
     assert_eq!(
-        d.is_cross_machine_within(gids.iter().cloned().collect()),
+        d.is_cross_machine_within(&gids.iter().cloned().collect()),
         val
     );
 }

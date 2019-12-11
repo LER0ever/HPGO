@@ -15,6 +15,7 @@ fn test_python_import_basic() {
     match result {
         Some(x) => {
             println!("Got result successfully, printing all fields...");
+            // NOTE: could've just print x, as it derives Debug
             println!("compute_times: {:?}", x.compute_times);
             println!("activation_sizes: {:?}", x.activation_sizes);
             println!("parameter_sizes: {:?}", x.parameter_sizes);
