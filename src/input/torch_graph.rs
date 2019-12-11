@@ -16,9 +16,15 @@ impl ModelImporter for TorchGraphImporter {
         let gil = Python::acquire_gil();
         let py = gil.python();
         let graph = PyModule::from_code(py, torch_graph_py::TORCH_GRAPH_PY, "torch_graph.py", "torch_graph").unwrap();
-        let result = graph.call1("prepare", (filename,)).unwrap();
-        println!("{:?}", result);
-        None
+        let result: (PyObject, PyObject, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<f64>, Vec<Vec<u32>> ) = graph.call1("prepare", (filename,)).unwrap().extract().unwrap();
+        // TODO: no error handling at all
+        Some(model_perf::ModelPerf{
+            compute_times: result.2,
+            activation_sizes: result.3,
+            parameter_sizes: result.4,
+            output_activation_sizes: result.5,
+            all_predecessor_ids: result.6,
+        })
     }
 }
 
