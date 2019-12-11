@@ -29,6 +29,8 @@
 //! [2] 2018, "F-BLEAU: Practical Channel Leakage Estimation". _Giovanni Cherubin, Konstantinos Chatzikokolakis, Catuscia Palamidessi_.
 //!
 //! [3] (Blog) "Machine Learning methods for Quantifying the Security of Black-boxes". https://giocher.com/pages/bayes.html
+
+#![allow(non_snake_case)]
 extern crate csv;
 extern crate ndarray;
 #[macro_use]
@@ -38,9 +40,8 @@ extern crate float_cmp;
 #[macro_use]
 extern crate serde;
 extern crate strsim;
-#[cfg(feature="python-module")]
 extern crate pyo3;
-#[cfg(feature="python-module")]
-extern crate numpy;
 
 pub mod environment;
+pub mod input;
+pub mod model;

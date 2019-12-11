@@ -1,0 +1,19 @@
+node1 -- c1 -- forward_compute_time=3.0, backward_compute_time=0.0, activation_size=30000000.0, parameter_size=200000.0
+node2 -- c2 -- forward_compute_time=3.0, backward_compute_time=0.0, activation_size=30000000.0, parameter_size=1300000.0
+node3 -- c3 -- forward_compute_time=5.0, backward_compute_time=0.0, activation_size=100000000.0, parameter_size=8300000.0
+node4 -- c4 -- forward_compute_time=5.0, backward_compute_time=0.0, activation_size=100000000.0, parameter_size=10000000.0
+node5 -- c5 -- forward_compute_time=5.0, backward_compute_time=0.0, activation_size=30000000.0, parameter_size=30000000.0
+node6 -- c6 -- forward_compute_time=5.0, backward_compute_time=0.0, activation_size=50000000.0, parameter_size=45000000.0
+node7 -- c7 -- forward_compute_time=7.0, backward_compute_time=0.0, activation_size=50000000.0, parameter_size=50000000.0
+node8 -- c8 -- forward_compute_time=7.0, backward_compute_time=0.0, activation_size=20000000.0, parameter_size=120000000.0
+node9 -- c9 -- forward_compute_time=7.0, backward_compute_time=0.0, activation_size=10000000.0, parameter_size=180000000.0
+node10 -- c10 -- forward_compute_time=7.0, backward_compute_time=0.0, activation_size=10000000.0, parameter_size=200000000.0
+	node1 -- node2
+	node2 -- node3
+	node3 -- node4
+	node4 -- node5
+	node5 -- node6
+	node6 -- node7
+	node7 -- node8
+	node8 -- node9
+	node9 -- node10
