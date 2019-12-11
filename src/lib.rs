@@ -35,12 +35,12 @@ extern crate csv;
 extern crate ndarray;
 #[macro_use]
 extern crate itertools;
-extern crate ordered_float;
 extern crate float_cmp;
+extern crate ordered_float;
 #[macro_use]
 extern crate serde;
-extern crate strsim;
 extern crate pyo3;
+extern crate strsim;
 
 pub mod environment;
 pub mod input;

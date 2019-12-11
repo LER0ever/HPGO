@@ -21,7 +21,7 @@ fn test_python_import_basic() {
             println!("parameter_sizes: {:?}", x.parameter_sizes);
             println!("output_activation_sizes: {:?}", x.output_activation_sizes);
             println!("all_predecessor_ids: {:?}", x.all_predecessor_ids);
-        },
+        }
         None => {
             panic!();
         }

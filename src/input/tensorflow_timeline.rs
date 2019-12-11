@@ -1,12 +1,11 @@
-use model::model_perf;
 use super::ModelImporter;
+use model::model_perf;
 
-struct TensorflowTimelineImporter {
-}
+struct TensorflowTimelineImporter {}
 
 impl ModelImporter for TensorflowTimelineImporter {
     fn new() -> TensorflowTimelineImporter {
-        TensorflowTimelineImporter{}
+        TensorflowTimelineImporter {}
     }
     fn ImportFrom(&self, filename: &str) -> Option<model_perf::ModelPerf> {
         unimplemented!();

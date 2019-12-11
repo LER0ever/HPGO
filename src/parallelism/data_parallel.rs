@@ -1,5 +1,5 @@
+use environment::*;
 use std::collections::BTreeSet;
-use environment::{*};
 
 pub fn all_reduce_time(d: &device::Devices, gids: &BTreeSet<u32>, size: f64) -> f64 {
     let b_cross = d.is_cross_machine_within(gids);

@@ -1,4 +1,3 @@
-
 use environment::network::*;
 
 // Default constant for Ethernet

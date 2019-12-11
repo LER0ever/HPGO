@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
-extern crate ndarray;
 extern crate docopt;
+extern crate ndarray;
 #[macro_use]
 extern crate serde;
 extern crate itertools;
@@ -8,8 +8,8 @@ extern crate strsim;
 
 extern crate HPGO;
 
-use std::fs::File;
 use docopt::Docopt;
+use std::fs::File;
 
 const USAGE: &str = "
 Estimate k-NN error and convergence.
@@ -48,7 +48,4 @@ Options:
     --version                   Show the version.
 ";
 
-
-fn main() {
-
-}
+fn main() {}
