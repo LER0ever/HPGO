@@ -19,7 +19,7 @@ name = "HPGO-CMD"
 path = "src/main.rs"
 
 [dependencies]
-docopt = "1"
+structopt = "0.3"
 itertools = "0.7.8"
 serde = { version = "1.0.70", features = ["derive"] }
 csv = "1.0.0"

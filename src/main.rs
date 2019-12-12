@@ -1,51 +1,51 @@
 #![allow(non_snake_case)]
-extern crate docopt;
-extern crate ndarray;
-#[macro_use]
-extern crate serde;
-extern crate itertools;
-extern crate strsim;
 
 extern crate HPGO;
+extern crate structopt;
 
-use docopt::Docopt;
-use std::fs::File;
+use std::path::PathBuf;
+use structopt::StructOpt;
 
-const USAGE: &str = "
-Estimate k-NN error and convergence.
+/// HPGO Command Line
+#[derive(StructOpt, Debug)]
+#[structopt(name = "HPGO-CMD", about, author)]
+struct Opt {
+    // A flag, true if used in the command line. Note doc comment will
+    // be used for the help message of the flag. The name of the
+    // argument will be, by default, based on the name of the field.
+    /// Activate debug mode
+    #[structopt(short, long)]
+    debug: bool,
 
-Usage: fbleau <estimate> [--knn-strategy=<strategy>] [options] <train> <eval>
-       fbleau (--help | --version)
+    // The number of occurrences of the `v/verbose` flag
+    /// Verbose mode (-v, -vv, -vvv, etc.)
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: u8,
 
-Arguments:
-    estimate:   nn              Nearest Neighbor. Converges only if the
-                                observation space is finite.
-                knn             k-NN rule. Converges for finite/continuous
-                                observation spaces.
-                frequentist     Frequentist estimator. Converges only if the
-                                observation space is finite.
-    knn-strategy: ln            k-NN with k = ln(n).
-                  log10         k-NN with k = log10(n).
-    train                       Training data (.csv file).
-    eval                        Evaluation data (.csv file).
+    /// Set speed
+    #[structopt(short, long, default_value = "42")]
+    speed: f64,
 
-Options:
-    --logfile=<fname>           Log estimates at each step.
-    --logerrors=<fname>         Log the individual error for each test object
-                                for the smallest error estimate.
-    --delta=<d>                 Delta for delta covergence.
-    --qstop=<q>                 Number of examples to declare
-                                delta-convergence. Default is 10% of
-                                training data.
-    --absolute                  Use absolute convergence instead of relative
-                                convergence.
-    --scale                     Scale features before running k-NN
-                                (only makes sense for objects of 2 or more
-                                dimensions).
-    --distance=<name>           Distance metric in (\"euclidean\",
-                                \"levenshtein\").
-    -h, --help                  Show help.
-    --version                   Show the version.
-";
+    /// Output file
+    #[structopt(short, long, parse(from_os_str))]
+    output: PathBuf,
 
-fn main() {}
+    // the long option will be translated by default to kebab case,
+    // i.e. `--nb-cars`.
+    /// Number of cars
+    #[structopt(short = "c", long)]
+    nb_cars: Option<i32>,
+
+    /// admin_level to consider
+    #[structopt(short, long)]
+    level: Vec<String>,
+
+    /// Files to process
+    #[structopt(name = "FILE", parse(from_os_str))]
+    files: Vec<PathBuf>,
+}
+
+fn main() {
+    let opt = Opt::from_args();
+    println!("{:#?}", opt);
+}
