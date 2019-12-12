@@ -1,7 +1,12 @@
 use environment::*;
 use std::collections::BTreeSet;
 
-pub fn split_concat_time(d: &device::Devices, from: &BTreeSet<u32>, to: &BTreeSet<u32>, size: f64) -> f64 {
+pub fn split_concat_time(
+    d: &device::Devices,
+    from: &BTreeSet<u32>,
+    to: &BTreeSet<u32>,
+    size: f64,
+) -> f64 {
     let split_concat_strict_cross_machine_check = true;
     if split_concat_strict_cross_machine_check {
         let b_to_cross = d.is_cross_machine_within(to);
@@ -14,7 +19,8 @@ pub fn split_concat_time(d: &device::Devices, from: &BTreeSet<u32>, to: &BTreeSe
             }
             println!("cross_machine_gids: {:?}", cross_machine_gids);
             if cross_machine_gids.len() > 0 {
-                size / from.len() as f64 * cross_machine_gids.len() as f64 / ethernet::BANDWIDTH_ETHERNET_P2P
+                size / from.len() as f64 * cross_machine_gids.len() as f64
+                    / ethernet::BANDWIDTH_ETHERNET_P2P
             } else {
                 size / nvlink::BANDWIDTH_NVLINK_P2P
             }

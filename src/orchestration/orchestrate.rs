@@ -1,9 +1,9 @@
-use std::collections::BTreeSet;
-use model::model;
 use environment::device;
+use model::model;
+use std::collections::BTreeSet;
 
 #[derive(Debug)]
-struct matrix_cell {
+struct MatrixCell {
     current_maxmin_block: f64,
     optimal_split: (u32, u32),
     num_gpus_used: u32,
@@ -11,7 +11,7 @@ struct matrix_cell {
     gpu_ids: BTreeSet<u32>,
 }
 
-type Matrix = Vec<Vec<matrix_cell>>;
+type Matrix = Vec<Vec<MatrixCell>>;
 
 #[derive(Debug)]
 pub struct Context {
@@ -19,7 +19,7 @@ pub struct Context {
 }
 
 #[derive(Debug)]
-pub struct Conductor <'a> {
+pub struct Conductor<'a> {
     ctx: Context,
     m: model::Model,
     d: device::Devices,
@@ -27,10 +27,10 @@ pub struct Conductor <'a> {
 }
 
 impl<'a> Conductor<'a> {
-    pub fn orchestrate_hierarchical() {
+    pub fn orchestrate_hierarchical(&self) {
         unimplemented!()
     }
-    pub fn orchestrate() {
+    pub fn orchestrate(&self) {
         unimplemented!()
     }
 }

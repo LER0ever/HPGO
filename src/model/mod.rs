@@ -1,2 +1,2 @@
-pub mod model_perf;
 pub mod model;
+pub mod model_perf;

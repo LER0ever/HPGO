@@ -2,13 +2,13 @@ use model::model_perf;
 
 #[derive(Debug)]
 pub struct Layer {
-   pub id: u32,
-   pub name: Option<String>,
-   pub desc: Option<String>,
-   pub compute_time: f64,
-   pub activation_size: f64,
-   pub output_activation_size: f64,
-   pub parameter_size: f64,
+    pub id: u32,
+    pub name: Option<String>,
+    pub desc: Option<String>,
+    pub compute_time: f64,
+    pub activation_size: f64,
+    pub output_activation_size: f64,
+    pub parameter_size: f64,
 }
 
 #[derive(Debug)]

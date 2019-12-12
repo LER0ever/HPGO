@@ -45,5 +45,5 @@ extern crate strsim;
 pub mod environment;
 pub mod input;
 pub mod model;
-pub mod parallelism;
 pub mod orchestration;
+pub mod parallelism;
