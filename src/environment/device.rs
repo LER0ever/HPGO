@@ -118,7 +118,7 @@ impl Devices {
                 let need_fresh: bool = match &t_ret.strategy {
                     AllocationStrategy::FreshFirst => true,
                     AllocationStrategy::AppendFirst => false,
-                    _ => false,
+                    _ => panic!(),
                 };
                 for i in 0..machine_availability.len() {
                     if machine_availability[i].0 == need_fresh {

@@ -3,7 +3,8 @@ use HPGO::environment::*;
 
 #[test]
 fn test_new_device() {
-    let d = device::Devices::new(16, vec![8, 16]);
+    // should not crash
+    let _d = device::Devices::new(16, vec![8, 16]);
 }
 
 /// test helper to perform cross_machine test with (from, to)

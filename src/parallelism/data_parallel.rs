@@ -15,5 +15,5 @@ pub fn dp_speedup_strong(d: &device::Devices, compute: f64, all_reduce: f64) -> 
 }
 
 pub fn dp_speedup_weak(d: &device::Devices, compute: f64, all_reduce: f64) -> f64 {
-    compute as f64 * (compute / (compute + all_reduce))
+    d.num_gpus as f64 * (compute / (compute + all_reduce))
 }

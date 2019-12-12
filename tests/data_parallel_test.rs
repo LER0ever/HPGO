@@ -7,9 +7,9 @@ fn test_all_reduce_time() {
     let d16 = device::Devices::new(16, vec![8, 16]);
     let in_machine: &[u32] = &[0, 1, 2, 3, 4, 5, 6, 7];
     let mut calculated_time =
-        data_parallel::all_reduce_time(&d16, &in_machine.iter().cloned().collect(), 1000000000.0);
+        data_parallel::all_reduce_time(&d16, &in_machine.iter().cloned().collect(), network::GIGABYTE);
     let mut expected_time: f64 =
-        1000000000.0 * 2.0 * 7.0 / 8.0 / nvlink::BANDWIDTH_NVLINK_P2P / 4.0;
+        network::GIGABYTE * 2.0 * 7.0 / 8.0 / nvlink::BANDWIDTH_NVLINK_P2P / 4.0;
     println!(
         "calculated at: {}, expected: {}",
         calculated_time, expected_time
@@ -20,9 +20,9 @@ fn test_all_reduce_time() {
     calculated_time = data_parallel::all_reduce_time(
         &d16,
         &between_machine.iter().cloned().collect(),
-        1000000000.0,
+        network::GIGABYTE,
     );
-    expected_time = 1000000000.0 * 2.0 * 7.0 / 8.0 / ethernet::BANDWIDTH_ETHERNET_NCCL;
+    expected_time = network::GIGABYTE * 2.0 * 7.0 / 8.0 / ethernet::BANDWIDTH_ETHERNET_NCCL;
     println!(
         "calculated at: {}, expected: {}",
         calculated_time, expected_time
