@@ -27,9 +27,6 @@ pub struct Conductor<'a> {
 }
 
 impl<'a> Conductor<'a> {
-    pub fn orchestrate_hierarchical(&self) {
-        unimplemented!()
-    }
     pub fn orchestrate(&self) {
         unimplemented!()
     }
