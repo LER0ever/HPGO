@@ -9,8 +9,10 @@ extern crate float_cmp;
 extern crate ordered_float;
 #[macro_use]
 extern crate serde;
-extern crate pyo3;
 extern crate strsim;
+
+extern crate pyo3;
+extern crate rayon;
 
 pub mod environment;
 pub mod input;

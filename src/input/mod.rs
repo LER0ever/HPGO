@@ -9,5 +9,11 @@ use model::model_perf;
 
 pub trait ModelImporter {
     fn new() -> Self;
-    fn ImportFrom(&self, filename: &str) -> Option<model_perf::ModelPerf>;
+    fn ImportFrom(
+        &self,
+        filename: &str,
+    ) -> (
+        Option<model_perf::ModelPerf>,
+        Option<model_perf::ModelStates>,
+    );
 }

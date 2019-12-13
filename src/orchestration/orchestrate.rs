@@ -3,7 +3,7 @@ use model::model;
 use std::collections::BTreeSet;
 
 #[derive(Debug)]
-struct MatrixCell {
+pub struct MatrixCell {
     current_maxmin_block: f64,
     optimal_split: (u32, u32),
     num_gpus_used: u32,
@@ -11,7 +11,7 @@ struct MatrixCell {
     gpu_ids: BTreeSet<u32>,
 }
 
-type Matrix = Vec<Vec<MatrixCell>>;
+pub type Matrix = Vec<Vec<MatrixCell>>;
 
 #[derive(Debug)]
 pub struct Context {
@@ -20,10 +20,10 @@ pub struct Context {
 
 #[derive(Debug)]
 pub struct Conductor<'a> {
-    ctx: Context,
-    m: model::Model,
-    d: device::Devices,
-    A: &'a mut Matrix,
+    pub ctx: Context,
+    pub m: model::Model,
+    pub d: device::Devices,
+    pub A: &'a mut Matrix,
 }
 
 impl<'a> Conductor<'a> {

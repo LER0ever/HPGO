@@ -7,7 +7,13 @@ impl ModelImporter for TensorflowTimelineImporter {
     fn new() -> TensorflowTimelineImporter {
         TensorflowTimelineImporter {}
     }
-    fn ImportFrom(&self, filename: &str) -> Option<model_perf::ModelPerf> {
+    fn ImportFrom(
+        &self,
+        filename: &str,
+    ) -> (
+        Option<model_perf::ModelPerf>,
+        Option<model_perf::ModelStates>,
+    ) {
         unimplemented!();
     }
 }

@@ -13,7 +13,7 @@ fn test_python_import_basic() {
     let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
     let result = tgi.ImportFrom("./profiles/vgg16/graph.txt");
     match result {
-        Some(x) => {
+        (Some(x), Some(y)) => {
             println!("Got result successfully, printing all fields...");
             // NOTE: could've just print x, as it derives Debug
             println!("compute_times: {:?}", x.compute_times);
@@ -22,7 +22,7 @@ fn test_python_import_basic() {
             println!("output_activation_sizes: {:?}", x.output_activation_sizes);
             println!("all_predecessor_ids: {:?}", x.all_predecessor_ids);
         }
-        None => {
+        _ => {
             panic!();
         }
     }
