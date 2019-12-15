@@ -1,14 +1,16 @@
 use environment::device;
 use model::model;
+use orchestration::Conductor;
 use std::collections::BTreeSet;
 
 #[derive(Debug)]
 pub struct MatrixCell {
-    current_maxmin_block: f64,
-    optimal_split: (u32, u32),
-    num_gpus_used: u32,
-    availability_bitset: Vec<bool>,
-    gpu_ids: BTreeSet<u32>,
+    pub current_value: Option<f64>,
+    pub current_maxmin_block: Option<f64>,
+    pub optimal_split: Option<(u32, u32)>,
+    pub num_gpus_used: Option<u32>,
+    pub availability_bitset: Vec<bool>,
+    pub gpu_ids: BTreeSet<u32>,
 }
 
 pub type Matrix = Vec<Vec<MatrixCell>>;
@@ -19,15 +21,23 @@ pub struct Context {
 }
 
 #[derive(Debug)]
-pub struct Conductor<'a> {
+pub struct SyncConductor<'a> {
     pub ctx: Context,
     pub m: model::Model,
     pub d: device::Devices,
     pub A: &'a mut Matrix,
 }
 
-impl<'a> Conductor<'a> {
-    pub fn orchestrate(&self) {
+impl<'a> Conductor for SyncConductor<'a> {
+    fn orchestrate(&self) {
+        unimplemented!()
+    }
+
+    fn compute_plan(&mut self) {
+        unimplemented!()
+    }
+
+    fn analyse_plan(&self) {
         unimplemented!()
     }
 }
