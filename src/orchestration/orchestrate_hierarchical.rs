@@ -27,6 +27,7 @@ impl<'a> HierarchicalConductor<'a> {
         let activation_sizes = &self.m.perf.activation_sizes;
         let output_activation_sizes = &self.m.perf.output_activation_sizes;
         let parameter_sizes = &self.m.perf.parameter_sizes;
+        let all_predecessor_ids = &self.m.perf.all_predecessor_ids;
         let A = &mut self.A; // pass mut ref for shorthand
 
         for _ in 0..compute_times.len() {
@@ -60,7 +61,8 @@ impl<'a> HierarchicalConductor<'a> {
                     dp_comm_time /= num_cards_per_machine as f64;
 
                     if cur_compute_time > -0.5 {
-                        A[i][j][m].current_value = Some((cur_compute_time + dp_comm_time) / (m + 1) as f64);
+                        A[i][j][m].current_value =
+                            Some((cur_compute_time + dp_comm_time) / (m + 1) as f64);
                         A[i][j][m].current_maxmin_block =
                             Some((cur_compute_time + dp_comm_time) / (m + 1) as f64);
                         A[i][j][m].optimal_split = None;
@@ -71,7 +73,51 @@ impl<'a> HierarchicalConductor<'a> {
         }
 
         let min_m = 1;
-        // TODO: finish the rest
+        let max_i = if final_level {
+            1
+        } else {
+            compute_times.len() as u32
+        };
+
+        for i in 0..max_i as usize {
+            for m in min_m..num_machines as usize {
+                for j in i + 1..compute_times[0].len() {
+                    let (min_pipeline_time, optimal_split, optimal_num_machines) = (
+                        A[i][j][m].current_maxmin_block,
+                        A[i][j][m].optimal_split,
+                        A[i][j][m].num_gpus_used,
+                    );
+                    for k in all_predecessor_ids[j].iter() {
+                        if i > 0 && all_predecessor_ids[i - 1].contains(k) {
+                            continue;
+                        }
+                        let max_mp = m + 1;
+                        for mp in 1..max_mp {
+                            let input_transfer_time = (2.0 * output_activation_sizes[*k as usize])
+                                / (bandwidth * mp as f64);
+                            // TODO: output_transfer_time
+                            let mut last_stage_time = compute_times[(*k + 1) as usize][j];
+                            if last_stage_time < -0.5 {
+                                continue;
+                            }
+                            let last_stage_parameter_size = parameter_sizes[(*k + 1) as usize][j];
+                            last_stage_time += (4.0 * (mp - 1) as f64 * last_stage_parameter_size)
+                                / (bandwidth * mp as f64);
+                            last_stage_time /= mp as f64;
+
+                            if A[i][*k as usize][m - mp].current_maxmin_block == None
+                                || A[i][*k as usize][m - mp].current_maxmin_block.unwrap() < -0.5
+                            {
+                                continue;
+                            }
+
+                            let mut pipeline_time = f64::max(A[i][*k as usize][m - mp].current_maxmin_block.unwrap(), last_stage_time);
+                            pipeline_time = f64::max(pipeline_time, input_transfer_time);
+                        }
+                    }
+                }
+            }
+        }
 
         //unimplemented!()
     }
