@@ -82,7 +82,7 @@ impl<'a> HierarchicalConductor<'a> {
         for i in 0..max_i as usize {
             for m in min_m..num_machines as usize {
                 for j in i + 1..compute_times[0].len() {
-                    let (min_pipeline_time, optimal_split, optimal_num_machines) = (
+                    let (mut min_pipeline_time, mut optimal_split, mut optimal_num_machines) = (
                         A[i][j][m].current_maxmin_block,
                         A[i][j][m].optimal_split,
                         A[i][j][m].num_gpus_used,
@@ -111,15 +111,30 @@ impl<'a> HierarchicalConductor<'a> {
                                 continue;
                             }
 
-                            let mut pipeline_time = f64::max(A[i][*k as usize][m - mp].current_maxmin_block.unwrap(), last_stage_time);
+                            let mut pipeline_time = f64::max(
+                                A[i][*k as usize][m - mp].current_maxmin_block.unwrap(),
+                                last_stage_time,
+                            );
                             pipeline_time = f64::max(pipeline_time, input_transfer_time);
+
+                            if min_pipeline_time.is_none()
+                                || (min_pipeline_time.is_some()
+                                    && pipeline_time < min_pipeline_time.unwrap())
+                            {
+                                optimal_split = Some((*k, m as u32 - mp as u32));
+                                optimal_num_machines = Some(mp as u32);
+                                min_pipeline_time = Some(pipeline_time);
+                            }
                         }
                     }
+                    A[i][j][m].current_maxmin_block = min_pipeline_time;
+                    A[i][j][m].optimal_split = optimal_split;
+                    A[i][j][m].num_gpus_used = optimal_num_machines;
                 }
             }
         }
 
-        //unimplemented!()
+        // return A;
     }
 }
 

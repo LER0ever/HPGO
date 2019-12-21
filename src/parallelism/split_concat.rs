@@ -1,7 +1,7 @@
 use environment::*;
 use std::collections::BTreeSet;
 
-pub fn split_concat_time(
+pub fn split_concat_all2all_time(
     d: &device::Devices,
     from: &BTreeSet<u32>,
     to: &BTreeSet<u32>,
