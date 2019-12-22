@@ -1,9 +1,17 @@
 extern crate HPGO;
+use HPGO::environment::network;
 use HPGO::input::*;
 use HPGO::orchestration::*;
 
 #[test]
 fn test_orchestrate_hierarchical_compute_plan() {
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-    let result = tgi.ImportFrom("./profiles/xlnet/graph.txt");
+    let mut c = orchestrate_hierarchical::HierarchicalConductor::new("./profiles/xlnet/graph.txt");
+    c.compute_plan_hierarchical(8, 1, network::GIGABYTE, true);
+    for i in 0..c.ctx.len() {
+        for j in 0..c.ctx[i].len() {
+            for k in 0..c.ctx[i][j].len() {
+                println!("{} {} {} | {:?}", i, j, k, c.ctx[i][j][k]);
+            }
+        }
+    }
 }

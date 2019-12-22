@@ -1,6 +1,7 @@
 use environment::device;
 use model::model;
-use orchestration::orchestrate::{Context, MatrixCell};
+use input::*;
+use orchestration::orchestrate::{MatrixCell};
 use orchestration::Conductor;
 use rayon::prelude::*;
 use std::collections::BTreeSet;
@@ -8,14 +9,25 @@ use std::collections::BTreeSet;
 pub type Matrix = Vec<Vec<Vec<MatrixCell>>>;
 
 #[derive(Debug)]
-pub struct HierarchicalConductor<'a> {
-    pub ctx: Context,
+pub struct HierarchicalConductor {
+    pub ctx: Matrix,
     pub m: model::Model,
-    pub d: device::Devices,
-    pub A: &'a mut Matrix,
+    // pub d: device::Devices,
+    //pub A: &'a mut Matrix,
 }
 
-impl<'a> HierarchicalConductor<'a> {
+impl HierarchicalConductor {
+    pub fn new(filename: &str) -> HierarchicalConductor {
+        let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+        let result = tgi.ImportFrom(filename);
+        let (perf, states) = (result.0.unwrap(), result.1.unwrap());
+        let model = model::Model::new_from_model_perf(perf, states);
+        HierarchicalConductor {
+            ctx: vec![],
+            m: model,
+            //A: &mut vec![],
+        }
+    }
     pub fn compute_plan_hierarchical(
         &mut self,
         num_machines: u32,
@@ -28,7 +40,7 @@ impl<'a> HierarchicalConductor<'a> {
         let output_activation_sizes = &self.m.perf.output_activation_sizes;
         let parameter_sizes = &self.m.perf.parameter_sizes;
         let all_predecessor_ids = &self.m.perf.all_predecessor_ids;
-        let A = &mut self.A; // pass mut ref for shorthand
+        let A = &mut self.ctx; // pass mut ref for shorthand
 
         for _ in 0..compute_times.len() {
             let mut row_a: Vec<Vec<MatrixCell>> = vec![];
@@ -42,7 +54,7 @@ impl<'a> HierarchicalConductor<'a> {
                         num_gpus_used: None,
                         availability_bitset: vec![],
                         gpu_ids: BTreeSet::new(),
-                    })
+                    });
                 }
                 row_a.push(row_row_a);
             }
@@ -138,7 +150,7 @@ impl<'a> HierarchicalConductor<'a> {
     }
 }
 
-impl<'a> Conductor for HierarchicalConductor<'a> {
+impl Conductor for HierarchicalConductor {
     fn orchestrate(&self) {
         unimplemented!()
     }

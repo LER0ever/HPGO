@@ -4,9 +4,9 @@ use std::iter::FromIterator;
 
 #[derive(Debug, Clone)]
 pub struct ReturnDevices {
-    strategy: AllocationStrategy,
-    occupied: Vec<bool>,
-    gids: BTreeSet<u32>, // GPU id array, BTreeSet because its hashable
+    pub strategy: AllocationStrategy,
+    pub occupied: Vec<bool>,
+    pub gids: BTreeSet<u32>, // GPU id array, BTreeSet because its hashable
 }
 
 /// Allocation Strategy used to allocate requested new cards

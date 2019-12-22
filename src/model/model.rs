@@ -23,11 +23,11 @@ pub struct Model {
 }
 
 impl Model {
-    fn new() -> Model {
+    pub fn new() -> Model {
         println!("For now, don't call new(), construct from perf results instead");
         panic!()
     }
-    fn new_from_model_perf(perf: model_perf::ModelPerf, states: model_perf::ModelStates) -> Model {
+    pub fn new_from_model_perf(perf: model_perf::ModelPerf, states: model_perf::ModelStates) -> Model {
         // WIP
         let mut layers: Vec<Layer> = vec![];
         for i in 0..perf.compute_times[0].len() {
