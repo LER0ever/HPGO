@@ -1,8 +1,8 @@
 use environment::device;
-use model::model;
 use input::*;
-use orchestration::orchestrate::{MatrixCell};
-use orchestration::Conductor;
+use model::model;
+use orchestration::orchestrate::MatrixCell;
+use orchestration::{Conductor, OrchestrationResult};
 use rayon::prelude::*;
 use std::collections::BTreeSet;
 
@@ -160,6 +160,10 @@ impl Conductor for HierarchicalConductor {
     }
 
     fn analyse_plan(&self) {
+        unimplemented!()
+    }
+
+    fn return_plan(&self) -> Box<dyn OrchestrationResult> {
         unimplemented!()
     }
 }

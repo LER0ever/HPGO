@@ -49,7 +49,7 @@ impl Devices {
         let global_min = min(min_from, min_to);
         let global_max = max(max_from, max_to);
 
-        println!("Global Min {} Max {}", global_min, global_max);
+        // println!("Global Min {} Max {}", global_min, global_max);
 
         let mut l: u32 = 0;
         for r in &self.seps {

@@ -17,7 +17,7 @@ pub fn split_concat_all2all_time(
                     cross_machine_gids.insert(*s);
                 }
             }
-            println!("cross_machine_gids: {:?}", cross_machine_gids);
+            // println!("cross_machine_gids: {:?}", cross_machine_gids);
             if cross_machine_gids.len() > 0 {
                 size / from.len() as f64 * cross_machine_gids.len() as f64
                     / ethernet::BANDWIDTH_ETHERNET_P2P

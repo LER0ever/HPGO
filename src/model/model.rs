@@ -27,7 +27,10 @@ impl Model {
         println!("For now, don't call new(), construct from perf results instead");
         panic!()
     }
-    pub fn new_from_model_perf(perf: model_perf::ModelPerf, states: model_perf::ModelStates) -> Model {
+    pub fn new_from_model_perf(
+        perf: model_perf::ModelPerf,
+        states: model_perf::ModelStates,
+    ) -> Model {
         // WIP
         let mut layers: Vec<Layer> = vec![];
         for i in 0..perf.compute_times[0].len() {
@@ -41,6 +44,7 @@ impl Model {
                 parameter_size: perf.parameter_sizes[i][i],
             });
         }
+        // println!("{:?}", layers);
         Model {
             layers: layers,
             perf: perf,

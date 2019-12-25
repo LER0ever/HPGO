@@ -86,7 +86,7 @@ impl ModelImporter for TorchGraphImporter {
                 stage_id: None,
             });
         }
-        println!("{:?}", states);
+        // println!("{:?}", states);
         let perf = model_perf::ModelPerf {
             compute_times: result.2,
             activation_sizes: result.3,
