@@ -119,8 +119,8 @@ impl SyncConductor {
                     );
                 } else {
                     println!(
-                        "[orchestrate] checking DP allreduce time: {}",
-                        data_parallel::all_reduce_time(d, &n.gids, cur_parameter_size,)
+                        "[orchestrate] checking DP allreduce time for {:?}: {}",
+                        &n.gids, data_parallel::all_reduce_time(d, &n.gids, cur_parameter_size)
                     );
                     A[j][m as usize].get_mut().insert(
                         ph.clone(),
@@ -131,7 +131,7 @@ impl SyncConductor {
                                     + data_parallel::all_reduce_time(
                                         d,
                                         &n.gids,
-                                        cur_parameter_size,
+                                        cur_parameter_size
                                     ),
                             ),
                             optimal_split: None,
