@@ -119,8 +119,9 @@ impl SyncConductor {
                     );
                 } else {
                     println!(
-                        "[orchestrate] checking DP allreduce time for {:?}: {}",
-                        &n.gids, data_parallel::all_reduce_time(d, &n.gids, cur_parameter_size)
+                        "[orchestrate]\t checking DP allreduce time for {:?}: {}",
+                        &n.gids,
+                        data_parallel::all_reduce_time(d, &n.gids, cur_parameter_size)
                     );
                     A[j][m as usize].get_mut().insert(
                         ph.clone(),
@@ -131,7 +132,7 @@ impl SyncConductor {
                                     + data_parallel::all_reduce_time(
                                         d,
                                         &n.gids,
-                                        cur_parameter_size
+                                        cur_parameter_size,
                                     ),
                             ),
                             optimal_split: None,
@@ -169,7 +170,7 @@ impl SyncConductor {
                     continue;
                 }
 
-                println!("m = {}, j = {}", m, j);
+                println!("[orchestrate]\t m = {}, j = {}", m, j);
 
                 let mut cur_A_bt = A[j][m as usize].borrow_mut();
                 let cur_A = cur_A_bt.get(&ph).unwrap();
@@ -188,6 +189,7 @@ impl SyncConductor {
                 );
 
                 for k in all_predecessor_ids[j].iter() {
+                    println!("[orchestrate]\t m = {}, j = {}, k = {}", m, j, k);
                     let max_mp = m + 1;
                     for mp in 1..max_mp {
                         for (bs, cell) in A[*k as usize][(m - mp) as usize].borrow().iter() {
@@ -226,6 +228,22 @@ impl SyncConductor {
                                     continue;
                                 }
 
+                                println!(
+                                    "[orchestrate]\t last_stage_time for {},{},{},{} = {} | prev_time = {} | input_transfer_time = {}",
+                                    m,
+                                    j,
+                                    k,
+                                    mp,
+                                    last_stage_time,
+                                    A[*k as usize][(m - mp) as usize]
+                                        .borrow()
+                                        .get(bs)
+                                        .unwrap()
+                                        .current_maxmin_block
+                                        .unwrap(),
+                                    input_transfer_time
+                                );
+
                                 let mut pipeline_time = f64::max(
                                     A[*k as usize][(m - mp) as usize]
                                         .borrow()
@@ -256,7 +274,7 @@ impl SyncConductor {
                                             .unwrap()
                                 {
                                     println!(
-                                        "Updating A[{}][{}][{:?}] \t| maxmin_block: {:.7}\t split: {:?}\t from_bs: {:?}\t gids: {:?} ",
+                                        "[orchestrate]\t Updating A[{}][{}][{:?}] \t| maxmin_block: {:.7}\t split: {:?}\t from_bs: {:?}\t gids: {:?} ",
                                         j,
                                         m,
                                         &nbs.occupied.iter().fold(String::new(), |acc, &b| acc

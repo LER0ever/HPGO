@@ -43,9 +43,9 @@ fn test_orchestrate_compute_plan() {
 fn test_orchestrate_analyse_plan() {
     let mut c = orchestrate::SyncConductor::new(
         "./profiles/amoebanet/flattened.txt",
-        [1, 2, 3, 4, 5, 6, 7, 8].to_vec(),
+        [8, 16].to_vec(),
     );
-    c.compute_plan_sync(8, 1);
-    let res = c.analyse_plan_sync(c.m.perf.compute_times[0].len() as u32, 8, 1);
+    c.compute_plan_sync(16, 1);
+    let res = c.analyse_plan_sync(c.m.perf.compute_times[0].len() as u32, 16, 1);
     println!("{:?}", res);
 }

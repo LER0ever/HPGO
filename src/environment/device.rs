@@ -84,6 +84,8 @@ impl Devices {
         mut machine_availability: Vec<(bool, u32)>, // already cloned
         strategy: AllocationStrategy,
     ) -> Option<ReturnDevices> {
+
+        println!("[device]\t next_cards_with_strategy: {:?}", strategy);
         // FF
         let mut t_ret: ReturnDevices = ReturnDevices {
             strategy: strategy,
@@ -124,10 +126,12 @@ impl Devices {
                     if machine_availability[i].0 == need_fresh {
                         let mut j: u32 = match i {
                             0 => 0,
-                            _ => *&self.seps[i - 1],
+                            _ => self.seps[i - 1],
                         };
                         if machine_availability[i].1 >= n_ret {
-                            while t_ret.occupied[j as usize] == true {
+                            // TODO: This line has a bug, which causes index overflow for j
+                            println!("[device]\t testing j = {}", j);
+                            while t_ret.occupied[j as usize] == true && j < (t_ret.occupied.len()-1) as u32 {
                                 j += 1;
                             }
                             while n_ret > 0 {

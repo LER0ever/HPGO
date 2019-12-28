@@ -33,7 +33,23 @@ impl Model {
     ) -> Model {
         // WIP
         let mut layers: Vec<Layer> = vec![];
+
+        // Format predecessor IDs
+        println!("All Predecessor IDs");
         for i in 0..perf.compute_times[0].len() {
+            println!("pred[{}]: {:?}", i, perf.all_predecessor_ids[i]);
+        }
+
+        // Model Performance Stats
+        println!("Profiling Results:");
+        for i in 0..perf.compute_times[0].len() {
+            println!(
+                "C = {:.5} \t A = {:.5} \t OA = {:.5} \t P = {:.5}",
+                perf.compute_times[i][i],
+                perf.activation_sizes[i][i],
+                perf.output_activation_sizes[i],
+                perf.parameter_sizes[i][i]
+            );
             layers.push(Layer {
                 id: Some(i as u32),
                 name: None,
@@ -44,7 +60,14 @@ impl Model {
                 parameter_size: perf.parameter_sizes[i][i],
             });
         }
-        // println!("{:?}", layers);
+        // Format Compute Times
+        println!("Compute Times matrix: ");
+        for ct in &perf.compute_times {
+            for i in ct {
+                print!("{:2.5}\t", if i < &-0.5 { &0.0 } else {i});
+            }
+            println!();
+        }
         Model {
             layers: layers,
             perf: perf,
