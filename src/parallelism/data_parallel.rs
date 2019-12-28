@@ -7,12 +7,10 @@ pub fn all_reduce_time(d: &device::Devices, gids: &BTreeSet<u32>, size: f64) -> 
     let f_factor: f64 = (gids.len() - 1) as f64 / gids.len() as f64;
     match gids.len() {
         1 => 0.0,
-        _ => {
-            match b_cross {
-                true => size * 2.0 * f_factor / ethernet::BANDWIDTH_ETHERNET_NCCL,
-                false => size * 2.0 * f_factor / nvlink::BANDWIDTH_NVLINK_P2P / (gids.len() / 2) as f64,
-            }
-        }
+        _ => match b_cross {
+            true => size * 2.0 * f_factor / ethernet::BANDWIDTH_ETHERNET_NCCL,
+            false => size * 2.0 * f_factor / nvlink::BANDWIDTH_NVLINK_P2P / (gids.len() / 2) as f64,
+        },
     }
 }
 

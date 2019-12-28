@@ -64,7 +64,7 @@ impl Model {
         println!("Compute Times matrix: ");
         for ct in &perf.compute_times {
             for i in ct {
-                print!("{:2.5}\t", if i < &-0.5 { &0.0 } else {i});
+                print!("{:2.5}\t", if i < &-0.5 { &0.0 } else { i });
             }
             println!();
         }
