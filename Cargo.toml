@@ -28,8 +28,13 @@ ordered-float = "0.5.0"
 float-cmp = "0.5.2"
 strsim = "0.9.1"
 ndarray = "0.13.0"
-pyo3 = { version = "0.8.2"}
 numpy = { version = "0.7.0", optional = true }
+
+[dependencies.pyo3]
+version = "0.8.4"
+[features]
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]
 
 [dev-dependencies]
 rustlearn = "0.5.0"
