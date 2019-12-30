@@ -1,6 +1,7 @@
 use environment::*;
 use model::*;
 use parallelism::*;
+use rayon::prelude::*;
 use std::collections::BTreeSet;
 
 #[derive(Debug)]
@@ -100,8 +101,8 @@ pub fn p3(d: &device::Devices, m: &model::Model) -> OverlapStats {
     }
 
     println!("Final Offset: {}", ds.offset);
-    let comp_time: f64 = m.layers.iter().map(|s| s.compute_time).sum();
-    let param_size: f64 = m.layers.iter().map(|s| s.parameter_size).sum();
+    let comp_time: f64 = m.layers.par_iter().map(|s| s.compute_time).sum();
+    let param_size: f64 = m.layers.par_iter().map(|s| s.parameter_size).sum();
     let comm_time: f64 = data_parallel::all_reduce_time(d, &all_gids, param_size);
     println!(
         "Pure Comp Time: {}\n Parameter Size: {}\n Pure Comm Time: {}",

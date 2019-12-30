@@ -1,3 +1,4 @@
+use environment::network::GIGABYTE;
 use std::cmp::{max, min};
 use std::collections::{BTreeSet, HashMap};
 use std::iter::FromIterator;
@@ -26,6 +27,9 @@ pub struct Devices {
     pub occupied: Vec<bool>,
     pub seps: Vec<u32>,
 }
+
+// define the GPU memory to be constant for now
+pub const GPU_MEMORY: f64 = 16.0 * GIGABYTE;
 
 impl Devices {
     pub fn new(n: u32, seps: Vec<u32>) -> Devices {

@@ -11,7 +11,7 @@ fn t_p3_for(filename: &str) -> cc_overlap::OverlapStats {
     let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
     let result = tgi.ImportFrom(filename);
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-    let model = model::Model::new_from_model_perf(perf, states);
+    let model = model::Model::new_from_model_perf(perf, states, 1, 1);
     cc_overlap::p3(&d16, &model)
 }
 

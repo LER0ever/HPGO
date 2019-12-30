@@ -40,11 +40,16 @@ pub struct SyncConductor {
 }
 
 impl SyncConductor {
-    pub fn new(filename: &str, seps: Vec<u32>) -> SyncConductor {
+    pub fn new_from_torch_graph(
+        filename: &str,
+        pbs: u32,
+        gbs: u32,
+        seps: Vec<u32>,
+    ) -> SyncConductor {
         let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
         let result = tgi.ImportFrom(filename);
         let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-        let model = model::Model::new_from_model_perf(perf, states);
+        let model = model::Model::new_from_model_perf(perf, states, pbs, gbs);
         let n = seps[seps.len() - 1];
         let d = device::Devices::new(n, seps);
         SyncConductor {

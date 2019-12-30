@@ -37,3 +37,12 @@ pub fn split_concat_all2all_time(
         }
     }
 }
+
+pub fn split_concat_time(
+    d: &device::Devices,
+    from: &BTreeSet<u32>,
+    to: &BTreeSet<u32>,
+    size: f64,
+) -> f64 {
+    unimplemented!()
+}
