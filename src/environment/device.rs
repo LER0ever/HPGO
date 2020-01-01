@@ -45,6 +45,12 @@ impl Devices {
         }
     }
 
+    pub fn all_gpus(&self) -> BTreeSet<u32> {
+        let vec_all_gids: Vec<u32> = (0..self.num_gpus).collect();
+        let all_gids: BTreeSet<u32> = vec_all_gids.iter().cloned().collect();
+        all_gids
+    }
+
     pub fn is_cross_machine_from_to(&self, from: &BTreeSet<u32>, to: &BTreeSet<u32>) -> bool {
         let min_from = from.iter().min().expect("min_from error");
         let max_from = from.iter().max().expect("max_from error");
@@ -67,6 +73,9 @@ impl Devices {
     }
 
     pub fn is_cross_machine_within(&self, gids: &BTreeSet<u32>) -> bool {
+        if gids.is_empty() {
+            panic!("[device] is_cross_machine_within: gids is NULL");
+        }
         let min_id = gids.iter().min().expect("min_id error");
         let max_id = gids.iter().max().expect("max_id error");
 
@@ -88,7 +97,7 @@ impl Devices {
         mut machine_availability: Vec<(bool, u32)>, // already cloned
         strategy: AllocationStrategy,
     ) -> Option<ReturnDevices> {
-        println!("[device]\t next_cards_with_strategy: {:?}", strategy);
+        // println!("[device]\t next_cards_with_strategy: {:?}", strategy);
         // FF
         let mut t_ret: ReturnDevices = ReturnDevices {
             strategy: strategy,
@@ -133,7 +142,7 @@ impl Devices {
                         };
                         if machine_availability[i].1 >= n_ret {
                             // TODO: This line has a bug, which causes index overflow for j
-                            println!("[device]\t testing j = {}", j);
+                            // println!("[device]\t testing j = {}", j);
                             while t_ret.occupied[j as usize] == true
                                 && j < (t_ret.occupied.len() - 1) as u32
                             {

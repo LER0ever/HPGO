@@ -1,6 +1,8 @@
 use model::model_perf;
+use pyo3::prelude::*;
 use rayon::prelude::*;
 
+#[pyclass]
 #[derive(Debug)]
 pub struct Layer {
     pub id: Option<u32>,
@@ -12,6 +14,7 @@ pub struct Layer {
     pub parameter_size: f64,
 }
 
+#[pyclass]
 #[derive(Debug)]
 pub struct Model {
     pub layers: Vec<Layer>,
@@ -24,6 +27,8 @@ pub struct Model {
     pub optimizer_memory_scaling: u32,
     pub peak_activation_per_batch: f64,
 }
+
+const VERBOSE: bool = false;
 
 impl Model {
     pub fn new() -> Model {
@@ -39,13 +44,14 @@ impl Model {
         // WIP
         let layers: Vec<Layer> = vec![];
 
-        // Format predecessor IDs
-        println!("All Predecessor IDs");
-        for i in 0..perf.compute_times[0].len() {
-            println!("pred[{}]: {:?}", i, perf.all_predecessor_ids[i]);
+        if VERBOSE {
+            // Format predecessor IDs
+            println!("All Predecessor IDs");
+            for i in 0..perf.compute_times[0].len() {
+                println!("pred[{}]: {:?}", i, perf.all_predecessor_ids[i]);
+            }
+            println!("Constructing Model m");
         }
-
-        println!("Constructing Model m");
 
         let mut m = Model {
             layers: layers,
@@ -53,7 +59,7 @@ impl Model {
             states: states,
             global_batch_size: gbs,
             profile_batch_size: pbs,
-            min_micro_batch_size: 0,
+            min_micro_batch_size: 1,
             use_async: false,
             optimizer_memory_scaling: 1,
             peak_activation_per_batch: 0.0,
@@ -61,35 +67,29 @@ impl Model {
 
         m.peak_activation_per_batch =
             m.perf.activation_sizes[0][m.perf.activation_sizes[0].len() - 1] / pbs as f64;
-        println!(
-            "Setting model peak activation per unit batch: {}",
-            m.peak_activation_per_batch
-        );
 
-        println!("Profiling Results before normalization:");
-        for i in 0..m.perf.compute_times[0].len() {
+        if VERBOSE {
             println!(
-                "C = {:.5} \t A = {:.5} \t OA = {:.5} \t P = {:.5}",
-                m.perf.compute_times[i][i],
-                m.perf.activation_sizes[i][i],
-                m.perf.output_activation_sizes[i],
-                m.perf.parameter_sizes[i][i]
+                "Setting model peak activation per unit batch: {}",
+                m.peak_activation_per_batch
             );
+            println!("Profiling Results before normalization:");
+            for i in 0..m.perf.compute_times[0].len() {
+                println!(
+                    "C = {:.5} \t A = {:.5} \t OA = {:.5} \t P = {:.5}",
+                    m.perf.compute_times[i][i],
+                    m.perf.activation_sizes[i][i],
+                    m.perf.output_activation_sizes[i],
+                    m.perf.parameter_sizes[i][i]
+                );
+            }
+            println!("Normalizing to GBS");
         }
 
-        println!("Normalizing to GBS");
         m.normalize(pbs, gbs);
 
         // Model Performance Stats
-        println!("Profiling Results:");
         for i in 0..m.perf.compute_times[0].len() {
-            println!(
-                "C = {:.5} \t A = {:.5} \t OA = {:.5} \t P = {:.5}",
-                m.perf.compute_times[i][i],
-                m.perf.activation_sizes[i][i],
-                m.perf.output_activation_sizes[i],
-                m.perf.parameter_sizes[i][i]
-            );
             m.layers.push(Layer {
                 id: Some(i as u32),
                 name: None,
@@ -101,12 +101,14 @@ impl Model {
             });
         }
         // Format Compute Times
-        println!("Compute Times matrix: ");
-        for ct in &m.perf.compute_times {
-            for i in ct {
-                print!("{:2.5}\t", if i < &-0.5 { &0.0 } else { i });
+        if VERBOSE && m.perf.compute_times.len() < 30 {
+            println!("Compute Times matrix: ");
+            for ct in &m.perf.compute_times {
+                for i in ct {
+                    print!("{:2.5}\t", if i < &-0.5 { &0.0 } else { i });
+                }
+                println!();
             }
-            println!();
         }
 
         m
@@ -138,6 +140,9 @@ impl Model {
     pub fn set_optimizer_memory_scaling(&mut self, s: u32) {
         // not doing anything here, useful when calculating GPU memory
         self.optimizer_memory_scaling = s;
+    }
+    pub fn set_min_microbatch_size(&mut self, s: u32) {
+        self.min_micro_batch_size = s;
     }
     pub fn set_peak_activation_per_batch(&mut self, papb: f64) {
         println!("Updating model peak activation per unit batch: {}", papb);

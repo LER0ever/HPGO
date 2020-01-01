@@ -2,11 +2,13 @@ extern crate HPGO;
 extern crate rayon;
 use rayon::prelude::*;
 use HPGO::analysis::*;
+use HPGO::environment::*;
 use HPGO::input::*;
 use HPGO::model::*;
+use HPGO::parallelism::*;
 
 #[test]
-fn test_model_max_batch_size() {
+fn test_cur_ga_iter_size() {
     // Define Models: (name, PBS, optimizer scale, PAPB)
     let models = vec![
         ("vgg16", 32, 1, -1.0),
@@ -18,6 +20,9 @@ fn test_model_max_batch_size() {
         // ("resnet50", 32),
     ];
 
+    // Devices
+    let d16 = device::Devices::new(16, vec![8, 16]);
+
     // Compute Max Batch Size in Parallel
     let res: Vec<_> = models
         .par_iter()
@@ -25,17 +30,19 @@ fn test_model_max_batch_size() {
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", s, "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-            let mut model = model::Model::new_from_model_perf(perf, states, *bs, 6);
+            let mut model = model::Model::new_from_model_perf(perf, states, *bs, 1024);
             model.set_optimizer_memory_scaling(*opt_scale);
             if *papb > 0.0 {
                 model.set_peak_activation_per_batch(*papb);
             }
-            (s, gpu_memory::max_single_gpu_batch_size(&model))
+            let cur_ga_size = gradient_accumulation::current_ga_iter_size(&d16, &model);
+            let opt_ga_size = gradient_accumulation::optimal_ga_iter_size(&d16, &model);
+            (s, (cur_ga_size, opt_ga_size))
         })
         .collect();
 
-    println!("\nMax Single GPU Batch Size:");
+    println!("\nCurrent / Optimal GA Per iteration Max Batch Size:");
     for i in res {
-        println!("{:12}: {}", i.0, i.1);
+        println!("{:12}: {} vs {}", i.0, (i.1).0, (i.1).1);
     }
 }

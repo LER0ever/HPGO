@@ -1,3 +1,5 @@
+use pyo3::prelude::*;
+#[pyclass]
 #[derive(Debug)]
 pub struct ModelPerf {
     pub compute_times: Vec<Vec<f64>>,
@@ -7,6 +9,7 @@ pub struct ModelPerf {
     pub all_predecessor_ids: Vec<Vec<u32>>,
 }
 
+#[pyclass]
 #[derive(Debug)]
 pub struct ModelState {
     pub id: Option<u32>,

@@ -10,7 +10,7 @@ pub trait OrchestrationResult {
 
 pub trait Conductor {
     // call corresponding new() functions
-    fn orchestrate(&self);
+    fn orchestrate(&mut self);
     fn compute_plan(&mut self);
     fn analyse_plan(&self);
     fn return_plan(&self) -> Box<dyn OrchestrationResult>;

@@ -28,25 +28,28 @@ struct DataStats {
 pub struct OverlapStats {
     pub offset: f64,
     pub speedup_percentage: f64,
-    pub speedup: f64,
 }
 
 pub fn p3(d: &device::Devices, m: &model::Model) -> OverlapStats {
+    p3_partial(d, m, 1.0)
+}
+
+pub fn p3_partial(d: &device::Devices, m: &model::Model, partial: f64) -> OverlapStats {
+    assert_eq!((partial <= 1.0 && partial >= 0.0), true);
     let mut ds: DataStats = DataStats {
         blocks: vec![],
         offset: 0.0,
         excess: 0.0,
     };
-    let vec_all_gids: Vec<u32> = (0..d.num_gpus).collect();
-    let all_gids: BTreeSet<u32> = vec_all_gids.iter().cloned().collect();
+    let all_gids = d.all_gpus();
 
     let mut cur_ts = 0.0;
     for i in (0..m.layers.len()).rev() {
         let l = &m.layers[i];
         let size = l.parameter_size;
         let ETA = data_parallel::all_reduce_time(d, &all_gids, size);
-        println!("ETA for {}: {}", i, ETA);
-        cur_ts += l.compute_time / 2.0; // should be back_time
+        // println!("ETA for {}: {}", i, ETA);
+        cur_ts += l.compute_time * partial / 2.0; // should be back_time
         let available_time = cur_ts;
         ds.blocks.push(DataBlock {
             available_time: available_time,
@@ -63,14 +66,14 @@ pub fn p3(d: &device::Devices, m: &model::Model) -> OverlapStats {
     let n = ds.blocks.len();
     for i in 0..n {
         let b = &mut ds.blocks[i];
-        println!("std_available_time: {} - {}", b.available_time, cur_ts);
+        // println!("std_available_time: {} - {}", b.available_time, cur_ts);
         b.std_available_time = b.available_time - cur_ts;
     }
     cur_ts = 0.0;
     for i in 0..m.layers.len() {
-        cur_ts += &m.layers[i].compute_time / 2.0; // TODO: Fwd Time
+        cur_ts += &m.layers[i].compute_time * partial / 2.0; // TODO: Fwd Time
         ds.blocks[i].need_time = cur_ts;
-        ds.blocks[i].comp_time = &m.layers[i].compute_time / 2.0;
+        ds.blocks[i].comp_time = &m.layers[i].compute_time * partial / 2.0;
     }
     // println!("DS: {:?}", ds);
 
@@ -84,16 +87,16 @@ pub fn p3(d: &device::Devices, m: &model::Model) -> OverlapStats {
             // need to further drift back
             if ds.blocks[i].ETA - (prev_slot + after_slot) < ds.excess {
                 // use excess further
-                println!("Excess before use: {}", ds.excess);
+                // println!("Excess before use: {}", ds.excess);
                 ds.excess -= ds.blocks[i].ETA - (prev_slot + after_slot);
-                println!("Excess after use: {}", ds.excess);
+            // println!("Excess after use: {}", ds.excess);
             } else {
-                println!("Excess before use: {}", ds.excess);
+                // println!("Excess before use: {}", ds.excess);
                 ds.blocks[i].drift_back = ds.blocks[i].ETA - (prev_slot + after_slot) - ds.excess;
                 ds.offset += ds.blocks[i].drift_back;
                 ds.excess = 0.0;
                 // ds.excess -= ds.blocks[i].ETA - (prev_slot + after_slot);
-                println!("Excess after use: {}", ds.excess);
+                // println!("Excess after use: {}", ds.excess);
             }
         } else {
             ds.excess += prev_slot + after_slot - ds.blocks[i].ETA;
@@ -114,6 +117,5 @@ pub fn p3(d: &device::Devices, m: &model::Model) -> OverlapStats {
     OverlapStats {
         offset: ds.offset,
         speedup_percentage: max_speedup,
-        speedup: 0.0,
     }
 }

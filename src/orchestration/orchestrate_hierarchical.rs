@@ -151,7 +151,7 @@ impl HierarchicalConductor {
 }
 
 impl Conductor for HierarchicalConductor {
-    fn orchestrate(&self) {
+    fn orchestrate(&mut self) {
         unimplemented!()
     }
 
