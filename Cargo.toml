@@ -18,6 +18,10 @@ crate-type = ["cdylib", "rlib"]
 name = "HPGO-CMD"
 path = "src/main.rs"
 
+[[bin]]
+name = "XLNet-Speedup"
+path = "src/xlnet_speedup.rs"
+
 [dependencies]
 structopt = "0.3"
 itertools = "0.7.8"
