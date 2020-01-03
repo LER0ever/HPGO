@@ -25,15 +25,15 @@ fn test_cur_ga_iter_size() {
 
     // Compute Max Batch Size in Parallel
     let res: Vec<_> = models
-        .par_iter()
+        .iter()
         .map(|(s, bs, opt_scale, papb)| {
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", s, "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, *bs, 1024);
-            model.set_optimizer_memory_scaling(*opt_scale);
+            model.optimizer_memory_scaling = *opt_scale;
             if *papb > 0.0 {
-                model.set_peak_activation_per_batch(*papb);
+                model.peak_activation_per_batch = *papb;
             }
             let cur_ga_size = gradient_accumulation::current_ga_iter_size(&d16, &model);
             let opt_ga_size = gradient_accumulation::optimal_ga_iter_size(&d16, &model);

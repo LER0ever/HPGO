@@ -519,7 +519,7 @@ impl Conductor for SyncConductor {
     fn orchestrate(&mut self) {
         let num_gpus = self.d.num_gpus;
         let vec_range: Vec<u32> = (2..num_gpus + 1).collect();
-        let mut result: Vec<_> = vec_range
+        let result: Vec<_> = vec_range
             .par_iter()
             .map(|i| self.plan_for(*i, false))
             .collect();

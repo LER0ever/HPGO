@@ -32,9 +32,9 @@ fn test_dp_speedup() {
             let result = tgi.ImportFrom(&["./profiles/", s, "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, *pbs, *gbs);
-            model.set_optimizer_memory_scaling(*opt_scale);
+            model.optimizer_memory_scaling = *opt_scale;
             if *papb > 0.0 {
-                model.set_peak_activation_per_batch(*papb);
+                model.peak_activation_per_batch = *papb;
             }
             let dp_speedup = data_parallel::dp_speedup(&d16, &model);
             let dp_p3_speedup = data_parallel::dp_p3_speedup(&d16, &model);
@@ -82,9 +82,9 @@ fn test_xlnet_speedup_at_all_bs() {
             let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, 1, *gbs);
-            model.set_optimizer_memory_scaling(3);
-            model.set_peak_activation_per_batch(3942774528.0);
-            model.set_min_microbatch_size(1);
+            model.optimizer_memory_scaling = 3;
+            model.peak_activation_per_batch = 3942774528.0;
+            model.min_micro_batch_size = 1;
             // Construct Devices
             let d16 = device::Devices::new(16, vec![8, 16]);
 

@@ -49,9 +49,9 @@ fn test_orchestrate_analyse_plan() {
     let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 256);
-    model.set_optimizer_memory_scaling(3);
-    model.set_peak_activation_per_batch(3942774528.0);
-    model.set_min_microbatch_size(1);
+    model.optimizer_memory_scaling = 3;
+    model.peak_activation_per_batch = 3942774528.0;
+    model.min_micro_batch_size = 1;
     // Construct Devices
     let d16 = device::Devices::new(16, vec![8, 16]);
 
@@ -68,9 +68,9 @@ fn test_orchestrate_plan_straight() {
     let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 128);
-    model.set_optimizer_memory_scaling(3);
-    model.set_peak_activation_per_batch(3942774528.0);
-    model.set_min_microbatch_size(1);
+    model.optimizer_memory_scaling = 3;
+    model.peak_activation_per_batch = 3942774528.0;
+    model.min_micro_batch_size = 1;
     // Construct Devices
     let d16 = device::Devices::new(16, vec![8, 16]);
 
@@ -85,9 +85,9 @@ fn test_orchestrate_orchestrate() {
     let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 256);
-    model.set_optimizer_memory_scaling(3);
-    model.set_peak_activation_per_batch(3942774528.0);
-    model.set_min_microbatch_size(1);
+    model.optimizer_memory_scaling = 3;
+    model.peak_activation_per_batch = 3942774528.0;
+    model.min_micro_batch_size = 1;
     // Construct Devices
     let d16 = device::Devices::new(16, vec![8, 16]);
 

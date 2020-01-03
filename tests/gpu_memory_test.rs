@@ -26,9 +26,9 @@ fn test_model_max_batch_size() {
             let result = tgi.ImportFrom(&["./profiles/", s, "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, *bs, 6);
-            model.set_optimizer_memory_scaling(*opt_scale);
+            model.optimizer_memory_scaling = *opt_scale;
             if *papb > 0.0 {
-                model.set_peak_activation_per_batch(*papb);
+                model.peak_activation_per_batch = *papb;
             }
             (s, gpu_memory::max_single_gpu_batch_size(&model))
         })
