@@ -20,7 +20,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "XLNet-Speedup"
-path = "src/xlnet_speedup.rs"
+path = "examples/xlnet_speedup.rs"
 
 [dependencies]
 structopt = "0.3"

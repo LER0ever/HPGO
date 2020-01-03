@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 
 #[pyclass]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Layer {
     pub id: Option<u32>,
     pub name: Option<String>,
@@ -15,16 +15,19 @@ pub struct Layer {
 }
 
 #[pyclass]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Model {
     pub layers: Vec<Layer>,
     pub perf: model_perf::ModelPerf,
     pub states: model_perf::ModelStates,
     pub global_batch_size: u32,
     pub profile_batch_size: u32,
+    #[pyo3(get, set)]
     pub min_micro_batch_size: u32,
     pub use_async: bool,
+    #[pyo3(get, set)]
     pub optimizer_memory_scaling: u32,
+    #[pyo3(get, set)]
     pub peak_activation_per_batch: f64,
 }
 
@@ -136,16 +139,5 @@ impl Model {
             .for_each(|c| {
                 *c *= factor;
             });
-    }
-    pub fn set_optimizer_memory_scaling(&mut self, s: u32) {
-        // not doing anything here, useful when calculating GPU memory
-        self.optimizer_memory_scaling = s;
-    }
-    pub fn set_min_microbatch_size(&mut self, s: u32) {
-        self.min_micro_batch_size = s;
-    }
-    pub fn set_peak_activation_per_batch(&mut self, papb: f64) {
-        println!("Updating model peak activation per unit batch: {}", papb);
-        self.peak_activation_per_batch = papb;
     }
 }

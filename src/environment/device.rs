@@ -1,4 +1,5 @@
 use environment::network::GIGABYTE;
+use pyo3::prelude::*;
 use std::cmp::{max, min};
 use std::collections::{BTreeSet, HashMap};
 use std::iter::FromIterator;
@@ -20,7 +21,8 @@ pub enum AllocationStrategy {
     Fusion,
 }
 
-#[derive(Debug)]
+#[pyclass]
+#[derive(Debug, Clone)]
 pub struct Devices {
     pub num_machines: u32,
     pub num_gpus: u32,

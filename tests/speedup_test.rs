@@ -93,6 +93,8 @@ fn test_xlnet_speedup_at_all_bs() {
             // let dp_p3_speedup = data_parallel::dp_p3_speedup(&d16, &model);
             let dp_cur_ga_p3_speedup = gradient_accumulation::dp_cur_ga_p3_speedup(&d16, &model);
             let dp_opt_ga_p3_speedup = gradient_accumulation::dp_opt_ga_p3_speedup(&d16, &model);
+
+            // Hybrid Parallel Speedups
             let mut c = orchestrate::SyncConductor::new_from_model_device(model, d16);
             c.orchestrate();
             let pipeline_speedup = c.res.iter().map(|s| s.speedup).fold(0. / 0., f64::max);

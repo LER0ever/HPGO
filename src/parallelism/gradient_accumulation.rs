@@ -8,7 +8,7 @@ pub fn dp_ga_speedup(d: &device::Devices, m: &model::Model) -> f64 {
     data_parallel::dp_speedup(d, m)
 }
 
-// get the current GA iteration batch size per machine
+/// get the current GA iteration batch size per machine
 pub fn current_ga_iter_size(d: &device::Devices, m: &model::Model) -> u32 {
     let max_bs = gpu_memory::max_single_gpu_batch_size(m);
     let gbs = m.global_batch_size;

@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 #[pyclass]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ModelPerf {
     pub compute_times: Vec<Vec<f64>>,
     pub activation_sizes: Vec<Vec<f64>>,
@@ -10,7 +10,7 @@ pub struct ModelPerf {
 }
 
 #[pyclass]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ModelState {
     pub id: Option<u32>,
     pub name: Option<String>,

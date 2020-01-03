@@ -1,12 +1,13 @@
 use environment::device;
 use input::*;
+use itertools::sorted;
 use model::model;
 use orchestration::{Conductor, OrchestrationResult};
 use parallelism::*;
+use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt;
 
 const VERBOSE: bool = false;
 
@@ -29,18 +30,28 @@ pub type Matrix = Vec<Vec<RefCell<BTreeMap<bitset, MatrixCell>>>>;
 //     pub matrix: Matrix,
 // }
 
+/// Orchestration result returned by SyncConductor
+#[pyclass]
+#[derive(Debug, Clone)]
 pub struct SyncConductorResult {
     pub speedup: f64,
     pub stages: Vec<(u32, u32, u32, BTreeSet<u32>)>,
 }
 
+/// Conductor for Synchronous Pipeline
+#[pyclass]
+#[derive(Debug, Clone)]
 pub struct SyncConductor {
+    #[pyo3(get)]
     pub m: model::Model,
+    #[pyo3(get)]
     pub d: device::Devices,
+    #[pyo3(get)]
     pub res: Vec<SyncConductorResult>,
 }
 
 impl SyncConductor {
+    /// Construct the SyncConductor from TorchGraphImporter
     pub fn new_from_torch_graph(
         filename: &str,
         pbs: u32,
@@ -60,6 +71,7 @@ impl SyncConductor {
         }
     }
 
+    /// Construct a SyncConductor from Model and Devices
     pub fn new_from_model_device(m: model::Model, d: device::Devices) -> SyncConductor {
         SyncConductor {
             m: m,
@@ -68,7 +80,8 @@ impl SyncConductor {
         }
     }
 
-    pub fn compute_plan_sync(&self, spa_size: u32, rp: u32) -> Matrix {
+    /// Computations in the matrix to output raw planning metadata
+    pub fn compute_plan_sync(&self, spa_size: u32, rp: u32, straight: bool) -> Matrix {
         // Shorthands
         let compute_times = &self.m.perf.compute_times;
         let activation_sizes = &self.m.perf.activation_sizes;
@@ -104,8 +117,11 @@ impl SyncConductor {
             let cur_compute_time = compute_times[0][j];
             let cur_activation_size = activation_sizes[0][j];
             let cur_parameter_size = parameter_sizes[0][j];
-            let max_m = num_machines;
+            let max_m = if straight { 1 } else { num_machines };
             for m in 0..max_m {
+                if VERBOSE {
+                    println!("[orchestrate]\t Assigning DP to A, m = {}, j = {}", m, j);
+                }
                 let n = d.next_cards(empty.clone(), (m + 1) * rp)[0].clone();
                 if cur_compute_time < -0.5 {
                     // A[j][m][ph] =
@@ -182,15 +198,35 @@ impl SyncConductor {
         let min_m = 1;
         for m in min_m..num_machines {
             for j in 1..compute_times[0].len() {
-                if !A[j][m as usize].borrow().contains_key(&ph) {
-                    continue;
-                }
+                //                if VERBOSE {
+                //                    println!("[orchestrate]\t pre-orchestration check, m = {}, j = {}", m, j);
+                //                }
+                //                if !A[j][m as usize].borrow().contains_key(&ph) && m > 0 {
+                //                    continue;
+                //                }
                 if VERBOSE {
                     println!("[orchestrate]\t m = {}, j = {}", m, j);
                 }
 
                 let mut cur_A_bt = A[j][m as usize].borrow_mut();
-                let cur_A = cur_A_bt.get(&ph).unwrap();
+
+                let empty_cell = MatrixCell {
+                    current_value: None,
+                    current_maxmin_block: None,
+                    optimal_split: None,
+                    num_gpus_used: None,
+                    availability_bitset: vec![],
+                    gpu_ids: BTreeSet::new(),
+                };
+
+                let cur_A: &MatrixCell;
+                if cur_A_bt.contains_key(&ph) {
+                    cur_A = cur_A_bt.get(&ph).unwrap();
+                } else {
+                    cur_A = &empty_cell;
+                }
+
+                // let cur_A = cur_A_bt.get(&ph).unwrap();
                 let (
                     mut min_pipeline_time,
                     mut optimal_split,
@@ -205,11 +241,11 @@ impl SyncConductor {
                     cur_A.gpu_ids.clone(),
                 );
 
-                for k in all_predecessor_ids[j].iter() {
+                for k in sorted(all_predecessor_ids[j].iter()) {
                     if VERBOSE {
                         println!("[orchestrate]\t m = {}, j = {}, k = {}", m, j, k);
                     }
-                    let max_mp = m + 1;
+                    let max_mp = if straight { 2 } else { m + 1 };
                     for mp in 1..max_mp {
                         for (bs, cell) in A[*k as usize][(m - mp) as usize].borrow().iter() {
                             if bs.len() as u32 > num_machines * rp {
@@ -341,6 +377,7 @@ impl SyncConductor {
         A
     }
 
+    /// Analyse the raw data from compute_plan_sync and output a human-readable plan
     pub fn analyse_plan_sync(
         &self,
         A: &Matrix,
@@ -360,24 +397,7 @@ impl SyncConductor {
         let mut last_machines = metadata.gpu_ids.clone();
         if last_machines.is_empty() {
             println!("Last Machines is EMPTY! \nFinal Context Matrix\n");
-            for j in 0..A.len() {
-                for m in 0..A[j].len() {
-                    for (k, v) in A[j][m].borrow().iter() {
-                        println!(
-                    "A[{}][{}][{:?}] \t| maxmin_block: {:.7?}\t split: {:?}\t from_bs: {:?}\t gids: {:?} ",
-                    j,
-                    m,
-                    k.iter().fold(String::new(), |acc, &b| acc
-                        + &(b as i32).to_string()),
-                    v.current_maxmin_block,
-                    v.optimal_split,
-                    v.availability_bitset.iter().fold(String::new(), |acc, &b| acc
-                        + &(b as i32).to_string()),
-                    v.gpu_ids,
-                        );
-                    }
-                }
-            }
+            SyncConductor::print_matrix(A);
             panic!("last_machines.is_empty()");
         }
         let mut last_from = metadata.availability_bitset.clone();
@@ -406,12 +426,86 @@ impl SyncConductor {
 
         res
     }
+
+    /// Shorthand for Planning each individual pipeline spin
+    pub fn plan_for(&self, i: u32, straight: bool) -> SyncConductorResult {
+        let num_gpus = self.d.num_gpus;
+        // 2 <= i <= num_gpus
+        let rp = num_gpus / i;
+        println!("Planning for {} x {}, {}", i, rp, straight);
+        let A = self.compute_plan_sync(i, rp, straight);
+        println!("Planning Done");
+
+        let mut ph: bitset = vec![];
+        for _ in 0..i * rp + 1 {
+            ph.push(true);
+        }
+
+        //        SyncConductor::print_matrix(&A);
+
+        let pipeline_block_bt = A[self.m.perf.compute_times[0].len() - 1][i as usize - 1].borrow();
+        let pipeline_block = pipeline_block_bt.get(&ph).unwrap();
+        let pipeline_time = pipeline_block.current_maxmin_block.unwrap();
+        if pipeline_time < 0.001 {
+            panic!("ppl time error");
+        }
+        println!("Pipeline Time: {}", pipeline_time);
+        let res = self.analyse_plan_sync(&A, self.m.perf.compute_times[0].len() as u32, i, rp);
+        let res_speedup =
+            sync_pipeline::sync_pipeline_speedup(&self.d, &self.m, rp, pipeline_time, res.clone());
+        SyncConductorResult {
+            speedup: res_speedup,
+            stages: res,
+        }
+    }
+
+    pub fn print_matrix(A: &Matrix) {
+        for j in 0..A.len() {
+            for m in 0..A[j].len() {
+                for (k, v) in A[j][m].borrow().iter() {
+                    println!(
+                        "A[{}][{}][{:?}] \t| maxmin_block: {:.7?}\t split: {:?}\t from_bs: {:?}\t gids: {:?} ",
+                        j,
+                        m,
+                        k.iter().fold(String::new(), |acc, &b| acc
+                            + &(b as i32).to_string()),
+                        v.current_maxmin_block,
+                        v.optimal_split,
+                        v.availability_bitset.iter().fold(String::new(), |acc, &b| acc
+                            + &(b as i32).to_string()),
+                        v.gpu_ids,
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// SyncConductor Python API
+#[pymethods]
+impl SyncConductor {
+    fn py_plan_for(
+        &self,
+        i: u32,
+        straight: bool,
+    ) -> PyResult<(f64, Vec<(u32, u32, u32, Vec<u32>)>)> {
+        let res = self.plan_for(i, straight);
+        let speedup = res.speedup;
+        let py_stages: Vec<(u32, u32, u32, Vec<u32>)>;
+        py_stages = res
+            .stages
+            .iter()
+            .map(|s| (s.0, s.1, s.2, s.3.iter().cloned().collect()))
+            .collect();
+        Ok((speedup, py_stages))
+    }
 }
 
 impl OrchestrationResult for SyncConductorResult {
     fn get_speedup(&self) -> Option<f64> {
         unimplemented!()
     }
+
     fn get_splits(&self) -> Option<Vec<u32>> {
         unimplemented!()
     }
@@ -425,71 +519,35 @@ impl Conductor for SyncConductor {
     fn orchestrate(&mut self) {
         let num_gpus = self.d.num_gpus;
         let vec_range: Vec<u32> = (2..num_gpus + 1).collect();
-        let result: Vec<_> = vec_range
+        let mut result: Vec<_> = vec_range
             .par_iter()
-            .map(|i| {
-                // 2 <= i <= num_gpus
-                let rp = num_gpus / i;
-                println!("Planning for {} x {}", *i, rp);
-                let A = self.compute_plan_sync(*i, rp);
-
-                let mut ph: bitset = vec![];
-                for _ in 0..*i * rp + 1 {
-                    ph.push(true);
-                }
-                let pipeline_block_bt =
-                    A[self.m.perf.compute_times[0].len() - 1][*i as usize - 1].borrow();
-                let pipeline_block = pipeline_block_bt.get(&ph).unwrap();
-                let pipeline_time = pipeline_block.current_maxmin_block.unwrap();
-                if pipeline_time < 0.001 {
-                    panic!("ppl time error");
-                }
-                let res =
-                    self.analyse_plan_sync(&A, self.m.perf.compute_times[0].len() as u32, *i, rp);
-                let res_speedup = sync_pipeline::sync_pipeline_speedup(
-                    &self.d,
-                    &self.m,
-                    rp,
-                    pipeline_time,
-                    res.clone(),
-                );
-                (res_speedup, res)
-            })
+            .map(|i| self.plan_for(*i, false))
             .collect();
 
-        for r in result {
-            self.res.push(SyncConductorResult {
-                stages: r.1,
-                speedup: r.0,
-            });
-        }
         /*
-        for i in 2..num_gpus + 1 {
-            // 2 <= i <= num_gpus
-            let rp = num_gpus / i;
-            println!("Planning for {} x {}", i, rp);
-            let A = self.compute_plan_sync(i, rp);
-
-            let mut ph: bitset = vec![];
-            for _ in 0..i * rp + 1 {
-                ph.push(true);
-            }
-            let pipeline_block_bt =
-                A[self.m.perf.compute_times[0].len() - 1][i as usize - 1].borrow();
-            let pipeline_block = pipeline_block_bt.get(&ph).unwrap();
-            let pipeline_time = pipeline_block.current_maxmin_block.unwrap();
-            if pipeline_time < 0.001 {
-                panic!("ppl time error");
-            }
-            let res = self.analyse_plan_sync(&A, self.m.perf.compute_times[0].len() as u32, i, rp);
-            let res_speedup =
-                sync_pipeline::sync_pipeline_speedup(&self.d, &self.m, rp, pipeline_time, res.clone());
-            self.res.push(SyncConductorResult{
-                speedup: res_speedup,
-                stages: res,
-            });
+        let mut straight_vec: Vec<u32> = vec![];
+        if num_gpus > 3 {
+            straight_vec.push(2); // 1:1
+            straight_vec.push(3); // 1:1:1
+            straight_vec.push(num_gpus); // all straight
+        } else if num_gpus > 2 {
+            straight_vec.push(2); // 1:1
+            straight_vec.push(num_gpus); // all straight
+        } else {
+            straight_vec.push(num_gpus); // all straight
         }
+
+        // println!("Appending Orchestration for {:?}", straight_vec);
+
+        let result_straight: Vec<_> = straight_vec
+            .par_iter()
+            .map(|i| self.plan_for(*i, true))
+            .collect();
+
+        result.extend(result_straight);
         */
+
+        self.res = result;
     }
 
     fn compute_plan(&mut self) {
