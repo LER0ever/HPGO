@@ -8,7 +8,7 @@ pub trait OrchestrationResult {
     fn pretty_print(&self) -> Option<String>;
 }
 
-pub trait Conductor {
+pub trait Orchestrate {
     // call corresponding new() functions
     fn orchestrate(&mut self);
     fn compute_plan(&mut self);

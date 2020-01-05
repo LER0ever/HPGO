@@ -5,18 +5,26 @@ use rayon::prelude::*;
 #[pyclass]
 #[derive(Debug, Clone)]
 pub struct Layer {
+    #[pyo3(get)]
     pub id: Option<u32>,
+    #[pyo3(get)]
     pub name: Option<String>,
+    #[pyo3(get)]
     pub desc: Option<String>,
+    #[pyo3(get)]
     pub compute_time: f64,
+    #[pyo3(get)]
     pub activation_size: f64,
+    #[pyo3(get)]
     pub output_activation_size: f64,
+    #[pyo3(get)]
     pub parameter_size: f64,
 }
 
 #[pyclass]
 #[derive(Debug, Clone)]
 pub struct Model {
+    #[pyo3(get)]
     pub layers: Vec<Layer>,
     pub perf: model_perf::ModelPerf,
     pub states: model_perf::ModelStates,

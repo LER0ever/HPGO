@@ -2,7 +2,7 @@ use environment::device;
 use input::*;
 use itertools::sorted;
 use model::model;
-use orchestration::{Conductor, OrchestrationResult};
+use orchestration::{Orchestrate, OrchestrationResult};
 use parallelism::*;
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -515,7 +515,7 @@ impl OrchestrationResult for SyncConductorResult {
     }
 }
 
-impl Conductor for SyncConductor {
+impl Orchestrate for SyncConductor {
     fn orchestrate(&mut self) {
         let num_gpus = self.d.num_gpus;
         let vec_range: Vec<u32> = (2..num_gpus + 1).collect();

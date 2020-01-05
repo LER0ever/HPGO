@@ -26,6 +26,9 @@ impl ModelImporter for TorchGraphImporter {
             "torch_graph.py",
             "torch_graph",
         )
+        .map_err(|e| {
+            e.print_and_set_sys_last_vars(py);
+        })
         .unwrap();
         let result: (
             PyObject,
