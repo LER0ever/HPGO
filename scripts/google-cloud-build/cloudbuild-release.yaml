@@ -1,0 +1,18 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'prepare cargo'
+  args: ['build', '--tag=gcr.io/$PROJECT_ID/cargo', './scripts/google-cloud-build/']
+- name: 'gcr.io/$PROJECT_ID/cargo'
+  id: 'build lib'
+  args: ['build', '--release']
+- name: 'gcr.io/$PROJECT_ID/cargo'
+  id: 'build python whl'
+  entrypoint: 'maturin'
+  args: ['build', '--release']
+
+timeout: 2000s
+
+artifacts:
+  objects:
+    location: 'gs://artifacts.rongyi-srv-gce.appspot.com/UX9Q/HPGO/${_NOW}_${BUILD_ID}/'
+    paths: ['target/release/libHPGO.so', 'target/wheels/*.whl']
