@@ -1,7 +1,7 @@
 use environment::device;
 use input::*;
 use model::model;
-use orchestration::orchestrate::MatrixCell;
+use orchestration::orchestrate_async::MatrixCell;
 use orchestration::{Orchestrate, OrchestrationResult};
 use rayon::prelude::*;
 use std::collections::BTreeSet;

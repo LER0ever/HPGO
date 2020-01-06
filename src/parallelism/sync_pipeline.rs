@@ -5,10 +5,21 @@ use std::collections::BTreeSet;
 
 const VERBOSE: bool = false;
 
-pub fn sync_pipeline_speedup_intermediate() {
-    unimplemented!()
+/// Calculate Synchronous Pipeline Length without full results
+pub fn sync_pipeline_length_intermediate(
+    max_pipeline_block: f64,
+    m_batch: u32,
+    half_stage_time_above: f64,
+    half_compute_time: f64,
+    cur_stage_allreduce: f64,
+) -> f64 {
+    half_compute_time
+        + max_pipeline_block * ((m_batch - 1) as f64)
+        + half_stage_time_above
+        + cur_stage_allreduce
 }
 
+/// Synchronous Pipeline Speedup Estimation
 pub fn sync_pipeline_speedup(
     d: &device::Devices,
     m: &model::Model,

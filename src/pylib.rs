@@ -27,7 +27,7 @@ fn conductor_from_torch_graph_and_seps(
     pbs: u32,
     gbs: u32,
     seps: Vec<u32>,
-) -> PyResult<orchestrate::SyncConductor> {
+) -> PyResult<orchestrate_async::AsyncOrchestrate> {
     let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
     let result = tgi.ImportFrom(filename);
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
@@ -36,7 +36,7 @@ fn conductor_from_torch_graph_and_seps(
     assert_eq!(seps.iter().max().unwrap(), &seps[seps.len() - 1]);
     let d = device::Devices::new(seps[seps.len() - 1], seps);
 
-    let c = orchestrate::SyncConductor::new_from_model_device(m, d);
+    let c = orchestrate_async::AsyncOrchestrate::new_from_model_device(m, d);
 
     Ok(c)
 }

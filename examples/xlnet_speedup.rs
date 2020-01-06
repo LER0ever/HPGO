@@ -37,7 +37,7 @@ fn test_xlnet_speedup_at_all_bs() {
             let dp_cur_ga_p3_speedup = gradient_accumulation::dp_cur_ga_p3_speedup(&d16, &model);
             let dp_opt_ga_p3_speedup = gradient_accumulation::dp_opt_ga_p3_speedup(&d16, &model);
             // Hybrid Parallelism Speedups
-            let mut c = orchestrate::SyncConductor::new_from_model_device(model, d16);
+            let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
             c.orchestrate();
             let mut pipeline_speedup = 0.0;
             let mut pipeline_stages: Vec<(u32, u32, u32, BTreeSet<u32>)> = vec![];

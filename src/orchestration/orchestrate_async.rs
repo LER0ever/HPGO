@@ -9,7 +9,7 @@ use rayon::prelude::*;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 
-const VERBOSE: bool = false;
+const VERBOSE: bool = true;
 
 pub type bitset = Vec<bool>;
 
@@ -25,15 +25,10 @@ pub struct MatrixCell {
 
 pub type Matrix = Vec<Vec<RefCell<BTreeMap<bitset, MatrixCell>>>>;
 
-// #[derive(Debug)]
-// pub struct Context {
-//     pub matrix: Matrix,
-// }
-
 /// Orchestration result returned by SyncConductor
 #[pyclass]
 #[derive(Debug, Clone)]
-pub struct SyncConductorResult {
+pub struct AsyncOrchestrateResult {
     pub speedup: f64,
     pub stages: Vec<(u32, u32, u32, BTreeSet<u32>)>,
 }
@@ -41,30 +36,30 @@ pub struct SyncConductorResult {
 /// Conductor for Synchronous Pipeline
 #[pyclass]
 #[derive(Debug, Clone)]
-pub struct SyncConductor {
+pub struct AsyncOrchestrate {
     #[pyo3(get)]
     pub m: model::Model,
     #[pyo3(get)]
     pub d: device::Devices,
     #[pyo3(get)]
-    pub res: Vec<SyncConductorResult>,
+    pub res: Vec<AsyncOrchestrateResult>,
 }
 
-impl SyncConductor {
+impl AsyncOrchestrate {
     /// Construct the SyncConductor from TorchGraphImporter
     pub fn new_from_torch_graph(
         filename: &str,
         pbs: u32,
         gbs: u32,
         seps: Vec<u32>,
-    ) -> SyncConductor {
+    ) -> AsyncOrchestrate {
         let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
         let result = tgi.ImportFrom(filename);
         let (perf, states) = (result.0.unwrap(), result.1.unwrap());
         let model = model::Model::new_from_model_perf(perf, states, pbs, gbs);
         let n = seps[seps.len() - 1];
         let d = device::Devices::new(n, seps);
-        SyncConductor {
+        AsyncOrchestrate {
             m: model,
             d: d,
             res: vec![],
@@ -72,8 +67,8 @@ impl SyncConductor {
     }
 
     /// Construct a SyncConductor from Model and Devices
-    pub fn new_from_model_device(m: model::Model, d: device::Devices) -> SyncConductor {
-        SyncConductor {
+    pub fn new_from_model_device(m: model::Model, d: device::Devices) -> AsyncOrchestrate {
+        AsyncOrchestrate {
             m: m,
             d: d,
             res: vec![],
@@ -122,7 +117,74 @@ impl SyncConductor {
                 if VERBOSE {
                     println!("[orchestrate]\t Assigning DP to A, m = {}, j = {}", m, j);
                 }
-                let n = d.next_cards(empty.clone(), (m + 1) * rp)[0].clone();
+                // let n = d.next_cards(empty.clone(), (m + 1) * rp)[0].clone();
+                for n in d.next_cards(empty.clone(), (m + 1) * rp) {
+                    A[j][m as usize].get_mut().insert(
+                        ph.clone(),
+                        MatrixCell {
+                            current_value: None,
+                            current_maxmin_block: if cur_compute_time < -0.5 {
+                                None
+                            } else {
+                                Some(
+                                    f64::max((cur_compute_time) / (m + 1) as f64 / rp as f64, 0.0)
+                                        + data_parallel::all_reduce_time(
+                                            d,
+                                            &n.gids,
+                                            cur_parameter_size,
+                                        ),
+                                )
+                            },
+                            optimal_split: None,
+                            num_gpus_used: if cur_compute_time < -0.5 {
+                                None
+                            } else {
+                                Some(m + 1)
+                            },
+                            availability_bitset: if cur_compute_time < -0.5 {
+                                ph.clone()
+                            } else {
+                                empty.clone()
+                            },
+                            gpu_ids: if cur_compute_time < -0.5 {
+                                BTreeSet::new()
+                            } else {
+                                n.gids.clone()
+                            },
+                        },
+                    );
+                    A[j][m as usize].get_mut().insert(
+                        n.occupied.clone(),
+                        MatrixCell {
+                            current_value: None,
+                            current_maxmin_block: if cur_compute_time < -0.5 {
+                                None
+                            } else {
+                                Some(
+                                    f64::max((cur_compute_time) / (m + 1) as f64 / rp as f64, 0.0)
+                                        + data_parallel::all_reduce_time(
+                                            d,
+                                            &n.gids,
+                                            cur_parameter_size,
+                                        ),
+                                )
+                            },
+                            optimal_split: None,
+                            num_gpus_used: if cur_compute_time < -0.5 {
+                                None
+                            } else {
+                                Some(m + 1)
+                            },
+                            availability_bitset: if cur_compute_time < -0.5 {
+                                ph.clone()
+                            } else {
+                                empty.clone()
+                            },
+                            gpu_ids: n.gids,
+                        },
+                    );
+                }
+                /*
                 if cur_compute_time < -0.5 {
                     // A[j][m][ph] =
                     A[j][m as usize].get_mut().insert(
@@ -191,7 +253,7 @@ impl SyncConductor {
                             gpu_ids: n.gids,
                         },
                     );
-                }
+                } */
             }
         }
 
@@ -397,7 +459,7 @@ impl SyncConductor {
         let mut last_machines = metadata.gpu_ids.clone();
         if last_machines.is_empty() {
             println!("Last Machines is EMPTY! \nFinal Context Matrix\n");
-            SyncConductor::print_matrix(A);
+            AsyncOrchestrate::print_matrix(A);
             panic!("last_machines.is_empty()");
         }
         let mut last_from = metadata.availability_bitset.clone();
@@ -428,7 +490,7 @@ impl SyncConductor {
     }
 
     /// Shorthand for Planning each individual pipeline spin
-    pub fn plan_for(&self, i: u32, straight: bool) -> SyncConductorResult {
+    pub fn plan_for(&self, i: u32, straight: bool) -> AsyncOrchestrateResult {
         let num_gpus = self.d.num_gpus;
         // 2 <= i <= num_gpus
         let rp = num_gpus / i;
@@ -441,8 +503,11 @@ impl SyncConductor {
             ph.push(true);
         }
 
-        //        SyncConductor::print_matrix(&A);
-
+        if VERBOSE {
+            println!("========================");
+            AsyncOrchestrate::print_matrix(&A);
+            println!("========================");
+        }
         let pipeline_block_bt = A[self.m.perf.compute_times[0].len() - 1][i as usize - 1].borrow();
         let pipeline_block = pipeline_block_bt.get(&ph).unwrap();
         let pipeline_time = pipeline_block.current_maxmin_block.unwrap();
@@ -453,7 +518,7 @@ impl SyncConductor {
         let res = self.analyse_plan_sync(&A, self.m.perf.compute_times[0].len() as u32, i, rp);
         let res_speedup =
             sync_pipeline::sync_pipeline_speedup(&self.d, &self.m, rp, pipeline_time, res.clone());
-        SyncConductorResult {
+        AsyncOrchestrateResult {
             speedup: res_speedup,
             stages: res,
         }
@@ -483,7 +548,7 @@ impl SyncConductor {
 
 /// SyncConductor Python API
 #[pymethods]
-impl SyncConductor {
+impl AsyncOrchestrate {
     fn py_plan_for(
         &self,
         i: u32,
@@ -501,7 +566,7 @@ impl SyncConductor {
     }
 }
 
-impl OrchestrationResult for SyncConductorResult {
+impl OrchestrationResult for AsyncOrchestrateResult {
     fn get_speedup(&self) -> Option<f64> {
         unimplemented!()
     }
@@ -515,7 +580,7 @@ impl OrchestrationResult for SyncConductorResult {
     }
 }
 
-impl Orchestrate for SyncConductor {
+impl Orchestrate for AsyncOrchestrate {
     fn orchestrate(&mut self) {
         let num_gpus = self.d.num_gpus;
         let vec_range: Vec<u32> = (2..num_gpus + 1).collect();

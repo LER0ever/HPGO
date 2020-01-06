@@ -1,5 +1,6 @@
-pub mod orchestrate;
+pub mod orchestrate_async;
 pub mod orchestrate_hierarchical;
+pub mod orchestrate_sync;
 
 pub trait OrchestrationResult {
     fn get_speedup(&self) -> Option<f64>;

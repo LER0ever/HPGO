@@ -6,7 +6,7 @@ use HPGO::orchestration::*;
 
 #[test]
 fn test_orchestrate_compute_plan() {
-    let mut c = orchestrate::SyncConductor::new_from_torch_graph(
+    let mut c = orchestrate_async::AsyncOrchestrate::new_from_torch_graph(
         "./profiles/amoebanet/flattened.txt",
         8,
         1024,
@@ -55,7 +55,7 @@ fn test_orchestrate_analyse_plan() {
     // Construct Devices
     let d16 = device::Devices::new(16, vec![8, 16]);
 
-    let mut c = orchestrate::SyncConductor::new_from_model_device(model, d16);
+    let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
     let A = c.compute_plan_sync(16, 1, false);
     let res = c.analyse_plan_sync(&A, c.m.perf.compute_times[0].len() as u32, 16, 1);
     println!("{:?}", res);
@@ -74,8 +74,31 @@ fn test_orchestrate_plan_straight() {
     // Construct Devices
     let d16 = device::Devices::new(16, vec![8, 16]);
 
-    let mut c = orchestrate::SyncConductor::new_from_model_device(model, d16);
+    let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
     println!("{:?}", c.plan_for(2, true));
+}
+
+#[test]
+fn test_orchestrate_plan_consistency() {
+    // Construct Model
+    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
+    let (perf, states) = (result.0.unwrap(), result.1.unwrap());
+    let mut model = model::Model::new_from_model_perf(perf, states, 1, 128);
+    model.optimizer_memory_scaling = 3;
+    model.peak_activation_per_batch = 3942774528.0;
+    model.min_micro_batch_size = 1;
+    // Construct Devices
+    let d16 = device::Devices::new(16, vec![8, 16]);
+
+    let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
+    let mut planning_results: Vec<orchestrate_async::AsyncOrchestrateResult> = vec![];
+    for _ in 0..5 {
+        planning_results.push(c.plan_for(2, true));
+    }
+    for i in 0..planning_results.len() {
+        println!("Try #{} -> {:?}", i, planning_results[i]);
+    }
 }
 
 #[test]
@@ -91,6 +114,6 @@ fn test_orchestrate_orchestrate() {
     // Construct Devices
     let d16 = device::Devices::new(16, vec![8, 16]);
 
-    let mut c = orchestrate::SyncConductor::new_from_model_device(model, d16);
+    let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
     c.orchestrate();
 }
