@@ -3,6 +3,7 @@
 #![allow(non_snake_case)]
 
 extern crate itertools;
+extern crate ordered_float;
 extern crate pyo3;
 extern crate rayon;
 

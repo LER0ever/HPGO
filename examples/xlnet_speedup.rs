@@ -1,7 +1,9 @@
 #![allow(non_snake_case)]
 
 extern crate HPGO;
+extern crate ordered_float;
 extern crate rayon;
+use ordered_float::OrderedFloat;
 use rayon::prelude::*;
 use std::collections::BTreeSet;
 use HPGO::analysis::*;
@@ -13,10 +15,15 @@ use HPGO::parallelism::*;
 
 fn test_xlnet_speedup_at_all_bs() {
     // GBS
-    let mut gbs = vec![1, 2, 4, 8, 16, 32, 64];
-    for i in 1..((2048 - 64) / 64) {
-        gbs.push(64 + i * 64);
+    let mut gbs = vec![1, 2, 4, 8];
+    for i in 1..((2048 - 8) / 4) {
+        gbs.push(8 + i * 4);
     }
+    // let mut gbs = vec![1, 2, 4, 8, 16, 32, 64];
+    // for i in 1..((2048 - 64) / 64) {
+    //     gbs.push(64 + i * 64);
+    // }
+
     // Compute Max Batch Size in Parallel
     let res: Vec<_> = gbs
         .par_iter()
@@ -36,6 +43,8 @@ fn test_xlnet_speedup_at_all_bs() {
             // let dp_p3_speedup = data_parallel::dp_p3_speedup(&d16, &model);
             let dp_cur_ga_p3_speedup = gradient_accumulation::dp_cur_ga_p3_speedup(&d16, &model);
             let dp_opt_ga_p3_speedup = gradient_accumulation::dp_opt_ga_p3_speedup(&d16, &model);
+            let dp_cur_ga_inner_overlap_speedup =
+                gradient_accumulation::dp_cur_ga_inner_overlap_speedup(&d16, &model);
             // Hybrid Parallelism Speedups
             let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
             c.orchestrate();
@@ -83,13 +92,13 @@ fn test_xlnet_speedup_at_all_bs() {
             let straight_res = c.plan_for(c.d.num_gpus, true);
             let straight_speedup = straight_res.speedup;
 
-            // Select best HP result
-            for s in c.res {
-                if s.speedup > pipeline_speedup {
-                    pipeline_speedup = s.speedup;
-                    pipeline_stages = s.stages;
-                }
-            }
+            let best_hp = c
+                .res
+                .into_par_iter()
+                .max_by_key(|r| OrderedFloat(r.speedup))
+                .unwrap();
+            pipeline_speedup = best_hp.speedup;
+            pipeline_stages = best_hp.stages;
 
             // NOTE: the following block is not thread-safe
             // let pipeline_speedup = c.res.par_iter().map(|s| {
@@ -102,18 +111,21 @@ fn test_xlnet_speedup_at_all_bs() {
                     dp_speedup,
                     dp_cur_ga_p3_speedup,
                     dp_opt_ga_p3_speedup,
-                    pipeline_speedup,
+                    dp_cur_ga_inner_overlap_speedup,
                     two_stage_speedup_1,
                     two_stage_speedup_2,
                     straight_speedup,
+                    pipeline_speedup,
+                    pipeline_stages,
                 ),
             )
         })
         .collect();
 
+    println!("Global Batch Size, DP No Overlap, DP + Uniform GA + P3, DP + Optimal GA + P3, DP + Uniform GA + Normal Overlap, DAPPLE 1:1 [0-11 ; 11-28], DAPPLE 1:1 POC [0-15 ; 15-28], Straight, Best Hybrid Speedup | Best Hybrid Solution");
     for i in res {
         println!(
-            "{}, {}, {}, {}, {}, {}, {}, {}",
+            "{}, {}, {}, {}, {}, {}, {}, {}, {} | {:?}",
             i.0,
             (i.1).0,
             (i.1).1,
@@ -122,6 +134,9 @@ fn test_xlnet_speedup_at_all_bs() {
             (i.1).4,
             (i.1).5,
             (i.1).6,
+            (i.1).7,
+            (i.1).8,
+            // (i.1).7,
         );
     }
 }

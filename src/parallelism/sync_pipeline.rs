@@ -42,7 +42,17 @@ pub fn sync_pipeline_speedup(
         return 0.0;
     }
     if VERBOSE {
-        println!("[sync_pipeline] using m_batch = {}", m_batch);
+        println!("[sync_pipeline]\t using m_batch = {}", m_batch);
+    }
+
+    if VERBOSE {
+        for i in 0..p.len() {
+            println!(
+                "[sync_pipeline]\t Stage {} compute time: {}",
+                i,
+                compute_times[p[i].0 as usize][p[i].1 as usize] / p[i].2 as f64 / rp as f64
+            );
+        }
     }
 
     let block_time = pipeline_time / m_batch as f64;
@@ -51,12 +61,12 @@ pub fn sync_pipeline_speedup(
 
     if VERBOSE {
         println!(
-            "[sync_pipeline] block_time = {} | total/rp/m_batch = {}",
+            "[sync_pipeline]\t block_time = {} | total/rp/m_batch = {}",
             block_time,
             total_compute_time / rp as f64 / m_batch as f64
         );
         println!(
-            "[sync_pipeline] pipeline length without DP: {}",
+            "[sync_pipeline]\t pipeline length without DP: {}",
             pipeline_length_wout_dp
         );
     }
@@ -67,7 +77,7 @@ pub fn sync_pipeline_speedup(
             output_activation_sizes[(p[i].1 - 1) as usize] / rp as f64 / m_batch as f64;
         if VERBOSE {
             println!(
-                "[sync_pipeline] cut_activations for stage {} ~ {} = {}, with original value = {}",
+                "[sync_pipeline]\t cut_activations for stage {} ~ {} = {}, with original value = {}",
                 i,
                 i + 1,
                 cut_activations,

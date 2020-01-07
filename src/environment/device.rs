@@ -12,7 +12,7 @@ pub struct ReturnDevices {
 }
 
 /// Allocation Strategy used to allocate requested new cards
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum AllocationStrategy {
     FreshFirst,
     AppendFirst,
@@ -228,7 +228,7 @@ impl Devices {
         return t_ret;
     }
 
-    fn next_cards_with_replica_helper(
+    pub fn next_cards_with_replica_helper(
         &self,
         bs: Vec<bool>,
         need: u32,

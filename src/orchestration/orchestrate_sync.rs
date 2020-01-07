@@ -164,12 +164,10 @@ impl SyncOrchestrate {
                         MatrixCell {
                             current_value: None,
                             current_maxmin_block: Some(
-                                f64::max((cur_compute_time) / (m + 1) as f64 / rp as f64 / mb_f64, 0.0)
-                                    + data_parallel::all_reduce_time(
-                                        d,
-                                        &n.gids,
-                                        cur_parameter_size,
-                                    ),
+                                f64::max(
+                                    (cur_compute_time) / (m + 1) as f64 / rp as f64 / mb_f64,
+                                    0.0,
+                                ) + data_parallel::all_reduce_time(d, &n.gids, cur_parameter_size),
                             ),
                             optimal_split: None,
                             num_gpus_used: Some(m + 1),
@@ -182,12 +180,10 @@ impl SyncOrchestrate {
                         MatrixCell {
                             current_value: None,
                             current_maxmin_block: Some(
-                                f64::max((cur_compute_time) / (m + 1) as f64 / rp as f64 / mb_f64, 0.0)
-                                    + data_parallel::all_reduce_time(
-                                        d,
-                                        &n.gids,
-                                        cur_parameter_size,
-                                    ),
+                                f64::max(
+                                    (cur_compute_time) / (m + 1) as f64 / rp as f64 / mb_f64,
+                                    0.0,
+                                ) + data_parallel::all_reduce_time(d, &n.gids, cur_parameter_size),
                             ),
                             optimal_split: None,
                             num_gpus_used: Some(m + 1),
@@ -297,12 +293,13 @@ impl SyncOrchestrate {
                                 let from = &cell.gpu_ids;
                                 let to = &nbs.gids;
 
-                                let mut input_transfer_time = split_concat::split_concat_all2all_time(
-                                    d,
-                                    from,
-                                    to,
-                                    2.0 * output_activation_sizes[*k as usize],
-                                );
+                                let mut input_transfer_time =
+                                    split_concat::split_concat_all2all_time(
+                                        d,
+                                        from,
+                                        to,
+                                        2.0 * output_activation_sizes[*k as usize],
+                                    );
                                 input_transfer_time /= mb_f64;
 
                                 let mut last_stage_time = compute_times[*k as usize + 1][j];
@@ -376,7 +373,7 @@ impl SyncOrchestrate {
                                 );
 
                                 // FPL Max with previous DP result
-                                
+
                                 if !A[*k as usize][(m - mp) as usize].borrow().contains_key(&ph)
                                     || A[*k as usize][(m - mp) as usize]
                                         .borrow()
@@ -387,21 +384,23 @@ impl SyncOrchestrate {
                                 {
                                     continue;
                                 }
-                                
-                                
+
                                 let fpl_time = f64::max(
                                     A[*k as usize][(m - mp) as usize]
-                                    .borrow()
-                                    .get(bs)
-                                    .unwrap()
-                                    .current_value
-                                    .unwrap(),
+                                        .borrow()
+                                        .get(bs)
+                                        .unwrap()
+                                        .current_value
+                                        .unwrap(),
                                     cur_fpl,
                                 );
 
                                 if optimal_value.is_none() || fpl_time < optimal_value.unwrap() {
                                     if VERBOSE {
-                                        println!("[orchestrate]\t fpl_time {} < optimal_value, updating", fpl_time);
+                                        println!(
+                                            "[orchestrate]\t fpl_time {} < optimal_value, updating",
+                                            fpl_time
+                                        );
                                     }
                                     optimal_value = Some(fpl_time);
                                     optimal_split = Some((*k, m - mp));
@@ -411,7 +410,10 @@ impl SyncOrchestrate {
                                 }
 
                                 if VERBOSE {
-                                    println!("[orchestrate]\t Current FPL = {}, FPL Time = {}", cur_fpl, fpl_time);
+                                    println!(
+                                        "[orchestrate]\t Current FPL = {}, FPL Time = {}",
+                                        cur_fpl, fpl_time
+                                    );
                                 }
 
                                 if !cur_A_bt.contains_key(&nbs.occupied)

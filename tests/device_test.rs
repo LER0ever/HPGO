@@ -90,9 +90,33 @@ fn test_next_cards_with_replica() {
     t_next_cards(&d8, &[0, 0, 0, 0, 0, 0, 0, 0], 4, 2, vec![]);
     let d16 = device::Devices::new(16, vec![8, 16]);
     println!("request 8 cards from a new 2m16g environment, twice");
-    t_next_cards(&d16, &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 8, 1, vec![]);
-    t_next_cards(&d16, &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 8, 1, vec![]);
+    t_next_cards(
+        &d16,
+        &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        8,
+        1,
+        vec![],
+    );
+    t_next_cards(
+        &d16,
+        &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        8,
+        1,
+        vec![],
+    );
     println!("request 4x3 cards from a new 2m16g environment, twice");
-    t_next_cards(&d16, &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 4, 3, vec![]);
-    t_next_cards(&d16, &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 4, 3, vec![]);
+    t_next_cards(
+        &d16,
+        &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        4,
+        3,
+        vec![],
+    );
+    t_next_cards(
+        &d16,
+        &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        4,
+        3,
+        vec![],
+    );
 }
