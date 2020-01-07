@@ -31,10 +31,10 @@ pub struct OverlapStats {
 }
 
 pub fn p3(d: &device::Devices, m: &model::Model) -> OverlapStats {
-    p3_partial(d, m, 1.0)
+    cc_overlap_partial(d, m, true, 1.0)
 }
 
-pub fn p3_partial(d: &device::Devices, m: &model::Model, partial: f64) -> OverlapStats {
+pub fn cc_overlap_partial(d: &device::Devices, m: &model::Model, inter_batch: bool, partial: f64) -> OverlapStats {
     assert_eq!((partial <= 1.0 && partial >= 0.0), true);
     let mut ds: DataStats = DataStats {
         blocks: vec![],
@@ -69,12 +69,15 @@ pub fn p3_partial(d: &device::Devices, m: &model::Model, partial: f64) -> Overla
         // println!("std_available_time: {} - {}", b.available_time, cur_ts);
         b.std_available_time = b.available_time - cur_ts;
     }
-    cur_ts = 0.0;
-    for i in 0..m.layers.len() {
-        cur_ts += &m.layers[i].compute_time * partial / 2.0; // TODO: Fwd Time
-        ds.blocks[i].need_time = cur_ts;
-        ds.blocks[i].comp_time = &m.layers[i].compute_time * partial / 2.0;
+    if inter_batch {
+        cur_ts = 0.0;
+        for i in 0..m.layers.len() {
+            cur_ts += &m.layers[i].compute_time * partial / 2.0; // TODO: Fwd Time
+            ds.blocks[i].need_time = cur_ts;
+            ds.blocks[i].comp_time = &m.layers[i].compute_time * partial / 2.0;
+        }
     }
+    
     // println!("DS: {:?}", ds);
 
     ds.blocks[n - 1].drift_back += ds.blocks[n - 1].ETA;
