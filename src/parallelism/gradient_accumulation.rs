@@ -44,31 +44,27 @@ pub fn optimal_ga_iter_size(d: &device::Devices, m: &model::Model) -> u32 {
 }
 
 pub fn dp_cur_ga_p3_speedup(d: &device::Devices, m: &model::Model) -> f64 {
-    let comp_time = m.perf.compute_times[0][m.perf.compute_times[0].len() - 1];
-    let gbs = m.global_batch_size;
-    let cur_max_bs = current_ga_iter_size(d, m);
-    let partial: f64 = cur_max_bs as f64 / gbs as f64;
-
-    let p3stats = cc_overlap::cc_overlap_partial(d, m, true, partial);
-    comp_time / (comp_time / d.num_gpus as f64 + p3stats.offset)
+    dp_ga_overlap_speedup(d, m, current_ga_iter_size(d, m), true)
 }
 
 pub fn dp_opt_ga_p3_speedup(d: &device::Devices, m: &model::Model) -> f64 {
-    let comp_time = m.perf.compute_times[0][m.perf.compute_times[0].len() - 1];
-    let gbs = m.global_batch_size;
-    let opt_max_bs = optimal_ga_iter_size(d, m);
-    let partial: f64 = opt_max_bs as f64 / gbs as f64;
-
-    let p3stats = cc_overlap::cc_overlap_partial(d, m, true, partial);
-    comp_time / (comp_time / d.num_gpus as f64 + p3stats.offset)
+    dp_ga_overlap_speedup(d, m, optimal_ga_iter_size(d, m), true)
 }
 
 pub fn dp_cur_ga_inner_overlap_speedup(d: &device::Devices, m: &model::Model) -> f64 {
+    dp_ga_overlap_speedup(d, m, current_ga_iter_size(d, m), false)
+}
+
+pub fn dp_ga_overlap_speedup(
+    d: &device::Devices,
+    m: &model::Model,
+    ga_size: u32,
+    inter_batch_overlap: bool,
+) -> f64 {
     let comp_time = m.perf.compute_times[0][m.perf.compute_times[0].len() - 1];
     let gbs = m.global_batch_size;
-    let cur_max_bs = current_ga_iter_size(d, m);
-    let partial: f64 = cur_max_bs as f64 / gbs as f64;
+    let partial: f64 = ga_size as f64 / gbs as f64;
 
-    let overlap_stats = cc_overlap::cc_overlap_partial(d, m, false, partial);
+    let overlap_stats = cc_overlap::cc_overlap_partial(d, m, inter_batch_overlap, partial);
     comp_time / (comp_time / d.num_gpus as f64 + overlap_stats.offset)
 }

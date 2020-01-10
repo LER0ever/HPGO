@@ -32,6 +32,7 @@ pub type Matrix = Vec<Vec<RefCell<BTreeMap<bitset, MatrixCell>>>>;
 pub struct AsyncOrchestrateResult {
     pub speedup: f64,
     pub stages: Vec<(u32, u32, u32, BTreeSet<u32>)>,
+    pub rp: u32,
 }
 
 /// Conductor for Synchronous Pipeline
@@ -191,77 +192,6 @@ impl AsyncOrchestrate {
                         gpu_ids: n.gids,
                     },
                 );
-                // }
-                /*
-                if cur_compute_time < -0.5 {
-                    // A[j][m][ph] =
-                    A[j][m as usize].get_mut().insert(
-                        ph.clone(),
-                        MatrixCell {
-                            current_value: None,
-                            current_maxmin_block: None,
-                            optimal_split: None,
-                            num_gpus_used: None,
-                            availability_bitset: ph.clone(),
-                            gpu_ids: BTreeSet::new(),
-                        },
-                    );
-                    A[j][m as usize].get_mut().insert(
-                        n.occupied.clone(),
-                        MatrixCell {
-                            current_value: None,
-                            current_maxmin_block: None,
-                            optimal_split: None,
-                            num_gpus_used: None,
-                            availability_bitset: ph.clone(),
-                            gpu_ids: n.gids,
-                        },
-                    );
-                } else {
-                    if VERBOSE {
-                        println!(
-                            "[orchestrate]\t checking DP allreduce time for {:?}: {}",
-                            &n.gids,
-                            data_parallel::all_reduce_time(d, &n.gids, cur_parameter_size)
-                        );
-                    }
-                    A[j][m as usize].get_mut().insert(
-                        ph.clone(),
-                        MatrixCell {
-                            current_value: None,
-                            current_maxmin_block: Some(
-                                f64::max((cur_compute_time) / (m + 1) as f64 / rp as f64, 0.0)
-                                    + data_parallel::all_reduce_time(
-                                        d,
-                                        &n.gids,
-                                        cur_parameter_size,
-                                    ),
-                            ),
-                            optimal_split: None,
-                            num_gpus_used: Some(m + 1),
-                            availability_bitset: empty.clone(),
-                            gpu_ids: n.gids.clone(),
-                        },
-                    );
-                    A[j][m as usize].get_mut().insert(
-                        n.occupied.clone(),
-                        MatrixCell {
-                            current_value: None,
-                            current_maxmin_block: Some(
-                                f64::max((cur_compute_time) / (m + 1) as f64 / rp as f64, 0.0)
-                                    + data_parallel::all_reduce_time(
-                                        d,
-                                        &n.gids,
-                                        cur_parameter_size,
-                                    ),
-                            ),
-                            optimal_split: None,
-                            num_gpus_used: Some(m + 1),
-                            availability_bitset: empty.clone(),
-                            gpu_ids: n.gids,
-                        },
-                    );
-                } */
             }
         }
 
@@ -311,7 +241,7 @@ impl AsyncOrchestrate {
                     cur_A.gpu_ids.clone(),
                 );
 
-                for k in sorted(all_predecessor_ids[j].iter()) {
+                for k in all_predecessor_ids[j].iter() {
                     if VERBOSE {
                         println!("[orchestrate]\t m = {}, j = {}, k = {}", m, j, k);
                     }
@@ -499,70 +429,94 @@ impl AsyncOrchestrate {
 
     pub fn compute_bipartition(&self) -> AsyncOrchestrateResult {
         let compute_times = &self.m.perf.compute_times;
-        let activation_sizes = &self.m.perf.activation_sizes;
         let output_activation_sizes = &self.m.perf.output_activation_sizes;
-        let parameter_sizes = &self.m.perf.parameter_sizes;
         let all_predecessor_ids = &self.m.perf.all_predecessor_ids;
         let d = &self.d;
-        let num_machines = d.num_gpus / 2;
         let L = compute_times[0].len() as u32;
 
-        let mut empty: bitset = vec![];
-        for _ in 0..d.num_gpus {
-            empty.push(false);
-        }
+        let empty: bitset = vec![false; d.num_gpus as usize];
 
-        let bicards: Vec<(device::ReturnDevices, device::ReturnDevices)> = d
-            .next_cards_with_replica_helper(empty, num_machines, 2)
-            .par_iter()
-            .map(move |v| (v[0].clone(), v[1].clone()))
-            .collect();
+        // let bicards: Vec<(device::ReturnDevices, device::ReturnDevices)> = d
+        //     .next_cards_with_replica_helper(empty, num_machines, 2)
+        //     .par_iter()
+        //     .map(move |v| (v[0].clone(), v[1].clone()))
+        //     .collect();
 
+        let vec_gpus: Vec<u32> = (1..d.num_gpus).collect();
         let vec_layers: Vec<u32> = (0..L - 1).collect();
         let res: Vec<_> = vec_layers
             .par_iter()
-            .map(move |l| {
-                let res_inner: Vec<_> = bicards
+            .map(|l| {
+                let res_inner: Vec<_> = vec_gpus
                     .par_iter()
-                    .map(|(g1, g2)| {
-                        if VERBOSE {
-                            println!("[orchestrate]\t Planning for Layer {}", *l);
-                        }
-                        let comp_times = f64::max(
-                            compute_times[0][*l as usize] / g1.gids.len() as f64,
-                            compute_times[*l as usize + 1][L as usize - 1] / g1.gids.len() as f64,
-                        );
-                        let comm_times = split_concat::split_concat_all2all_time(
-                            &self.d,
-                            &g1.gids,
-                            &g2.gids,
-                            output_activation_sizes[*l as usize],
-                        );
-                        let ppl_time = f64::max(comp_times, comm_times);
-                        let p = vec![
-                            (0, l + 1, g1.gids.len() as u32, g1.gids.clone()),
-                            (l + 1, L - 1, g2.gids.len() as u32, g2.gids.clone()),
-                        ];
-                        let res_speedup = sync_pipeline::sync_pipeline_speedup(
-                            &self.d,
-                            &self.m,
-                            2,
-                            ppl_time,
-                            p.clone(),
-                        );
-                        if VERBOSE {
-                            println!("[orchestrate]\n P = {:?}\nSpeedup = {}", p, res_speedup);
-                        }
-                        AsyncOrchestrateResult {
-                            speedup: res_speedup,
-                            stages: p,
-                        }
+                    .map(|g| {
+                        let empty = vec![false; d.num_gpus as usize];
+                        let first_round = d.next_cards(empty, *g);
+                        let res_g1: Vec<_> = first_round
+                            .par_iter()
+                            .map(|g1| {
+                                let cur_bs = g1.occupied.clone();
+                                let sub_sr = d.next_cards(cur_bs, d.num_gpus - *g);
+                                let res_g2: Vec<_> = sub_sr
+                                    .par_iter()
+                                    .map(|g2| {
+                                        if VERBOSE {
+                                            println!("[orchestrate]\t Planning for Layer {}", *l);
+                                        }
+                                        let comp_times = f64::max(
+                                            compute_times[0][*l as usize] / g1.gids.len() as f64,
+                                            compute_times[*l as usize + 1][L as usize - 1]
+                                                / g2.gids.len() as f64,
+                                        );
+                                        let comm_times = split_concat::split_concat_all2all_time(
+                                            &self.d,
+                                            &g1.gids,
+                                            &g2.gids,
+                                            output_activation_sizes[*l as usize],
+                                        );
+                                        let ppl_time = f64::max(comp_times, comm_times);
+                                        let p = vec![
+                                            (0, l + 1, g1.gids.len() as u32, g1.gids.clone()),
+                                            (l + 1, L - 1, g2.gids.len() as u32, g2.gids.clone()),
+                                        ];
+                                        let res_speedup = sync_pipeline::sync_pipeline_speedup_analytical(
+                                            &self.d,
+                                            &self.m,
+                                            1,
+                                            ppl_time,
+                                            p.clone(),
+                                        );
+                                        if VERBOSE {
+                                            println!(
+                                                "[orchestrate]\n P = {:?}\nSpeedup = {}",
+                                                p, res_speedup
+                                            );
+                                        }
+                                        AsyncOrchestrateResult {
+                                            speedup: res_speedup,
+                                            stages: p,
+                                            rp: 1,
+                                        }
+                                    })
+                                    .collect();
+                                res_g2
+                            })
+                            .collect();
+                        res_g1
                     })
                     .collect();
+                // let res_inner: Vec<_> = bicards
+                //     .par_iter()
+                //     .map(|(g1, g2)| {
+                //     })
+                //     .collect();
                 res_inner
             })
             .collect();
-        let flattened_res: Vec<AsyncOrchestrateResult> = res.into_iter().flatten().collect();
+        // we're working with a 4-dimensional array, flattening it to 1d.
+        // NOTE: potential bottleneck for flatten
+        let flattened_res: Vec<AsyncOrchestrateResult> =
+            res.into_iter().flatten().flatten().flatten().collect();
         let best_result = flattened_res
             .into_par_iter()
             .max_by_key(|r| OrderedFloat(r.speedup))
@@ -579,9 +533,15 @@ impl AsyncOrchestrate {
         let num_gpus = self.d.num_gpus;
         // 2 <= i <= num_gpus
         let rp = num_gpus / i;
-        // println!("Planning for {} x {}, {}", i, rp, straight);
+        if VERBOSE {
+            println!("Planning for {} x {}, {}", i, rp, straight);
+        }
+        
         let A = self.compute_plan_sync(i, rp, straight);
-        // println!("Planning Done");
+        if VERBOSE{
+            println!("Planning Done");
+        }
+        
 
         let mut ph: bitset = vec![];
         for _ in 0..i * rp + 1 {
@@ -595,6 +555,9 @@ impl AsyncOrchestrate {
         }
         let pipeline_block_bt = A[self.m.perf.compute_times[0].len() - 1][i as usize - 1].borrow();
         let pipeline_block = pipeline_block_bt.get(&ph).unwrap();
+        if VERBOSE {
+            println!("Accessing A[{}][{}][{:?}]", self.m.perf.compute_times[0].len() - 1, i as usize - 1, ph);
+        }
         let pipeline_time = pipeline_block.current_maxmin_block.unwrap();
         if pipeline_time < 0.001 {
             panic!("ppl time error");
@@ -605,10 +568,11 @@ impl AsyncOrchestrate {
 
         let res = self.analyse_plan_sync(&A, self.m.perf.compute_times[0].len() as u32, i, rp);
         let res_speedup =
-            sync_pipeline::sync_pipeline_speedup(&self.d, &self.m, rp, pipeline_time, res.clone());
+            sync_pipeline::sync_pipeline_speedup_analytical(&self.d, &self.m, rp, pipeline_time, res.clone());
         AsyncOrchestrateResult {
             speedup: res_speedup,
             stages: res,
+            rp: rp,
         }
     }
 
@@ -679,14 +643,16 @@ impl Orchestrate for AsyncOrchestrate {
             .collect();
 
         let mut straight_vec: Vec<u32> = vec![];
-        if num_gpus > 2 {
+        if num_gpus > 2 && num_gpus % 2 == 0 {
             straight_vec.push(2); // 1:1
             straight_vec.push(num_gpus); // all straight
         } else {
             straight_vec.push(num_gpus); // all straight
         }
 
-        // println!("Appending Orchestration for {:?}", straight_vec);
+        if VERBOSE {
+            println!("Appending Orchestration for {:?}", straight_vec);
+        }
 
         let result_straight: Vec<_> = straight_vec
             .par_iter()

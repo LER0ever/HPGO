@@ -25,5 +25,5 @@ pub mod orchestration;
 /// HPGO Parallelism Definitions and Helpers
 pub mod parallelism;
 
-/// HPGO Python API
-pub mod pylib;
+/// HPGO Public API: C & Python
+pub mod api;

@@ -40,8 +40,14 @@ impl ModelImporter for TorchGraphImporter {
             Vec<Vec<u32>>,
         ) = graph
             .call1("prepare", (filename,))
+            .map_err(|e| {
+                e.print_and_set_sys_last_vars(py);
+            })
             .unwrap()
             .extract()
+            .map_err(|e| {
+                e.print_and_set_sys_last_vars(py);
+            })
             .unwrap();
         // TODO: no error handling at all
 

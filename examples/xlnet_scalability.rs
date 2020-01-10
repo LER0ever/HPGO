@@ -16,25 +16,33 @@ use HPGO::parallelism::*;
 
 fn test_bert_speedup_at_all_bs() {
     // GBS
-    let mut gbs = vec![1, 2, 4, 8, 16];
-    for i in 1..((256 - 16) / 8) + 1 {
-        gbs.push(16 + i * 8);
+    let gbs = 128;
+    let mut d: Vec<Vec<u32>> = vec![];
+    for i in 2..33 {
+        let mut cur_d: Vec<u32> = vec![i];
+        if i > 24 {cur_d.insert(0, 24);}
+        if i > 16 {cur_d.insert(0, 16);}
+        if i > 8 {cur_d.insert(0, 8);}
+        d.push(cur_d);
     }
 
+    println!("D Matrix: {:?}", d);
+
     // Compute Max Batch Size in Parallel
-    let res: Vec<_> = gbs
+    let res: Vec<_> = d
         .par_iter()
-        .map(|(gbs)| {
+        .map(|(cur_d)| {
+            
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-            let mut model = model::Model::new_from_model_perf(perf, states, 1, *gbs);
+            let mut model = model::Model::new_from_model_perf(perf, states, 1, gbs);
             model.optimizer_memory_scaling = 3;
             model.peak_activation_per_batch = 3942774528.0 * 1.5; // don't have data for XLNet-36, use 24 * 1.5
             model.min_micro_batch_size = 1;
             // Construct Devices
-            let d16 = device::Devices::new(16, vec![8, 16]);
+            let d16 = device::Devices::new(cur_d[cur_d.len()-1], cur_d.to_vec());
 
             // DP Speedups
             let dp_speedup = data_parallel::dp_speedup(&d16, &model);
@@ -43,12 +51,10 @@ fn test_bert_speedup_at_all_bs() {
             let dp_ga_inner_overlap_speedup =
                 gradient_accumulation::dp_cur_ga_inner_overlap_speedup(&d16, &model);
 
-            let model_cloned = model.clone();
-            let d16_cloned = d16.clone();
-
             let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
             // Straight Pipeline
-            let res_straight = c.plan_for(16, true);
+            println!("Planning for {}", cur_d[cur_d.len()-1]);
+            let res_straight = c.plan_for(cur_d[cur_d.len()-1], true);
             let straight_speedup = res_straight.speedup;
 
             // Hybrid Parallelism Speedups
@@ -69,33 +75,25 @@ fn test_bert_speedup_at_all_bs() {
             let pipeline_speedup = best_hp.speedup;
             let pipeline_stages = best_hp.stages;
 
-            let pipeline_recursive_speedup = sync_pipeline::sync_pipeline_speedup_recursive(
-                &d16_cloned,
-                &model_cloned,
-                best_hp.rp,
-                pipeline_stages.clone(),
-            );
-
             // return gbs and all speedups
             (
-                gbs,
+                cur_d[cur_d.len()-1],
                 (
                     dp_speedup,
                     dp_ga_p3_speedup,
                     dp_ga_inner_overlap_speedup,
                     straight_speedup,
                     pipeline_speedup,
-                    pipeline_recursive_speedup,
                     pipeline_stages,
                 ),
             )
         })
         .collect();
 
-    println!("Global Batch Size, DP No Overlap, DP+P3, DP+Normal Overlap, Straight Speedup, Best Hybrid Speedup, Best Hybrid Speedup (recursive) | Best Hybrid Solution");
+    println!("Num of GPU, DP No Overlap, DP+P3, DP+Normal Overlap, Straight Speedup, Best Hybrid Speedup | Best Hybrid Solution");
     for i in res {
         println!(
-            "{}, {}, {}, {}, {}, {}, {} | {:?}",
+            "{}, {}, {}, {}, {}, {} | {:?}",
             i.0,
             (i.1).0,
             (i.1).1,
@@ -103,7 +101,6 @@ fn test_bert_speedup_at_all_bs() {
             (i.1).3,
             (i.1).4,
             (i.1).5,
-            (i.1).6,
             // (i.1).7,
         );
     }

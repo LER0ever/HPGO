@@ -16,9 +16,9 @@ use HPGO::parallelism::*;
 
 fn test_bert_speedup_at_all_bs() {
     // GBS
-    let mut gbs = vec![1, 2, 4, 8, 16];
-    for i in 1..((256 - 16) / 8) + 1 {
-        gbs.push(16 + i * 8);
+    let mut gbs = vec![32, 64];
+    for i in 1..((4096 - 64) / 32) + 1 {
+        gbs.push(64 + i * 32);
     }
 
     // Compute Max Batch Size in Parallel
@@ -27,11 +27,11 @@ fn test_bert_speedup_at_all_bs() {
         .map(|(gbs)| {
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-            let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
+            let result = tgi.ImportFrom(&["./profiles/", "amoebanet", "/amoebanet18.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-            let mut model = model::Model::new_from_model_perf(perf, states, 1, *gbs);
+            let mut model = model::Model::new_from_model_perf(perf, states, 2, *gbs);
             model.optimizer_memory_scaling = 3;
-            model.peak_activation_per_batch = 3942774528.0 * 1.5; // don't have data for XLNet-36, use 24 * 1.5
+            model.peak_activation_per_batch = 1736689664.0;
             model.min_micro_batch_size = 1;
             // Construct Devices
             let d16 = device::Devices::new(16, vec![8, 16]);
@@ -43,38 +43,19 @@ fn test_bert_speedup_at_all_bs() {
             let dp_ga_inner_overlap_speedup =
                 gradient_accumulation::dp_cur_ga_inner_overlap_speedup(&d16, &model);
 
-            let model_cloned = model.clone();
-            let d16_cloned = d16.clone();
-
-            let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
-            // Straight Pipeline
-            let res_straight = c.plan_for(16, true);
-            let straight_speedup = res_straight.speedup;
-
             // Hybrid Parallelism Speedups
+            let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
             c.orchestrate();
+            let mut pipeline_speedup = 0.0;
+            let mut pipeline_stages: Vec<(u32, u32, u32, BTreeSet<u32>)> = vec![];
 
             let best_hp = c
                 .res
                 .into_par_iter()
-                .max_by_key(|r| {
-                    if r.stages.len() == 1 {
-                        // throw away pseudo DPs
-                        OrderedFloat(0.0)
-                    } else {
-                        OrderedFloat(r.speedup)
-                    }
-                })
+                .max_by_key(|r| OrderedFloat(r.speedup))
                 .unwrap();
-            let pipeline_speedup = best_hp.speedup;
-            let pipeline_stages = best_hp.stages;
-
-            let pipeline_recursive_speedup = sync_pipeline::sync_pipeline_speedup_recursive(
-                &d16_cloned,
-                &model_cloned,
-                best_hp.rp,
-                pipeline_stages.clone(),
-            );
+            pipeline_speedup = best_hp.speedup;
+            pipeline_stages = best_hp.stages;
 
             // return gbs and all speedups
             (
@@ -83,27 +64,23 @@ fn test_bert_speedup_at_all_bs() {
                     dp_speedup,
                     dp_ga_p3_speedup,
                     dp_ga_inner_overlap_speedup,
-                    straight_speedup,
                     pipeline_speedup,
-                    pipeline_recursive_speedup,
                     pipeline_stages,
                 ),
             )
         })
         .collect();
 
-    println!("Global Batch Size, DP No Overlap, DP+P3, DP+Normal Overlap, Straight Speedup, Best Hybrid Speedup, Best Hybrid Speedup (recursive) | Best Hybrid Solution");
+    println!("Global Batch Size, DP No Overlap, DP+P3, DP+Normal Overlap, Best Hybrid Speedup, Best Hybrid Solution");
     for i in res {
         println!(
-            "{}, {}, {}, {}, {}, {}, {} | {:?}",
+            "{}, {}, {}, {}, {} | {:?}",
             i.0,
             (i.1).0,
             (i.1).1,
             (i.1).2,
             (i.1).3,
             (i.1).4,
-            (i.1).5,
-            (i.1).6,
             // (i.1).7,
         );
     }

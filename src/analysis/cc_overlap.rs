@@ -34,7 +34,12 @@ pub fn p3(d: &device::Devices, m: &model::Model) -> OverlapStats {
     cc_overlap_partial(d, m, true, 1.0)
 }
 
-pub fn cc_overlap_partial(d: &device::Devices, m: &model::Model, inter_batch: bool, partial: f64) -> OverlapStats {
+pub fn cc_overlap_partial(
+    d: &device::Devices,
+    m: &model::Model,
+    inter_batch: bool,
+    partial: f64,
+) -> OverlapStats {
     assert_eq!((partial <= 1.0 && partial >= 0.0), true);
     let mut ds: DataStats = DataStats {
         blocks: vec![],
@@ -77,7 +82,7 @@ pub fn cc_overlap_partial(d: &device::Devices, m: &model::Model, inter_batch: bo
             ds.blocks[i].comp_time = &m.layers[i].compute_time * partial / 2.0;
         }
     }
-    
+
     // println!("DS: {:?}", ds);
 
     ds.blocks[n - 1].drift_back += ds.blocks[n - 1].ETA;

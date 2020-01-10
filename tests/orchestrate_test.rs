@@ -1,8 +1,13 @@
 extern crate HPGO;
+extern crate ordered_float;
+extern crate rayon;
 use HPGO::environment::*;
 use HPGO::input::*;
 use HPGO::model::*;
 use HPGO::orchestration::*;
+use HPGO::parallelism::*;
+use ordered_float::OrderedFloat;
+use rayon::prelude::*;
 
 #[test]
 fn test_orchestrate_compute_plan() {
@@ -67,7 +72,7 @@ fn test_orchestrate_plan_straight() {
     let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
     let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-    let mut model = model::Model::new_from_model_perf(perf, states, 1, 24);
+    let mut model = model::Model::new_from_model_perf(perf, states, 1, 16);
     model.optimizer_memory_scaling = 3;
     model.peak_activation_per_batch = 3942774528.0;
     model.min_micro_batch_size = 1;
@@ -105,17 +110,30 @@ fn test_orchestrate_plan_consistency() {
 fn test_orchestrate_orchestrate() {
     // Construct Model
     let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-    let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
+    let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-    let mut model = model::Model::new_from_model_perf(perf, states, 1, 256);
+    let mut model = model::Model::new_from_model_perf(perf, states, 1, 16);
     model.optimizer_memory_scaling = 3;
-    model.peak_activation_per_batch = 3942774528.0;
+    model.peak_activation_per_batch = 3942774528.0 * 1.5;
     model.min_micro_batch_size = 1;
     // Construct Devices
-    let d16 = device::Devices::new(16, vec![8, 16]);
+    let d16 = device::Devices::new(4, vec![2,4]);
 
     let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
     c.orchestrate();
+    let best_hp = c
+                .res
+                .into_par_iter()
+                .max_by_key(|r| {
+                    if r.stages.len() == 1 {
+                        // throw away pseudo DPs
+                        OrderedFloat(0.0)
+                    } else {
+                        OrderedFloat(r.speedup)
+                    }
+                })
+                .unwrap();
+    println!("Best HP Speedup: {}, Stages: {:?}", best_hp.speedup, best_hp.stages);
 }
 
 #[test]
@@ -133,4 +151,43 @@ fn test_orchestrate_bipartition() {
 
     let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
     c.compute_bipartition();
+}
+
+#[test]
+fn test_orchestrate_sync_speedup() {
+    // Construct Model
+    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
+    let (perf, states) = (result.0.unwrap(), result.1.unwrap());
+    let mut model = model::Model::new_from_model_perf(perf, states, 1, 4);
+    model.optimizer_memory_scaling = 3;
+    model.peak_activation_per_batch = 3942774528.0 * 1.5;
+    model.min_micro_batch_size = 1;
+    // Construct Devices
+    let d16 = device::Devices::new(2, vec![1,2]);
+
+    let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
+    c.orchestrate();
+    let best_hp = c
+                .res
+                .into_par_iter()
+                .max_by_key(|r| {
+                    if r.stages.len() == 1 {
+                        // throw away pseudo DPs
+                        OrderedFloat(0.0)
+                    } else {
+                        OrderedFloat(r.speedup)
+                    }
+                })
+                .unwrap();
+    println!("Best HP Speedup: {}, Stages: {:?}", best_hp.speedup, best_hp.stages);
+
+    let pipeline_recursive_speedup = sync_pipeline::sync_pipeline_speedup_recursive(
+        &c.d,
+        &c.m,
+        best_hp.rp,
+        best_hp.stages.clone(),
+    );
+
+    println!("Best HP Speedup Recursive: {}", pipeline_recursive_speedup);
 }

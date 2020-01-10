@@ -42,7 +42,7 @@ fn conductor_from_torch_graph_and_seps(
 }
 
 #[pymodule]
-fn HPGO(py: Python, m: &PyModule) -> PyResult<()> {
+fn HPGO(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(model_from_torch_graph))?;
     m.add_wrapped(wrap_pyfunction!(devices_from_seps))?;
     m.add_wrapped(wrap_pyfunction!(conductor_from_torch_graph_and_seps))?;

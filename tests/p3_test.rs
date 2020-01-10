@@ -28,11 +28,21 @@ fn test_p3_for_all() {
     ];
     let res_p3: Vec<_> = models
         .par_iter()
-        .map(|&s| (s, t_p3_for(&["./profiles/", s, "/graph.txt"].join(""), true)))
+        .map(|&s| {
+            (
+                s,
+                t_p3_for(&["./profiles/", s, "/graph.txt"].join(""), true),
+            )
+        })
         .collect();
     let res_inner_batch: Vec<_> = models
         .par_iter()
-        .map(|&s| (s, t_p3_for(&["./profiles/", s, "/graph.txt"].join(""), false)))
+        .map(|&s| {
+            (
+                s,
+                t_p3_for(&["./profiles/", s, "/graph.txt"].join(""), false),
+            )
+        })
         .collect();
     println!();
     for i in res_p3 {
@@ -41,6 +51,9 @@ fn test_p3_for_all() {
 
     println!();
     for i in res_inner_batch {
-        println!("{}: Normal Overlap Speedup {:.5}%", i.0, i.1.speedup_percentage);
+        println!(
+            "{}: Normal Overlap Speedup {:.5}%",
+            i.0, i.1.speedup_percentage
+        );
     }
 }
