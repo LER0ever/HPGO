@@ -27,11 +27,11 @@ fn test_bert_speedup_at_all_bs() {
         .map(|(gbs)| {
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-            let result = tgi.ImportFrom(&["./profiles/", "amoebanet", "/amoebanet18.txt"].join(""));
+            let result = tgi.ImportFrom(&["./profiles/", "amoebanet_36", "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-            let mut model = model::Model::new_from_model_perf(perf, states, 2, *gbs);
+            let mut model = model::Model::new_from_model_perf(perf, states, 1, *gbs);
             model.optimizer_memory_scaling = 3;
-            model.peak_activation_per_batch = 1736689664.0;
+            model.peak_activation_per_batch = 250845152.0 * 3.0;
             model.min_micro_batch_size = 1;
             // Construct Devices
             let d16 = device::Devices::new(16, vec![8, 16]);

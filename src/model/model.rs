@@ -104,7 +104,7 @@ impl Model {
             m.layers.push(Layer {
                 id: Some(i as u32),
                 name: None,
-                desc: None,
+                desc: m.states[i].desc.clone(),
                 compute_time: m.perf.compute_times[i][i],
                 activation_size: m.perf.activation_sizes[i][i],
                 output_activation_size: m.perf.output_activation_sizes[i],

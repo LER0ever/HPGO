@@ -15,7 +15,7 @@ fn test_model_max_batch_size() {
         ("amoebanet", 8, 4, 250845152.0),
         ("bert_large", 2, 3, 1733171968.0),
         ("gnmt_large", 32, 3, -1.0),
-        // ("resnet50", 32),
+        ("amoebanet_36", 1, 3, 250845152.0 * 3.0), // ("resnet50", 32),
     ];
 
     // Compute Max Batch Size in Parallel
