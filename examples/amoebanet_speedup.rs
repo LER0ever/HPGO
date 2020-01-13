@@ -16,9 +16,9 @@ use HPGO::parallelism::*;
 
 fn test_bert_speedup_at_all_bs() {
     // GBS
-    let mut gbs = vec![32, 64];
-    for i in 1..((4096 - 64) / 32) + 1 {
-        gbs.push(64 + i * 32);
+    let mut gbs = vec![8, 16, 32];
+    for i in 1..((1024 - 32) / 32) + 1 {
+        gbs.push(32 + i * 32);
     }
 
     // Compute Max Batch Size in Parallel
@@ -27,14 +27,17 @@ fn test_bert_speedup_at_all_bs() {
         .map(|(gbs)| {
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-            let result = tgi.ImportFrom(&["./profiles/", "amoebanet_36", "/graph.txt"].join(""));
+            let result = tgi.ImportFrom(&["./profiles/", "amoebanet_18", "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-            let mut model = model::Model::new_from_model_perf(perf, states, 1, *gbs);
+            let mut model = model::Model::new_from_model_perf(perf, states, 8, *gbs);
             model.optimizer_memory_scaling = 3;
-            model.peak_activation_per_batch = 250845152.0 * 3.0;
+            model.peak_activation_per_batch = 250845152.0 * 1.5;
             model.min_micro_batch_size = 1;
             // Construct Devices
-            let d16 = device::Devices::new(16, vec![8, 16]);
+            let d16 = device::Devices::new(
+                16,
+                vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+            );
 
             // DP Speedups
             let dp_speedup = data_parallel::dp_speedup(&d16, &model);

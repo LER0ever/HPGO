@@ -16,12 +16,27 @@ use HPGO::parallelism::*;
 
 fn test_bert_speedup_at_all_bs() {
     // GBS
-    let gbs = 128;
+    let gbs = 256;
+    // let mut d: Vec<Vec<u32>> = vec![];
+    // for i in 2..16+1 {
+    //     let mut cur_d: Vec<u32> = vec![];
+    //     for j in 1..i+1 {
+    //         cur_d.push(j);
+    //     }
+    //     d.push(cur_d);
+    // }
+
     let mut d: Vec<Vec<u32>> = vec![];
-    for i in 2..16 + 1 {
-        let mut cur_d: Vec<u32> = vec![];
-        for j in 1..i + 1 {
-            cur_d.push(j);
+    for i in 2..17 {
+        let mut cur_d: Vec<u32> = vec![i];
+        if i > 24 {
+            cur_d.insert(0, 24);
+        }
+        if i > 16 {
+            cur_d.insert(0, 16);
+        }
+        if i > 8 {
+            cur_d.insert(0, 8);
         }
         d.push(cur_d);
     }
@@ -34,11 +49,11 @@ fn test_bert_speedup_at_all_bs() {
         .map(|(cur_d)| {
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-            let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
+            let result = tgi.ImportFrom(&["./profiles/", "amoebanet_36", "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, 1, gbs);
             model.optimizer_memory_scaling = 3;
-            model.peak_activation_per_batch = 3942774528.0 * 1.5; // don't have data for XLNet-36, use 24 * 1.5
+            model.peak_activation_per_batch = 250845152.0 * 3.0;
             model.min_micro_batch_size = 1;
             // Construct Devices
             let d16 = device::Devices::new(cur_d[cur_d.len() - 1], cur_d.to_vec());
