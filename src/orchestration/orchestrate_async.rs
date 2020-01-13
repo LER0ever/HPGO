@@ -479,13 +479,14 @@ impl AsyncOrchestrate {
                                             (0, l + 1, g1.gids.len() as u32, g1.gids.clone()),
                                             (l + 1, L - 1, g2.gids.len() as u32, g2.gids.clone()),
                                         ];
-                                        let res_speedup = sync_pipeline::sync_pipeline_speedup_analytical(
-                                            &self.d,
-                                            &self.m,
-                                            1,
-                                            ppl_time,
-                                            p.clone(),
-                                        );
+                                        let res_speedup =
+                                            sync_pipeline::sync_pipeline_speedup_analytical(
+                                                &self.d,
+                                                &self.m,
+                                                1,
+                                                ppl_time,
+                                                p.clone(),
+                                            );
                                         if VERBOSE {
                                             println!(
                                                 "[orchestrate]\n P = {:?}\nSpeedup = {}",
@@ -536,12 +537,11 @@ impl AsyncOrchestrate {
         if VERBOSE {
             println!("Planning for {} x {}, {}", i, rp, straight);
         }
-        
+
         let A = self.compute_plan_sync(i, rp, straight);
-        if VERBOSE{
+        if VERBOSE {
             println!("Planning Done");
         }
-        
 
         let mut ph: bitset = vec![];
         for _ in 0..i * rp + 1 {
@@ -556,7 +556,12 @@ impl AsyncOrchestrate {
         let pipeline_block_bt = A[self.m.perf.compute_times[0].len() - 1][i as usize - 1].borrow();
         let pipeline_block = pipeline_block_bt.get(&ph).unwrap();
         if VERBOSE {
-            println!("Accessing A[{}][{}][{:?}]", self.m.perf.compute_times[0].len() - 1, i as usize - 1, ph);
+            println!(
+                "Accessing A[{}][{}][{:?}]",
+                self.m.perf.compute_times[0].len() - 1,
+                i as usize - 1,
+                ph
+            );
         }
         let pipeline_time = pipeline_block.current_maxmin_block.unwrap();
         if pipeline_time < 0.001 {
@@ -567,8 +572,13 @@ impl AsyncOrchestrate {
         }
 
         let res = self.analyse_plan_sync(&A, self.m.perf.compute_times[0].len() as u32, i, rp);
-        let res_speedup =
-            sync_pipeline::sync_pipeline_speedup_analytical(&self.d, &self.m, rp, pipeline_time, res.clone());
+        let res_speedup = sync_pipeline::sync_pipeline_speedup_analytical(
+            &self.d,
+            &self.m,
+            rp,
+            pipeline_time,
+            res.clone(),
+        );
         AsyncOrchestrateResult {
             speedup: res_speedup,
             stages: res,

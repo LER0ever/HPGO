@@ -1,13 +1,13 @@
 extern crate HPGO;
 extern crate ordered_float;
 extern crate rayon;
+use ordered_float::OrderedFloat;
+use rayon::prelude::*;
 use HPGO::environment::*;
 use HPGO::input::*;
 use HPGO::model::*;
 use HPGO::orchestration::*;
 use HPGO::parallelism::*;
-use ordered_float::OrderedFloat;
-use rayon::prelude::*;
 
 #[test]
 fn test_orchestrate_compute_plan() {
@@ -117,23 +117,26 @@ fn test_orchestrate_orchestrate() {
     model.peak_activation_per_batch = 3942774528.0 * 1.5;
     model.min_micro_batch_size = 1;
     // Construct Devices
-    let d16 = device::Devices::new(4, vec![2,4]);
+    let d16 = device::Devices::new(4, vec![2, 4]);
 
     let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
     c.orchestrate();
     let best_hp = c
-                .res
-                .into_par_iter()
-                .max_by_key(|r| {
-                    if r.stages.len() == 1 {
-                        // throw away pseudo DPs
-                        OrderedFloat(0.0)
-                    } else {
-                        OrderedFloat(r.speedup)
-                    }
-                })
-                .unwrap();
-    println!("Best HP Speedup: {}, Stages: {:?}", best_hp.speedup, best_hp.stages);
+        .res
+        .into_par_iter()
+        .max_by_key(|r| {
+            if r.stages.len() == 1 {
+                // throw away pseudo DPs
+                OrderedFloat(0.0)
+            } else {
+                OrderedFloat(r.speedup)
+            }
+        })
+        .unwrap();
+    println!(
+        "Best HP Speedup: {}, Stages: {:?}",
+        best_hp.speedup, best_hp.stages
+    );
 }
 
 #[test]
@@ -164,23 +167,26 @@ fn test_orchestrate_sync_speedup() {
     model.peak_activation_per_batch = 3942774528.0 * 1.5;
     model.min_micro_batch_size = 1;
     // Construct Devices
-    let d16 = device::Devices::new(2, vec![1,2]);
+    let d16 = device::Devices::new(2, vec![1, 2]);
 
     let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
     c.orchestrate();
     let best_hp = c
-                .res
-                .into_par_iter()
-                .max_by_key(|r| {
-                    if r.stages.len() == 1 {
-                        // throw away pseudo DPs
-                        OrderedFloat(0.0)
-                    } else {
-                        OrderedFloat(r.speedup)
-                    }
-                })
-                .unwrap();
-    println!("Best HP Speedup: {}, Stages: {:?}", best_hp.speedup, best_hp.stages);
+        .res
+        .into_par_iter()
+        .max_by_key(|r| {
+            if r.stages.len() == 1 {
+                // throw away pseudo DPs
+                OrderedFloat(0.0)
+            } else {
+                OrderedFloat(r.speedup)
+            }
+        })
+        .unwrap();
+    println!(
+        "Best HP Speedup: {}, Stages: {:?}",
+        best_hp.speedup, best_hp.stages
+    );
 
     let pipeline_recursive_speedup = sync_pipeline::sync_pipeline_speedup_recursive(
         &c.d,

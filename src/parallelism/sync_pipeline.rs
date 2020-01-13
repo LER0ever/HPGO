@@ -161,8 +161,7 @@ pub fn sync_pipeline_speedup_recursive(
         F.push(block_comp_time / 2.0);
         B.push(block_comp_time / 2.0);
         if i != p.len() - 1 {
-            let cut_activations =
-                output_activation_sizes[(p[i].1 - 1) as usize] / m_batch as f64;
+            let cut_activations = output_activation_sizes[(p[i].1 - 1) as usize] / m_batch as f64;
             let cut_comm_time =
                 split_concat::split_concat_all2all_time(d, &p[i].3, &p[i + 1].3, cut_activations);
             F.push(cut_comm_time);
@@ -179,7 +178,7 @@ pub fn sync_pipeline_speedup_recursive(
 
     f[0][0] = Some((0.0, F[0]));
     for i in 1..F.len() {
-        f[0][i] = Some(((f[0][i-1].unwrap()).1, (f[0][i-1].unwrap()).1 + F[i]));
+        f[0][i] = Some(((f[0][i - 1].unwrap()).1, (f[0][i - 1].unwrap()).1 + F[i]));
     }
 
     let mut max_length = 0.0;
@@ -233,12 +232,11 @@ fn sync_pipeline_speedup_resursive_helper_f(
     S: usize,
     phi: usize,
 ) -> (f64, f64) {
-
     if VERBOSE {
         println!("[sync_pipeline]\t Requesting f[{}][{}]", i, x);
     }
 
-    if i < 0 || i >= M  as i32 || x < 0 || x >= S  as i32 {
+    if i < 0 || i >= M as i32 || x < 0 || x >= S as i32 {
         if VERBOSE {
             println!("[sync_pipeline]\t f[{}][{}] = {}", i, x, 0.0);
         }
@@ -247,7 +245,8 @@ fn sync_pipeline_speedup_resursive_helper_f(
     if f[i as usize][x as usize].is_some() {
         return f[i as usize][x as usize].unwrap();
     }
-    let fm_1 = sync_pipeline_speedup_resursive_helper_b(f, b, F, B, i - phi as i32 + x, x, M, S, phi).1;
+    let fm_1 =
+        sync_pipeline_speedup_resursive_helper_b(f, b, F, B, i - phi as i32 + x, x, M, S, phi).1;
     let fm_2 = sync_pipeline_speedup_resursive_helper_f(f, b, F, B, i - 1, x, M, S, phi).1;
     let fm_3 = sync_pipeline_speedup_resursive_helper_f(f, b, F, B, i, x - 1, M, S, phi).1;
 
@@ -255,7 +254,10 @@ fn sync_pipeline_speedup_resursive_helper_f(
     f[i as usize][x as usize] = Some((cur_f, cur_f + F[x as usize]));
 
     if VERBOSE {
-        println!("[sync_pipeline]\t f[{}][{}] = {:?}", i, x, f[i as usize][x as usize]);
+        println!(
+            "[sync_pipeline]\t f[{}][{}] = {:?}",
+            i, x, f[i as usize][x as usize]
+        );
     }
 
     return f[i as usize][x as usize].unwrap();
@@ -285,15 +287,20 @@ fn sync_pipeline_speedup_resursive_helper_b(
     if b[i as usize][x as usize].is_some() {
         return b[i as usize][x as usize].unwrap();
     }
-    let bm_1 =sync_pipeline_speedup_resursive_helper_b(f, b, F, B, i, x + 1, M, S, phi).1;
+    let bm_1 = sync_pipeline_speedup_resursive_helper_b(f, b, F, B, i, x + 1, M, S, phi).1;
     // let bm_2 = sync_pipeline_speedup_resursive_helper_b(f, b, F, B, i - 1, x, M, S, phi).1;
-    let bm_3 = sync_pipeline_speedup_resursive_helper_f(f, b, F, B, i + phi as i32 - x - 1, x, M, S, phi).1;
+    let bm_3 =
+        sync_pipeline_speedup_resursive_helper_f(f, b, F, B, i + phi as i32 - x - 1, x, M, S, phi)
+            .1;
 
     let cur_b = f64::max(bm_1, bm_3);
     b[i as usize][x as usize] = Some((cur_b, cur_b + B[x as usize]));
 
     if VERBOSE {
-        println!("[sync_pipeline]\t b[{}][{}] = {:?}", i, x, b[i as usize][x as usize]);
+        println!(
+            "[sync_pipeline]\t b[{}][{}] = {:?}",
+            i, x, b[i as usize][x as usize]
+        );
     }
 
     return b[i as usize][x as usize].unwrap();

@@ -20,9 +20,15 @@ fn test_bert_speedup_at_all_bs() {
     let mut d: Vec<Vec<u32>> = vec![];
     for i in 2..33 {
         let mut cur_d: Vec<u32> = vec![i];
-        if i > 24 {cur_d.insert(0, 24);}
-        if i > 16 {cur_d.insert(0, 16);}
-        if i > 8 {cur_d.insert(0, 8);}
+        if i > 24 {
+            cur_d.insert(0, 24);
+        }
+        if i > 16 {
+            cur_d.insert(0, 16);
+        }
+        if i > 8 {
+            cur_d.insert(0, 8);
+        }
         d.push(cur_d);
     }
 
@@ -32,7 +38,6 @@ fn test_bert_speedup_at_all_bs() {
     let res: Vec<_> = d
         .par_iter()
         .map(|(cur_d)| {
-            
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
@@ -42,7 +47,7 @@ fn test_bert_speedup_at_all_bs() {
             model.peak_activation_per_batch = 3942774528.0 * 1.5; // don't have data for XLNet-36, use 24 * 1.5
             model.min_micro_batch_size = 1;
             // Construct Devices
-            let d16 = device::Devices::new(cur_d[cur_d.len()-1], cur_d.to_vec());
+            let d16 = device::Devices::new(cur_d[cur_d.len() - 1], cur_d.to_vec());
 
             // DP Speedups
             let dp_speedup = data_parallel::dp_speedup(&d16, &model);
@@ -53,8 +58,8 @@ fn test_bert_speedup_at_all_bs() {
 
             let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
             // Straight Pipeline
-            println!("Planning for {}", cur_d[cur_d.len()-1]);
-            let res_straight = c.plan_for(cur_d[cur_d.len()-1], true);
+            println!("Planning for {}", cur_d[cur_d.len() - 1]);
+            let res_straight = c.plan_for(cur_d[cur_d.len() - 1], true);
             let straight_speedup = res_straight.speedup;
 
             // Hybrid Parallelism Speedups
@@ -77,7 +82,7 @@ fn test_bert_speedup_at_all_bs() {
 
             // return gbs and all speedups
             (
-                cur_d[cur_d.len()-1],
+                cur_d[cur_d.len() - 1],
                 (
                     dp_speedup,
                     dp_ga_p3_speedup,

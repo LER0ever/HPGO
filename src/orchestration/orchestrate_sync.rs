@@ -548,8 +548,13 @@ impl SyncOrchestrate {
         }
         println!("Pipeline Time: {}", pipeline_time);
         let res = self.analyse_plan_sync(&A, self.m.perf.compute_times[0].len() as u32, i, rp);
-        let res_speedup =
-            sync_pipeline::sync_pipeline_speedup_analytical(&self.d, &self.m, rp, pipeline_time, res.clone());
+        let res_speedup = sync_pipeline::sync_pipeline_speedup_analytical(
+            &self.d,
+            &self.m,
+            rp,
+            pipeline_time,
+            res.clone(),
+        );
         SyncOrchestrateResult {
             speedup: res_speedup,
             stages: res,
