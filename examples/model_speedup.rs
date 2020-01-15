@@ -14,6 +14,8 @@ use HPGO::model::*;
 use HPGO::orchestration::*;
 use HPGO::parallelism::*;
 
+const VERBOSE: bool = true;
+
 struct ModelConfig {
     gbs: Vec<u32>,    // GBS vector
     filename: String, // filename to TorchGraph txt
@@ -48,17 +50,32 @@ fn get_vgg19_model_config() -> ModelConfig {
 }
 
 fn get_gnmt32_model_config() -> ModelConfig {
-    let mut gbs = vec![32, 64];
-    for i in 1..((1024 - 64) / 32) + 1 {
-        gbs.push(64 + i * 32);
+    let mut gbs = vec![64];
+    for i in 1..((4096 - 64) / 64) + 1 {
+        gbs.push(64 + i * 64);
     }
     ModelConfig {
         gbs: gbs,
         filename: ["./profiles/", "gnmt_32", "/graph.txt"].join(""),
         optimizer_memory_scaling: 3,
         pbs: 64,
-        mbs: 32,
-        papb: -1.0,
+        mbs: 64,
+        papb: 70000000.0,
+    }
+}
+
+fn get_bert48_model_config() -> ModelConfig {
+    let mut gbs = vec![1, 2, 4, 8, 16];
+    for i in 1..((256 - 16) / 8) + 1 {
+        gbs.push(16 + i * 8);
+    }
+    ModelConfig {
+        gbs: gbs,
+        filename: ["./profiles/", "bert_48", "/graph.txt"].join(""),
+        optimizer_memory_scaling: 3,
+        pbs: 2,
+        mbs: 1,
+        papb: 1736689664.0 * 2.0,
     }
 }
 
@@ -71,6 +88,9 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     }
 
     // model at pbs
+    if VERBOSE {
+        println!("[main]\t Importing Model from TorchGraph...")
+    }
     let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
     let result = tgi.ImportFrom(&mc.filename);
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
@@ -85,7 +105,9 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     let res: Vec<_> = mc.gbs
         .par_iter()
         .map(|(gbs)| {
-            
+            if VERBOSE {
+                println!("[main]\t Planning in parallel for bs = {} ...", *gbs);
+            }
             let m1 = m0.normalized_copy(*gbs);
 
             // DP Speedups
@@ -108,6 +130,10 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
                 .unwrap();
             pipeline_speedup = best_hp.speedup;
             pipeline_stages = best_hp.stages;
+
+            if VERBOSE {
+                println!("[main]\t Got all results for bs = {} ...", *gbs);
+            }
 
             // return gbs and all speedups
             (
@@ -138,5 +164,5 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     }
 }
 fn main() {
-    test_speedup_at_all_bs(get_gnmt32_model_config(), false);
+    test_speedup_at_all_bs(get_bert48_model_config(), false);
 }
