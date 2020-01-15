@@ -692,12 +692,16 @@ from collections import OrderedDict
 
 import sys
 
-def prepare(profile_filename, verbose=False):
-    gr = graph.Graph.from_str(open(profile_filename, 'r').read())
+def prepare(profile_filename, verbose=True):
+    if verbose:
+        print("[python]\t Got prepare argument: ", profile_filename, verbose)
+    gr = Graph.from_str(open(profile_filename, 'r').read())
 
     # Zero out all metadata associated with inputs in graph, since the optimizer
     # shouldn't really get a choice with where to place the input (should always
     # be in the first stage).
+    if verbose:
+        print("[python]\t Zeroing out Input's metadata")
     sources = gr.sources()
     nodes_to_remove = OrderedDict()
     for source in sources:
@@ -713,6 +717,8 @@ def prepare(profile_filename, verbose=False):
 
     # Remove all unneeded sinks that are not used, makes code generation and
     # optimization easier.
+    if verbose:
+        print("[python]\t remove unneeded sinks")
     sinks = gr.sinks()
     for sink in sinks:
         if sink.node_desc.startswith("__getitem__"):
@@ -729,6 +735,8 @@ def prepare(profile_filename, verbose=False):
         for antichain_node in states[i].antichain:
             states[i].output_activation_size += gr.nodes[antichain_node].activation_size
 
+    if verbose:
+        print("[python]\t Computing states metadata...")
     for i in range(len(states)):
         antichain = states[i].antichain
         all_predecessors = gr.all_predecessors(antichain)
@@ -742,11 +750,15 @@ def prepare(profile_filename, verbose=False):
             states[i].parameter_size += predecessor.parameter_size
     gr.reset()
 
+    if verbose:
+        print("[python]\t Computing output_activations and predecessor_ids ...")
     output_activation_sizes = [state.output_activation_size for state in states]
     all_predecessor_ids = [[states_indices[predecessor] for predecessor in
                             antichain_gr.predecessors(states[i].node_id)]
                            for i in range(len(states))]
 
+    if verbose:
+        print("[python]\t Computing return values ...")
     compute_times = []
     activation_sizes = []
     parameter_sizes = []

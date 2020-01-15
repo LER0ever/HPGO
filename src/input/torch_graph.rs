@@ -4,6 +4,8 @@ use model::model_perf;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 
+const VERBOSE: bool = true;
+
 pub struct TorchGraphImporter {}
 
 impl ModelImporter for TorchGraphImporter {
@@ -30,6 +32,11 @@ impl ModelImporter for TorchGraphImporter {
             e.print_and_set_sys_last_vars(py);
         })
         .unwrap();
+
+        if VERBOSE {
+            println!("[python]\t Entering Prepare()...");
+        }
+
         let result: (
             PyObject,
             PyObject,
@@ -54,6 +61,10 @@ impl ModelImporter for TorchGraphImporter {
         // NOTE: process states object into Rust
         let py_states: Vec<PyObject> = result.1.extract(py).unwrap();
         let mut states: model_perf::ModelStates = vec![];
+
+        if VERBOSE {
+            println!("[python]\t Prepare() done, States.len(): {}", py_states.len());
+        }
         for s in py_states {
             let id: Option<u32> = s
                 .getattr(py, "node_id")
@@ -67,6 +78,11 @@ impl ModelImporter for TorchGraphImporter {
                 .getattr(py, "node_desc")
                 .ok()
                 .and_then(|x| x.extract(py).ok());
+
+            if VERBOSE {
+                println!("[python]\t @state: {:?}", desc);
+            }
+            
             // below are required
             let compute_time: f64 = s.getattr(py, "compute_time").unwrap().extract(py).unwrap();
             let activation_size: f64 = s

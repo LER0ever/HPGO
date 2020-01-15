@@ -25,60 +25,6 @@ struct ModelConfig {
     papb: f64,
 }
 
-// Seps Array for Flat and Hierarchical
-fn get_hierarchical_devices() -> device::Devices {
-    device::Devices::new(16, vec![8, 16])
-}
-
-fn get_flat_devices() -> device::Devices {
-    device::Devices::new(16, vec![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])
-}
-
-fn get_vgg19_model_config() -> ModelConfig {
-    let mut gbs = vec![32, 64];
-    for i in 1..((4096 - 64) / 64) + 1 {
-        gbs.push(64 + i * 64);
-    }
-    ModelConfig {
-        gbs: gbs,
-        filename: ["./profiles/", "vgg19", "/graph.txt"].join(""),
-        optimizer_memory_scaling: 2,
-        pbs: 32,
-        mbs: 32,
-        papb: 70000000.0,
-    }
-}
-
-fn get_gnmt32_model_config() -> ModelConfig {
-    let mut gbs = vec![64];
-    for i in 1..((4096 - 64) / 64) + 1 {
-        gbs.push(64 + i * 64);
-    }
-    ModelConfig {
-        gbs: gbs,
-        filename: ["./profiles/", "gnmt_32", "/graph.txt"].join(""),
-        optimizer_memory_scaling: 3,
-        pbs: 64,
-        mbs: 64,
-        papb: 70000000.0,
-    }
-}
-
-fn get_bert48_model_config() -> ModelConfig {
-    let mut gbs = vec![1, 2, 4, 8, 16];
-    for i in 1..((256 - 16) / 8) + 1 {
-        gbs.push(16 + i * 8);
-    }
-    ModelConfig {
-        gbs: gbs,
-        filename: ["./profiles/", "bert_48", "/graph.txt"].join(""),
-        optimizer_memory_scaling: 3,
-        pbs: 2,
-        mbs: 1,
-        papb: 1736689664.0 * 2.0,
-    }
-}
-
 fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     let d: device::Devices;
     if flat {
@@ -94,11 +40,18 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
     let result = tgi.ImportFrom(&mc.filename);
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
+    if VERBOSE {
+        println!("[main]\t Constructing HPGO Model...")
+    }
     let mut m0 = model::Model::new_from_model_perf(perf, states, mc.pbs, mc.pbs);
     m0.optimizer_memory_scaling = mc.optimizer_memory_scaling;
     m0.min_micro_batch_size = mc.mbs;
     if mc.papb > 0.0 {
         m0.peak_activation_per_batch = mc.papb;
+    }
+
+    if VERBOSE {
+        println!("[main]\t Model Import Complete. Starting Parallel Planning...")
     }
 
     // Compute Max Batch Size in Parallel
@@ -164,5 +117,78 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     }
 }
 fn main() {
-    test_speedup_at_all_bs(get_bert48_model_config(), false);
+    test_speedup_at_all_bs(get_gnmt16_model_config(), false);
+}
+
+
+
+/// Data Area
+
+// Seps Array for Flat and Hierarchical
+fn get_hierarchical_devices() -> device::Devices {
+    device::Devices::new(16, vec![8, 16])
+}
+
+fn get_flat_devices() -> device::Devices {
+    device::Devices::new(16, vec![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])
+}
+
+fn get_vgg19_model_config() -> ModelConfig {
+    let mut gbs = vec![32, 64];
+    for i in 1..((4096 - 64) / 64) + 1 {
+        gbs.push(64 + i * 64);
+    }
+    ModelConfig {
+        gbs: gbs,
+        filename: ["./profiles/", "vgg19", "/graph.txt"].join(""),
+        optimizer_memory_scaling: 2,
+        pbs: 32,
+        mbs: 32,
+        papb: 70000000.0,
+    }
+}
+
+fn get_gnmt32_model_config() -> ModelConfig {
+    let mut gbs = vec![64];
+    for i in 1..((4096 - 64) / 64) + 1 {
+        gbs.push(64 + i * 64);
+    }
+    ModelConfig {
+        gbs: gbs,
+        filename: ["./profiles/", "gnmt_32", "/graph.txt"].join(""),
+        optimizer_memory_scaling: 3,
+        pbs: 64,
+        mbs: 64,
+        papb: -1.0,
+    }
+}
+
+fn get_gnmt16_model_config() -> ModelConfig {
+    let mut gbs = vec![32, 64];
+    for i in 1..((4096 - 64) / 64) + 1 {
+        gbs.push(64 + i * 64);
+    }
+    ModelConfig {
+        gbs: gbs,
+        filename: ["./profiles/", "gnmt_large", "/graph.txt"].join(""),
+        optimizer_memory_scaling: 3,
+        pbs: 32,
+        mbs: 32,
+        papb: -1.0,
+    }
+}
+
+fn get_bert48_model_config() -> ModelConfig {
+    let mut gbs = vec![1, 2, 4, 8, 16];
+    for i in 1..((256 - 16) / 8) + 1 {
+        gbs.push(16 + i * 8);
+    }
+    ModelConfig {
+        gbs: gbs,
+        filename: ["./profiles/", "bert_48", "/graph.txt"].join(""),
+        optimizer_memory_scaling: 3,
+        pbs: 2,
+        mbs: 1,
+        papb: 1736689664.0 * 2.0,
+    }
 }
