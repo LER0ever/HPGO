@@ -77,7 +77,7 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     let mut m0 = model::Model::new_from_model_perf(perf, states, mc.pbs, mc.pbs);
     m0.optimizer_memory_scaling = mc.optimizer_memory_scaling;
     m0.min_micro_batch_size = mc.mbs;
-    if mc.papb > 0 {
+    if mc.papb > 0.0 {
         m0.peak_activation_per_batch = mc.papb;
     }
 
@@ -138,5 +138,5 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     }
 }
 fn main() {
-    test_speedup_at_all_bs(get_vgg19_model_config(), false);
+    test_speedup_at_all_bs(get_gnmt32_model_config(), false);
 }
