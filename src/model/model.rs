@@ -148,4 +148,26 @@ impl Model {
                 *c *= factor;
             });
     }
+
+    pub fn normalized_copy(&self, bs: u32) -> Model {
+        let mut m = self.clone();
+        // normalize from gbs to bs
+        m.normalize(self.global_batch_size, bs);
+        m.global_batch_size = bs;
+        // reconstruct & override the original layers
+        m.layers = vec![];
+        for i in 0..m.perf.compute_times[0].len() {
+            m.layers.push(Layer {
+                id: Some(i as u32),
+                name: None,
+                desc: m.states[i].desc.clone(),
+                compute_time: m.perf.compute_times[i][i],
+                activation_size: m.perf.activation_sizes[i][i],
+                output_activation_size: m.perf.output_activation_sizes[i],
+                parameter_size: m.perf.parameter_sizes[i][i],
+            });
+        }
+
+        m
+    }
 }
