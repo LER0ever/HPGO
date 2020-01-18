@@ -3,7 +3,7 @@
 
 import graphviz
 import os
-
+import gc
 
 class Graph(object):
     def __init__(self, node=None):
@@ -724,8 +724,12 @@ def prepare(profile_filename, verbose=True):
         if sink.node_desc.startswith("__getitem__"):
             gr.remove_node(sink)
 
+    if verbose:
+        print("[python]\t Generating Antichain...")
+
     antichain_gr = gr.antichain_dag()
     states = antichain_gr.topological_sort()
+    
     if verbose:
         print("Total number of states: %d" % len(states))
     states_indices = {}
@@ -750,12 +754,15 @@ def prepare(profile_filename, verbose=True):
             states[i].parameter_size += predecessor.parameter_size
     gr.reset()
 
+    gc.collect()
     if verbose:
         print("[python]\t Computing output_activations and predecessor_ids ...")
     output_activation_sizes = [state.output_activation_size for state in states]
+    gc.collect()
     all_predecessor_ids = [[states_indices[predecessor] for predecessor in
                             antichain_gr.predecessors(states[i].node_id)]
                            for i in range(len(states))]
+    gc.collect()
 
     if verbose:
         print("[python]\t Computing return values ...")
