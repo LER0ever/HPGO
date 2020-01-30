@@ -148,6 +148,21 @@ fn get_vgg19_model_config() -> ModelConfig {
     }
 }
 
+// fn get_amoebanet36_model_config() -> ModelConfig {
+//     let mut gbs = vec![32, 64];
+//     for i in 1..((4096 - 64) / 64) + 1 {
+//         gbs.push(64 + i * 64);
+//     }
+//     ModelConfig {
+//         gbs: gbs,
+//         filename: ["./profiles/", "vgg19", "/graph.txt"].join(""),
+//         optimizer_memory_scaling: 2,
+//         pbs: 32,
+//         mbs: 32,
+//         papb: 70000000.0,
+//     }
+// }
+
 fn get_gnmt32_model_config() -> ModelConfig {
     let mut gbs = vec![64];
     for i in 1..((4096 - 64) / 64) + 1 {
@@ -155,25 +170,25 @@ fn get_gnmt32_model_config() -> ModelConfig {
     }
     ModelConfig {
         gbs: gbs,
-        filename: ["./profiles/", "gnmt_32", "/graph.txt"].join(""),
+        filename: ["./profiles/", "gnmt_32_simplified", "/graph.txt"].join(""),
         optimizer_memory_scaling: 3,
         pbs: 64,
         mbs: 64,
-        papb: -1.0,
+        papb: 1614725120.0 / 64.0,
     }
 }
 
 fn get_gnmt16_model_config() -> ModelConfig {
-    let mut gbs = vec![32, 64];
+    let mut gbs = vec![64];
     for i in 1..((4096 - 64) / 64) + 1 {
         gbs.push(64 + i * 64);
     }
     ModelConfig {
         gbs: gbs,
-        filename: ["./profiles/", "gnmt_large", "/graph.txt"].join(""),
+        filename: ["./profiles/", "gnmt_16", "/graph.txt"].join(""),
         optimizer_memory_scaling: 3,
-        pbs: 32,
-        mbs: 32,
+        pbs: 64,
+        mbs: 64,
         papb: -1.0,
     }
 }
