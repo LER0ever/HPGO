@@ -55,7 +55,8 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     }
 
     // Compute Max Batch Size in Parallel
-    let res: Vec<_> = mc.gbs
+    let res: Vec<_> = mc
+        .gbs
         .par_iter()
         .map(|(gbs)| {
             if VERBOSE {
@@ -71,7 +72,8 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
                 gradient_accumulation::dp_cur_ga_inner_overlap_speedup(&d, &m1);
 
             // Hybrid Parallelism Speedups
-            let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(m1.clone(), d.clone());
+            let mut c =
+                orchestrate_async::AsyncOrchestrate::new_from_model_device(m1.clone(), d.clone());
             c.orchestrate();
             let mut pipeline_speedup = 0.0;
             let mut pipeline_stages: Vec<(u32, u32, u32, BTreeSet<u32>)> = vec![];
@@ -117,10 +119,8 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     }
 }
 fn main() {
-    test_speedup_at_all_bs(get_gnmt16_model_config(), false);
+    test_speedup_at_all_bs(get_resnet50_model_config(), false);
 }
-
-
 
 /// Data Area
 
@@ -130,7 +130,10 @@ fn get_hierarchical_devices() -> device::Devices {
 }
 
 fn get_flat_devices() -> device::Devices {
-    device::Devices::new(16, vec![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])
+    device::Devices::new(
+        16,
+        vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    )
 }
 
 fn get_vgg19_model_config() -> ModelConfig {
@@ -141,6 +144,21 @@ fn get_vgg19_model_config() -> ModelConfig {
     ModelConfig {
         gbs: gbs,
         filename: ["./profiles/", "vgg19", "/graph.txt"].join(""),
+        optimizer_memory_scaling: 2,
+        pbs: 32,
+        mbs: 32,
+        papb: 70000000.0,
+    }
+}
+
+fn get_resnet50_model_config() -> ModelConfig {
+    let mut gbs = vec![32, 64];
+    for i in 1..((4096 - 64) / 64) + 1 {
+        gbs.push(64 + i * 64);
+    }
+    ModelConfig {
+        gbs: gbs,
+        filename: ["./profiles/", "resnet50", "/graph.txt"].join(""),
         optimizer_memory_scaling: 2,
         pbs: 32,
         mbs: 32,
@@ -185,11 +203,11 @@ fn get_gnmt16_model_config() -> ModelConfig {
     }
     ModelConfig {
         gbs: gbs,
-        filename: ["./profiles/", "gnmt_16", "/graph.txt"].join(""),
+        filename: ["./profiles/", "gnmt_large", "/graph.txt"].join(""),
         optimizer_memory_scaling: 3,
         pbs: 64,
         mbs: 64,
-        papb: -1.0,
+        papb: 100000000.0,
     }
 }
 
