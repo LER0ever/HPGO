@@ -195,3 +195,6 @@ dmypy.json
 
 # HPGO-Rust
 logs/
+*.png
+*.dot
+flattened/
