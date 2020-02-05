@@ -52,7 +52,7 @@ jobs:
         displayName: 'Install new wheel'
       
       - script: |
-          maturin publish -u rongyi -p $(pypi.password)
+          maturin publish -u rongyi -p "$(pypi.password)"
         displayName: "Upload to PyPi"
         condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
   
@@ -103,7 +103,7 @@ jobs:
         displayName: 'Install new wheel'
       
       - script: |
-          maturin publish -u rongyi -p $(pypi.password)
+          maturin publish -u rongyi -p "$(pypi.password)"
         displayName: "Upload to PyPi"
         condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
   
@@ -157,6 +157,6 @@ jobs:
         displayName: 'Install new wheel'
       
       - script: |
-          maturin publish -u rongyi -p $(pypi.password) --interpreter python
+          maturin publish -u rongyi -p "$(pypi.password)" --interpreter python
         displayName: "Upload to PyPi"
         condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
