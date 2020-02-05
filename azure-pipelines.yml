@@ -11,39 +11,12 @@ jobs:
       vmImage: 'ubuntu-18.04'
   
     steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '3.7'
-          architecture: 'x64'
-    
-      - script: |
-          python -m pip install --upgrade pip setuptools wheel
-        displayName: 'Install setuptools+wheel'
-  
-      - script: docker run -v $(Build.SourcesDirectory):/io konstin2/maturin:master build
-        displayName: 'Install maturin'
-  
-      - script: |
-          pip install $(Build.SourcesDirectory)/target/wheels/HPGO-*-cp37-*.whl
-        displayName: 'Install new wheel'
-      
-      - script: |
-          docker run -v $(Build.SourcesDirectory):/io konstin2/maturin:master publish -u rongyi -p $(pypi.password)
-        displayName: "Upload to PyPi"
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
-  
-  
-  - job:
-    displayName: macOS-10.13
-  
-    pool:
-      vmImage: 'macOS-10.13'
-  
-    steps:
       - script: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
           echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
-        displayName: "Install rust"
+          rustup default nightly-x86_64-unknown-linux-gnu
+          cargo --version
+        displayName: "Install Rust"
       
       - bash: |
           MY_TAG="$(Build.SourceBranch)"
@@ -59,7 +32,7 @@ jobs:
   
       - bash: |
           cargo install maturin
-        displayName: "Install PyO3-pack"
+        displayName: "Install Maturin"
   
       - task: UsePythonVersion@0
         inputs:
@@ -68,11 +41,62 @@ jobs:
     
       - script: |
           python -m pip install --upgrade pip setuptools wheel
-        displayName: 'Install maturin'
+        displayName: 'Upgrade Python pip'
   
       - script: |
           maturin build -o $(Build.BinariesDirectory)
-        displayName: 'PyO3-pack build'
+        displayName: 'Maturin build'
+  
+      - script: |
+          pip install $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl
+        displayName: 'Install new wheel'
+      
+      - script: |
+          maturin publish -u rongyi -p $(pypi.password)
+        displayName: "Upload to PyPi"
+        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+  
+  
+  - job:
+    displayName: macOS-10.13
+  
+    pool:
+      vmImage: 'macOS-10.13'
+  
+    steps:
+      - script: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
+          echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+        displayName: "Install Rust"
+      
+      - bash: |
+          MY_TAG="$(Build.SourceBranch)"
+          MY_TAG=${MY_TAG#refs/tags/}
+          echo $MY_TAG
+          echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
+        displayName: "Create tag variable"
+      
+      - bash: |
+          DATE="$(date +%Y-%m-%d)"
+          echo "##vso[task.setvariable variable=build.date]$DATE"
+        displayName: "Create date variable"
+  
+      - bash: |
+          cargo install maturin
+        displayName: "Install Maturin"
+  
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.7'
+          architecture: 'x64'
+    
+      - script: |
+          python -m pip install --upgrade pip setuptools wheel
+        displayName: 'Upgrade Python pip'
+  
+      - script: |
+          maturin build -o $(Build.BinariesDirectory)
+        displayName: 'Maturin build'
   
       - script: |
           pip install $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl
@@ -95,8 +119,9 @@ jobs:
             curl -sSf -o rustup-init.exe https://win.rustup.rs
             rustup-init.exe -y --default-host x86_64-pc-windows-msvc --default-toolchain nightly
             echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
+            rustup default nightly-x86_64-pc-windows-msvc
             cargo --version
-        displayName: Install rust
+        displayName: Install Rust
       
       - bash: |
           MY_TAG="$(Build.SourceBranch)"
