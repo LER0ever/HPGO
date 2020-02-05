@@ -1,7 +1,7 @@
 # HPGO
 Hybrid Parallelism Global Orchestration
 
-[![](https://img.shields.io/badge/PyPI-HPGO%200.92-blue?logo=python&style=for-the-badge&logoColor=yellow)](https://pypi.org/project/HPGO/) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg?style=for-the-badge)](https://opensource.org/licenses/BSD-3-Clause) [![Build Status](https://dev.azure.com/rongyi-io/HPGO/_apis/build/status/LER0ever.HPGO?branchName=master)](https://dev.azure.com/rongyi-io/HPGO/_build/latest?definitionId=1&branchName=master)
+[![](https://img.shields.io/badge/PyPI-HPGO%200.92-blue?logo=python&logoColor=yellow)](https://pypi.org/project/HPGO/) [![Build Status](https://dev.azure.com/rongyi-io/HPGO/_apis/build/status/LER0ever.HPGO?branchName=master)](https://dev.azure.com/rongyi-io/HPGO/_build/latest?definitionId=1&branchName=master) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 (_Project Name TBD_)
 
@@ -13,7 +13,6 @@ Hybrid Parallelism Global Orchestration
 ```bash
 cargo install HPGO
 ```
-`TODO: publish to Cargo crates after open source`
 
 #### From Python PyPI, as a Python3 package
 ```bash
@@ -41,6 +40,17 @@ print(res)
 ## License
 
 This project is open sourced under the terms of BSD-3-Clause, details of which can be found in the [`LICENSE`](LICENSE) file
+
+If you apply this library to any project and research, please cite this code:
+
+```
+@misc{HPGO,
+  author       = {Yi Rong},
+  title        = {HPGO, [{Hybrid Parallelism} Global Orchestration]},
+  howpublished = {\url{https://github.com/LER0ever/HPGO}},
+  year         = {2020}
+}
+```
 
 The project contains source code from [PipeDream](https://github.com/msr-fiddle/pipedream), a Microsoft Research project licensed under the MIT License. Code taken from Pipedream includes a Rust file `src/input/torch_graph_py.rs`, several profiling data files under the `profiles` directory, and the `contrib` directory.
 
