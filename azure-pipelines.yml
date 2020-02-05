@@ -26,11 +26,6 @@ trigger:
       - script: |
           pip install $(Build.SourcesDirectory)/target/wheels/HPGO-*-cp37-*.whl
         displayName: 'Install new wheel'
-  
-      # - script: |
-      #     pip install pytest pytest-azurepipelines
-      #     pytest
-      #   displayName: 'pytest'
       
       - script: |
           docker run -v $(Build.SourcesDirectory):/io konstin2/pyo3-pack:master publish -u rongyi -p $(pypi.password)
@@ -82,11 +77,6 @@ trigger:
       - script: |
           pip install $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl
         displayName: 'Install new wheel'
-  
-      # - script: |
-      #     pip install pytest pytest-azurepipelines
-      #     pytest
-      #   displayName: 'pytest'
       
       - script: |
           maturin publish -u rongyi -p $(pypi.password)
@@ -139,15 +129,8 @@ trigger:
       - powershell: |
           pip install $(Build.BinariesDirectory)/$(Get-ChildItem $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl | Select -exp Name)
         displayName: 'Install new wheel'
-  
-      # - script: |
-      #     pip install pytest pytest-azurepipelines
-      #     pytest
-      #   displayName: 'pytest'
       
       - script: |
           maturin publish -u rongyi -p $(pypi.password) --interpreter python
         displayName: "Upload to PyPi"
         condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
-
-# From https://github.com/omerbenamram/pyevtx-rs
