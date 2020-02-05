@@ -16,7 +16,7 @@ use HPGO::parallelism::*;
 
 fn test_vgg_speedup_at_all_bs() {
     // GBS
-    let mut gbs = vec![32,64];
+    let mut gbs = vec![32, 64];
     for i in 1..((4096 - 64) / 64) + 1 {
         gbs.push(64 + i * 64);
     }
@@ -36,7 +36,7 @@ fn test_vgg_speedup_at_all_bs() {
             // Construct Devices
             let d16 = device::Devices::new(
                 16,
-                vec![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+                vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
             );
 
             // DP Speedups

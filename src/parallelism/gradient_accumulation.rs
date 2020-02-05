@@ -13,7 +13,7 @@ pub fn dp_ga_speedup(d: &device::Devices, m: &model::Model) -> f64 {
 /// get the current GA iteration batch size per machine
 pub fn current_ga_iter_size(d: &device::Devices, m: &model::Model) -> u32 {
     let max_bs = gpu_memory::max_single_gpu_batch_size(m);
-    let bs_per_device = m.global_batch_size / d.num_gpus;
+    let bs_per_device = m.global_batch_size / d.num_gpus; // TODO: fix division info loss
 
     if max_bs >= bs_per_device {
         bs_per_device
@@ -35,7 +35,7 @@ pub fn current_ga_iter_size(d: &device::Devices, m: &model::Model) -> u32 {
 
 pub fn optimal_ga_iter_size(d: &device::Devices, m: &model::Model) -> u32 {
     let max_bs = gpu_memory::max_single_gpu_batch_size(m);
-    let bs_per_device = m.global_batch_size / d.num_gpus;
+    let bs_per_device = m.global_batch_size / d.num_gpus; // TODO: fix division info loss
     if max_bs >= bs_per_device {
         bs_per_device
     } else if max_bs * 2 >= bs_per_device {

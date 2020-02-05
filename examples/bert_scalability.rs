@@ -16,25 +16,38 @@ use HPGO::parallelism::*;
 
 fn test_bert_speedup_at_all_bs() {
     // GBS
-    let mut gbs = vec![8, 16, 32];
-    for i in 1..((1024 - 32) / 32) + 1 {
-        gbs.push(32 + i * 32);
+    let gbs = 128;
+    let mut d: Vec<Vec<u32>> = vec![];
+    for i in 2..16 + 1 {
+        let mut cur_d: Vec<u32> = vec![i];
+        if i > 24 {
+            cur_d.insert(0, 24);
+        }
+        if i > 16 {
+            cur_d.insert(0, 16);
+        }
+        if i > 8 {
+            cur_d.insert(0, 8);
+        }
+        d.push(cur_d);
     }
 
+    println!("D Matrix: {:?}", d);
+
     // Compute Max Batch Size in Parallel
-    let res: Vec<_> = gbs
+    let res: Vec<_> = d
         .par_iter()
-        .map(|(gbs)| {
+        .map(|(cur_d)| {
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-            let result = tgi.ImportFrom(&["./profiles/", "amoebanet_18", "/graph.txt"].join(""));
+            let result = tgi.ImportFrom(&["./profiles/", "bert_48", "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
-            let mut model = model::Model::new_from_model_perf(perf, states, 8, *gbs);
+            let mut model = model::Model::new_from_model_perf(perf, states, 2, gbs);
             model.optimizer_memory_scaling = 3;
-            model.peak_activation_per_batch = 250845152.0 * 1.5;
+            model.peak_activation_per_batch = 3462609152.0; //1736689664.0 * 2.0; // don't have data for XLNet-36, use 24 * 1.5
             model.min_micro_batch_size = 1;
             // Construct Devices
-            let d16 = device::Devices::new(8, vec![1, 2, 3, 4, 5, 6, 7, 8]);
+            let d16 = device::Devices::new(cur_d[cur_d.len() - 1], cur_d.to_vec());
 
             // DP Speedups
             let dp_speedup = data_parallel::dp_speedup(&d16, &model);
@@ -43,27 +56,38 @@ fn test_bert_speedup_at_all_bs() {
             let dp_ga_inner_overlap_speedup =
                 gradient_accumulation::dp_cur_ga_inner_overlap_speedup(&d16, &model);
 
-            // Hybrid Parallelism Speedups
             let mut c = orchestrate_async::AsyncOrchestrate::new_from_model_device(model, d16);
+            // Straight Pipeline
+            println!("Planning for {}", cur_d[cur_d.len() - 1]);
+            let res_straight = c.plan_for(cur_d[cur_d.len() - 1], true);
+            let straight_speedup = res_straight.speedup;
+
+            // Hybrid Parallelism Speedups
             c.orchestrate();
-            let mut pipeline_speedup = 0.0;
-            let mut pipeline_stages: Vec<(u32, u32, u32, BTreeSet<u32>)> = vec![];
 
             let best_hp = c
                 .res
                 .into_par_iter()
-                .max_by_key(|r| OrderedFloat(r.speedup))
+                .max_by_key(|r| {
+                    if r.stages.len() == 1 {
+                        // throw away pseudo DPs
+                        OrderedFloat(0.0)
+                    } else {
+                        OrderedFloat(r.speedup)
+                    }
+                })
                 .unwrap();
-            pipeline_speedup = best_hp.speedup;
-            pipeline_stages = best_hp.stages;
+            let pipeline_speedup = best_hp.speedup;
+            let pipeline_stages = best_hp.stages;
 
             // return gbs and all speedups
             (
-                gbs,
+                cur_d[cur_d.len() - 1],
                 (
                     dp_speedup,
                     dp_ga_p3_speedup,
                     dp_ga_inner_overlap_speedup,
+                    straight_speedup,
                     pipeline_speedup,
                     pipeline_stages,
                 ),
@@ -71,16 +95,17 @@ fn test_bert_speedup_at_all_bs() {
         })
         .collect();
 
-    println!("Global Batch Size, DP No Overlap, DP+P3, DP+Normal Overlap, Best Hybrid Speedup | Best Hybrid Solution");
+    println!("Num of GPU, DP No Overlap, DP+P3, DP+Normal Overlap, Straight Speedup, Best Hybrid Speedup | Best Hybrid Solution");
     for i in res {
         println!(
-            "{}, {}, {}, {}, {} | {:?}",
+            "{}, {}, {}, {}, {}, {} | {:?}",
             i.0,
             (i.1).0,
             (i.1).1,
             (i.1).2,
             (i.1).3,
             (i.1).4,
+            (i.1).5,
             // (i.1).7,
         );
     }

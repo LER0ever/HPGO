@@ -63,7 +63,10 @@ impl ModelImporter for TorchGraphImporter {
         let mut states: model_perf::ModelStates = vec![];
 
         if VERBOSE {
-            println!("[python]\t Prepare() done, States.len(): {}", py_states.len());
+            println!(
+                "[python]\t Prepare() done, States.len(): {}",
+                py_states.len()
+            );
         }
         for s in py_states {
             let id: Option<u32> = s
@@ -82,7 +85,7 @@ impl ModelImporter for TorchGraphImporter {
             if VERBOSE {
                 println!("[python]\t @state: {:?}", desc);
             }
-            
+
             // below are required
             let compute_time: f64 = s.getattr(py, "compute_time").unwrap().extract(py).unwrap();
             let activation_size: f64 = s

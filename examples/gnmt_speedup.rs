@@ -27,7 +27,8 @@ fn test_bert_speedup_at_all_bs() {
         .map(|(gbs)| {
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-            let result = tgi.ImportFrom(&["./profiles/", "gnmt_32", "/graph.txt"].join(""));
+            let result =
+                tgi.ImportFrom(&["./profiles/", "gnmt_32_simplified", "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, 1, *gbs);
             model.optimizer_memory_scaling = 3;

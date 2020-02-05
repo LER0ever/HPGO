@@ -10,7 +10,7 @@ fn test_model_max_batch_size() {
     // Define Models: (name, PBS, optimizer scale, PAPB)
     let models = vec![
         ("vgg16", 32, 1, -1.0),
-        ("vgg19", 32, 1, -1.0),
+        ("vgg19", 32, 2, 70000000.0),
         ("xlnet", 1, 3, 3942774528.0),
         ("amoebanet", 8, 4, 250845152.0),
         ("bert_large", 2, 3, 1733171968.0),
