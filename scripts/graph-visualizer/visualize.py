@@ -3,7 +3,7 @@ import csv
 import os
 
 import sys
-sys.path.append("../../contrib")
+sys.path.append("../../contrib/pipedream/")
 import graph
 
 def convert_graph(graph_filename, output_directory, arch):
