@@ -50,6 +50,16 @@ jobs:
       - script: |
           pip install $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl
         displayName: 'Install new wheel'
+
+      - task: CopyFiles@2
+        inputs:
+          contents: '$(Build.BinariesDirectory)/**'
+          targetFolder: $(Build.ArtifactStagingDirectory)
+      
+      - task: PublishBuildArtifacts@1
+        inputs:
+          pathToPublish: $(Build.ArtifactStagingDirectory)
+          artifactName: LinuxWheel
       
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)"
@@ -101,6 +111,16 @@ jobs:
       - script: |
           pip install $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl
         displayName: 'Install new wheel'
+
+      - task: CopyFiles@2
+        inputs:
+          contents: '$(Build.BinariesDirectory)/**'
+          targetFolder: $(Build.ArtifactStagingDirectory)
+      
+      - task: PublishBuildArtifacts@1
+        inputs:
+          pathToPublish: $(Build.ArtifactStagingDirectory)
+          artifactName: MacOSWheel
       
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)"
@@ -155,6 +175,16 @@ jobs:
       - powershell: |
           pip install $(Build.BinariesDirectory)/$(Get-ChildItem $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl | Select -exp Name)
         displayName: 'Install new wheel'
+
+      - task: CopyFiles@2
+        inputs:
+          contents: '$(Build.BinariesDirectory)/**'
+          targetFolder: $(Build.ArtifactStagingDirectory)
+      
+      - task: PublishBuildArtifacts@1
+        inputs:
+          pathToPublish: $(Build.ArtifactStagingDirectory)
+          artifactName: Win32Wheel
       
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)" --interpreter python
