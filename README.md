@@ -1,7 +1,7 @@
 # HPGO
 Hybrid Parallelism Global Orchestration
 
-[![](https://img.shields.io/badge/PyPI-HPGO%200.92-blue?logo=python&logoColor=yellow)](https://pypi.org/project/HPGO/) [![Build Status](https://dev.azure.com/rongyi-io/HPGO/_apis/build/status/LER0ever.HPGO?branchName=master)](https://dev.azure.com/rongyi-io/HPGO/_build/latest?definitionId=1&branchName=master) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![](https://img.shields.io/badge/PyPI-HPGO%200.92-blue?logo=python&logoColor=yellow)](https://pypi.org/project/HPGO/) [![Build Status](https://dev.azure.com/rongyi-io/HPGO/_apis/build/status/LER0ever.HPGO?branchName=master)](https://dev.azure.com/rongyi-io/HPGO/_build/latest?definitionId=1&branchName=master) [![GitLab CI Status](https://gitlab.com/rongyi.io/work/alibaba/HPGO/badges/master/pipeline.svg)](https://gitlab.com/rongyi.io/work/alibaba/HPGO/pipelines) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 (_Project Name TBD_)
 
