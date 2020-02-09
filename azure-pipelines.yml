@@ -29,11 +29,7 @@ jobs:
           DATE="$(date +%Y-%m-%d)"
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
-  
-      - bash: |
-          cargo install maturin
-        displayName: "Install Maturin"
-  
+
       - task: UsePythonVersion@0
         inputs:
           versionSpec: '3.7'
@@ -42,7 +38,11 @@ jobs:
       - script: |
           python -m pip install --upgrade pip setuptools wheel
         displayName: 'Upgrade Python pip'
-  
+    
+      - bash: |
+          python -m pip install maturin
+        displayName: "Install Maturin via pip"
+
       - script: |
           maturin build -o $(Build.BinariesDirectory)
         displayName: 'Maturin build'
@@ -92,10 +92,6 @@ jobs:
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
   
-      - bash: |
-          cargo install maturin
-        displayName: "Install Maturin"
-  
       - task: UsePythonVersion@0
         inputs:
           versionSpec: '3.7'
@@ -104,6 +100,10 @@ jobs:
       - script: |
           python -m pip install --upgrade pip setuptools wheel
         displayName: 'Upgrade Python pip'
+
+      - bash: |
+          python -m pip install maturin
+        displayName: "Install Maturin via pip"
   
       - script: |
           maturin build -o $(Build.BinariesDirectory)
@@ -157,10 +157,6 @@ jobs:
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
   
-      - script: |
-          cargo install maturin
-        displayName: "Install PyO3-pack"
-  
       - task: UsePythonVersion@0
         inputs:
           versionSpec: '3.7'
@@ -168,7 +164,11 @@ jobs:
   
       - script: |
           python -m pip install --upgrade pip setuptools wheel
-        displayName: 'Install maturin'
+        displayName: 'Upgrade Python pip'
+
+      - script: |
+          python -m pip install maturin
+        displayName: "Install Maturin via pip"
   
       - script: |
           maturin build -o $(Build.BinariesDirectory) --interpreter python
