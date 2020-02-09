@@ -27,7 +27,7 @@ prettytable-rs = "0.8"
 ordered-float = "1.0"
 
 [dependencies.pyo3]
-version = "0.8.4"
+version = "0.8.5"
 [features]
 extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
