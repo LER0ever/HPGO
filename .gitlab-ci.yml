@@ -1,0 +1,25 @@
+image: rustlang/rust:nightly
+
+variables:
+  ARTIFACTS_DIR: artifacts
+  OUTPUT_PATH: ${CI_PROJECT_DIR}/${ARTIFACTS_DIR}/
+
+before_script:
+  - mkdir -p ${CI_PROJECT_DIR}/${ARTIFACTS_DIR}
+  - rustc --version
+  - cargo install maturin
+
+test:
+  dependencies: []
+  script:
+    - cargo test --no-default-features -- --nocapture
+
+build:nightly:
+  stage: build
+  script:
+    - cargo build --release
+    - maturin build --release -o ${OUTPUT_PATH}
+  artifacts:
+    name: "$CI_BUILD_NAME"
+    paths:
+      - ${ARTIFACTS_DIR}
