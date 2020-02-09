@@ -34,7 +34,7 @@ default = ["extension-module"]
 
 [dev-dependencies]
 criterion = "0.3"
-quickcheck = "0.8"
+quickcheck = "0.9"
 quickcheck_macros = "0.8"
 
 [package.metadata.maturin]
