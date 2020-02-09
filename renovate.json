@@ -1,5 +1,44 @@
 {
-  "extends": [
-    "config:base"
-  ]
+  "ansible": {"enabled": false},
+  "bazel": {"enabled": false},
+  "buildkite": {"enabled": false},
+  "bundler": {"enabled": false},
+  "cargo": {
+    "enabled": true,
+    "lockFileMaintenance": { "enabled": true },
+    "binarySource": "docker"
+  },
+  "circleci": {"enabled": false},
+  "composer": {"enabled": false},
+  "deps-edn": {"enabled": false},
+  "dockerfile": {"enabled": true},
+  "docker-compose": {"enabled": true},
+  "droneci": {"enabled": false},
+  "github-actions": {"enabled": true},
+  "gitlabci": {"enabled": true},
+  "gitlabci-include": {"enabled": true},
+  "git-submodules": {"enabled": false},
+  "gomod": {"enabled": false},
+  "gradle": {"enabled": false},
+  "gradle-wrapper": {"enabled": false},
+  "helm-requirements": {"enabled": false},
+  "homebrew": {"enabled": false},
+  "kubernetes": {"enabled": false},
+  "leiningen": {"enabled": false},
+  "maven": {"enabled": false},
+  "meteor": {"enabled": false},
+  "mix": {"enabled": false},
+  "npm": {"enabled": false},
+  "nuget": {"enabled": false},
+  "nvm": {"enabled": false},
+  "pipenv": {"enabled": false},
+  "pip_requirements": {"enabled": false},
+  "pip_setup": {"enabled": false},
+  "poetry": {"enabled": false},
+  "pub": {"enabled": false},
+  "ruby-version": {"enabled": false},
+  "sbt": {"enabled": false},
+  "swift": {"enabled": false},
+  "terraform": {"enabled": false},
+  "travis": {"enabled": false}
 }

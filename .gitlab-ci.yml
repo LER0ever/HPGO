@@ -21,4 +21,5 @@ maturin-build-dind:
     name: "$CI_BUILD_NAME"
     paths:
       - ${ARTIFACTS_DIR}
+    expire_in: 1 week
   
