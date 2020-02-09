@@ -35,7 +35,7 @@ default = ["extension-module"]
 [dev-dependencies]
 criterion = "0.3"
 quickcheck = "0.9"
-quickcheck_macros = "0.8"
+quickcheck_macros = "0.9"
 
 [package.metadata.maturin]
 requires-dist = ["graphviz~=0.13"]
