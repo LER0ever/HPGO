@@ -40,5 +40,13 @@
   "sbt": {"enabled": false},
   "swift": {"enabled": false},
   "terraform": {"enabled": false},
-  "travis": {"enabled": false}
+  "travis": {"enabled": false},
+  "hostRules": [
+    {
+      "domainName": "github.com",
+      "encrypted": {
+        "token": "rcCSUneP45Rue+D7lY0is+Z0k2buSpZAn6jhIKzLtNiqS1V4APK0gdCoNdXuyJQ8SJgttD4/Oo+rUeFGY5ExX7yfJV6kH+UFC6B0PGK2OuZNb8/pwRdq6tcV8VOXgXCKBdp+gNpTp7B00feRRd70jCtZm3PLRY6h4jV57pKRRLNbyP7i9U/uiwLOnoS4jM2AECI8P6VqpnpZtySumsmXhkxFipQ5VRcS9gOAhL0aOoALh8+9zR+UNJiLEVCUtpVIEeu8Me1a1n6hR5VxCa59Hz2UVPOf2z8Hvo5Is9Su3/IQ084p/jJ3N3Rphhq4xQHukgGlr2ct5FfiHS9zYlLciA=="
+      }
+    }
+  ]
 }
