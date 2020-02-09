@@ -1,4 +1,4 @@
-image: konstin2/maturin
+image: konstin2/maturin:master
 
 variables:
   ARTIFACTS_DIR: artifacts
