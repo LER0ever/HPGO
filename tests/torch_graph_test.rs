@@ -4,13 +4,13 @@ use HPGO::input::*;
 #[test]
 fn test_python_env() {
     // should not crash
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     tgi.ImportFrom("./profiles/xlnet/graph.txt");
 }
 
 #[test]
 fn test_python_import_basic() {
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom("./profiles/vgg16/graph.txt");
     match result {
         (Some(x), Some(y)) => {

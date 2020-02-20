@@ -7,7 +7,7 @@ pub mod tensorflow_timeline;
 
 use model::model_perf;
 
-pub trait ModelImporter {
+pub trait LayerwiseModelImporter {
     fn new() -> Self;
     fn ImportFrom(
         &self,

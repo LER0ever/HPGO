@@ -39,7 +39,7 @@ fn test_gnmt_speedup_at_all_bs() {
         .par_iter()
         .map(|(cur_d)| {
             // Construct Model
-            let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+            let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", "gnmt_large", "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, 128, gbs);

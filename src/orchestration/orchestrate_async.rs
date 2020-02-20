@@ -55,7 +55,7 @@ impl AsyncOrchestrate {
         gbs: u32,
         seps: Vec<u32>,
     ) -> AsyncOrchestrate {
-        let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+        let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
         let result = tgi.ImportFrom(filename);
         let (perf, states) = (result.0.unwrap(), result.1.unwrap());
         let model = model::Model::new_from_model_perf(perf, states, pbs, gbs);

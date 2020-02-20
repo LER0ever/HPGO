@@ -1,4 +1,4 @@
-use super::ModelImporter;
+use super::LayerwiseModelImporter;
 use input::torch_graph_py;
 use model::model_perf;
 use pyo3::prelude::*;
@@ -8,7 +8,7 @@ const VERBOSE: bool = true;
 
 pub struct TorchGraphImporter {}
 
-impl ModelImporter for TorchGraphImporter {
+impl LayerwiseModelImporter for TorchGraphImporter {
     fn new() -> TorchGraphImporter {
         TorchGraphImporter {}
     }

@@ -50,7 +50,7 @@ fn test_orchestrate_compute_plan() {
 #[test]
 fn test_orchestrate_analyse_plan() {
     // Construct Model
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 256);
@@ -69,7 +69,7 @@ fn test_orchestrate_analyse_plan() {
 #[test]
 fn test_orchestrate_plan_straight() {
     // Construct Model
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 16);
@@ -86,7 +86,7 @@ fn test_orchestrate_plan_straight() {
 #[test]
 fn test_orchestrate_plan_consistency() {
     // Construct Model
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 128);
@@ -109,8 +109,8 @@ fn test_orchestrate_plan_consistency() {
 #[test]
 fn test_orchestrate_orchestrate() {
     // Construct Model
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-    let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
+    let result = tgi.ImportFrom(&["./profiles/", "xlnet_36", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 16);
     model.optimizer_memory_scaling = 3;
@@ -142,7 +142,7 @@ fn test_orchestrate_orchestrate() {
 #[test]
 fn test_orchestrate_bipartition() {
     // Construct Model
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 256);
@@ -159,8 +159,8 @@ fn test_orchestrate_bipartition() {
 #[test]
 fn test_orchestrate_sync_speedup() {
     // Construct Model
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
-    let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
+    let result = tgi.ImportFrom(&["./profiles/", "xlnet_36", "/graph.txt"].join(""));
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let mut model = model::Model::new_from_model_perf(perf, states, 1, 4);
     model.optimizer_memory_scaling = 3;

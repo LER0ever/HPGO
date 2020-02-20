@@ -8,7 +8,7 @@ use HPGO::model::*;
 
 fn t_p3_for(filename: &str, inter_batch: bool) -> cc_overlap::OverlapStats {
     let d16 = device::Devices::new(16, vec![8, 16]);
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom(filename);
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let model = model::Model::new_from_model_perf(perf, states, 1, 1);

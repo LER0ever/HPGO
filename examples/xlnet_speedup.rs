@@ -26,7 +26,7 @@ fn test_bert_speedup_at_all_bs() {
         .par_iter()
         .map(|(gbs)| {
             // Construct Model
-            let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+            let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/xlnet-36.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, 1, *gbs);

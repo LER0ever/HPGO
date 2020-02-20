@@ -18,7 +18,7 @@ pub struct HierarchicalConductor {
 
 impl HierarchicalConductor {
     pub fn new_from_torch_graph(filename: &str, pbs: u32, gbs: u32) -> HierarchicalConductor {
-        let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+        let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
         let result = tgi.ImportFrom(filename);
         let (perf, states) = (result.0.unwrap(), result.1.unwrap());
         let model = model::Model::new_from_model_perf(perf, states, pbs, gbs);

@@ -7,7 +7,7 @@ use pyo3::wrap_pyfunction;
 
 #[pyfunction]
 fn model_from_torch_graph(filename: &str, pbs: u32, gbs: u32) -> PyResult<model::Model> {
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom(filename);
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let model = model::Model::new_from_model_perf(perf, states, pbs, gbs);
@@ -28,7 +28,7 @@ fn conductor_from_torch_graph_and_seps(
     gbs: u32,
     seps: Vec<u32>,
 ) -> PyResult<orchestrate_async::AsyncOrchestrate> {
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom(filename);
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     let m = model::Model::new_from_model_perf(perf, states, pbs, gbs);

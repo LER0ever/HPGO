@@ -27,7 +27,7 @@ fn test_cur_ga_iter_size() {
     let res: Vec<_> = models
         .iter()
         .map(|(s, bs, opt_scale, papb)| {
-            let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+            let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", s, "/graph.txt"].join(""));
             let (perf, states) = (result.0.unwrap(), result.1.unwrap());
             let mut model = model::Model::new_from_model_perf(perf, states, *bs, 1024);

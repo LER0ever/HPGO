@@ -37,7 +37,7 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     if VERBOSE {
         println!("[main]\t Importing Model from TorchGraph...")
     }
-    let tgi: torch_graph::TorchGraphImporter = ModelImporter::new();
+    let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom(&mc.filename);
     let (perf, states) = (result.0.unwrap(), result.1.unwrap());
     if VERBOSE {

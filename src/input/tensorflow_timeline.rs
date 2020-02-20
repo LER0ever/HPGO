@@ -1,9 +1,9 @@
-use super::ModelImporter;
+use super::LayerwiseModelImporter;
 use model::model_perf;
 
 struct TensorflowTimelineImporter {}
 
-impl ModelImporter for TensorflowTimelineImporter {
+impl LayerwiseModelImporter for TensorflowTimelineImporter {
     fn new() -> TensorflowTimelineImporter {
         TensorflowTimelineImporter {}
     }
