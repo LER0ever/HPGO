@@ -7,10 +7,6 @@ variables:
 services:
   - docker:19.03.7-dind
 
-stages:
-  - build
-  - deploy
-
 before_script:
   - docker info
   - pwd
@@ -28,7 +24,7 @@ maturin-build-dind:
     expire_in: 1 week
 
 cargo-doc-deploy:
-  stage: deploy
+  stage: build
   script:
     - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'yum install -y git; rustup default nightly; cargo doc --no-deps' # to target/doc
     - git clone https://LER0ever:$GITLAB_GIT_TOKEN@gitlab.com/rongyi.io/configurations/websites/HPGO.rongyi.io.git
