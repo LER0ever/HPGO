@@ -38,7 +38,7 @@ cargo-doc-build:
     expire_in: 1 week
 
 cargo-doc-deploy:
-  image: go:latest
+  image: golang:latest
   stage: deploy
   script:
     - ls
