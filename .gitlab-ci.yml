@@ -11,11 +11,6 @@ stages:
   - build
   - deploy
 
-before_script:
-  - docker info
-  - pwd
-  - ls
-
 maturin-build-dind:
   stage: build
   script:
