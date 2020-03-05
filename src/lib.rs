@@ -6,6 +6,7 @@ extern crate itertools;
 extern crate ordered_float;
 extern crate pyo3;
 extern crate rayon;
+extern crate pest;
 
 /// HPGO Model Analysis
 pub mod analysis;

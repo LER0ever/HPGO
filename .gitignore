@@ -51,7 +51,7 @@ lab/
 *.dll
 
 # Fortran module files
-*.mod
+# *.mod, go.mod you idiot
 *.smod
 
 # Compiled Static libraries
