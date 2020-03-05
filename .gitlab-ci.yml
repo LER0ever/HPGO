@@ -30,7 +30,7 @@ maturin-build-dind:
 cargo-doc-deploy:
   stage: deploy
   script:
-    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'rustup default nightly; cargo doc --no-deps' # to target/doc
+    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'yum install -y git; rustup default nightly; cargo doc --no-deps' # to target/doc
     - git clone https://LER0ever:$GITLAB_GIT_TOKEN@gitlab.com/rongyi.io/configurations/websites/HPGO.rongyi.io.git
     - git config --global user.email "i@rongyi.io"
     - git config --global user.name "LER0ever"
