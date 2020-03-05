@@ -7,6 +7,10 @@ variables:
 services:
   - docker:19.03.7-dind
 
+stages:
+  - build
+  - deploy
+
 before_script:
   - docker info
   - pwd
@@ -22,4 +26,19 @@ maturin-build-dind:
     paths:
       - ${ARTIFACTS_DIR}
     expire_in: 1 week
-  
+
+cargo-doc-deploy:
+  stage: deploy
+  script:
+    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'rustup default nightly; cargo doc --no-deps' # to target/doc
+    - git clone https://LER0ever:$GITLAB_GIT_TOKEN@gitlab.com/rongyi.io/configurations/websites/HPGO.rongyi.io.git
+    - git config --global user.email "i@rongyi.io"
+    - git config --global user.name "LER0ever"
+    - cd HPGO.rongyi.io
+    - rm -rf *
+    - cp -r ../target/doc/* .
+    - echo '<!DOCTYPE html><html><head><meta http-equiv="Refresh" content="0; url=/HPGO" /></head><body></body></html>' > index.html
+    - git add -A
+    - git diff-index --quiet HEAD || git commit -m "HPGO Rust Docs | Auto Deploy | $CI_SERVER_NAME $CI_PIPELINE_ID"
+    - git push
+
