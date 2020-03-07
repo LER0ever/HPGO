@@ -12,6 +12,7 @@ Hybrid Parallelism Global Orchestration
 ## Get Started
 
 ### Install
+The binary package of this library is provided for every release.
 
 #### From Rust Cargo, as a Rust crate
 ```bash

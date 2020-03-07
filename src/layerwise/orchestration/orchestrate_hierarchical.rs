@@ -1,8 +1,8 @@
 use environment::device;
 use input::*;
-use model::model;
-use orchestration::orchestrate_async::MatrixCell;
-use orchestration::{Orchestrate, OrchestrationResult};
+use layerwise::model::model;
+use layerwise::orchestration::orchestrate_async::MatrixCell;
+use layerwise::orchestration::{Orchestrate, OrchestrationResult};
 use rayon::prelude::*;
 use std::collections::BTreeSet;
 

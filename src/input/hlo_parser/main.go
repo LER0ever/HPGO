@@ -50,12 +50,12 @@ type Instruction struct {
 type FunctionCall struct {
 	ReturnTypes []RichType  `(@@ | "(" @@ { "," @@ } ")" )`
 	Name        string      `@Ident`
-	Params      []RichParam `"(" [ @@ { "," @@ } ] ")"`
+	Params      []RichParam `"(" ( @@ { "," @@ } )? ")"`
 }
 
 type Meta struct {
 	Key        string  `@Ident "="`
-	Value      string  `(@Ident|@VarName|@Number)?`
+	Value      *string `(@Ident|@VarName|@Number)?`
 	DictValue  []Dict  `("{" { @@ } "}")?`
 	ListNums   []int32 `("{" @Number {"," @Number } "}")?`
 	ListSlices []Slice `("{" @@ {"," @@ } "}")?`

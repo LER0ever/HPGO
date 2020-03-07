@@ -1,6 +1,6 @@
 use environment::*;
-use model::*;
-use parallelism::*;
+use layerwise::model::*;
+use layerwise::parallelism::*;
 use std::collections::BTreeSet;
 
 /// Calculate the speedup for the partition, assuming GPipe microbatch arrangement

@@ -199,3 +199,4 @@ lab/
 *.png
 *.dot
 flattened/
+src/input/hlo_parser/hlo-parser

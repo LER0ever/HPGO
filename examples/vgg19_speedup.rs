@@ -7,12 +7,12 @@ use ordered_float::OrderedFloat;
 use rayon::prelude::*;
 use std::cmp::min;
 use std::collections::BTreeSet;
-use HPGO::analysis::*;
+use HPGO::layerwise::analysis::*;
 use HPGO::environment::*;
 use HPGO::input::*;
-use HPGO::model::*;
-use HPGO::orchestration::*;
-use HPGO::parallelism::*;
+use HPGO::layerwise::model::*;
+use HPGO::layerwise::orchestration::*;
+use HPGO::layerwise::parallelism::*;
 
 fn test_vgg_speedup_at_all_bs() {
     // GBS

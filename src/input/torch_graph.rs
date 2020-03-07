@@ -1,6 +1,6 @@
 use super::LayerwiseModelImporter;
 use input::torch_graph_py;
-use model::model_perf;
+use layerwise::model::model_perf;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 

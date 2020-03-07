@@ -1,6 +1,6 @@
 extern crate HPGO;
 use HPGO::environment::*;
-use HPGO::parallelism::split_concat;
+use HPGO::layerwise::parallelism::split_concat;
 
 fn t_split_concat_all2all_time(
     d: &device::Devices,

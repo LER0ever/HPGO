@@ -1,9 +1,9 @@
 extern crate HPGO;
 extern crate rayon;
 use rayon::prelude::*;
-use HPGO::analysis::*;
+use HPGO::layerwise::analysis::*;
 use HPGO::input::*;
-use HPGO::model::*;
+use HPGO::layerwise::model::*;
 
 #[test]
 fn test_model_max_batch_size() {

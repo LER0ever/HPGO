@@ -1,6 +1,6 @@
-use analysis::*;
+use layerwise::analysis::*;
 use environment::*;
-use model::*;
+use layerwise::model::*;
 use std::collections::BTreeSet;
 
 pub fn all_reduce_time(d: &device::Devices, gids: &BTreeSet<u32>, size: f64) -> f64 {

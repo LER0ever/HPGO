@@ -1,10 +1,10 @@
 extern crate HPGO;
 extern crate rayon;
 use rayon::prelude::*;
-use HPGO::analysis::*;
+use HPGO::layerwise::analysis::*;
 use HPGO::environment::*;
 use HPGO::input::*;
-use HPGO::model::*;
+use HPGO::layerwise::model::*;
 
 fn t_p3_for(filename: &str, inter_batch: bool) -> cc_overlap::OverlapStats {
     let d16 = device::Devices::new(16, vec![8, 16]);

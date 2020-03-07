@@ -11,11 +11,6 @@ stages:
   - build
   - deploy
 
-before_script:
-  - docker info
-  - pwd
-  - ls
-
 maturin-build-dind:
   stage: build
   script:
@@ -27,10 +22,24 @@ maturin-build-dind:
       - ${ARTIFACTS_DIR}
     expire_in: 1 week
 
-cargo-doc-deploy:
-  stage: deploy
+cargo-doc-build:
+  stage: build
   script:
-    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'rustup default nightly; cargo doc --no-deps' # to target/doc
+    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'yum install -y git; rustup default nightly; cargo doc --no-deps' # to target/doc
+  artifacts:
+    name: "$CI_BUILD_NAME-doc"
+    paths:
+      - target/doc
+    expire_in: 1 week
+
+cargo-doc-deploy:
+  image: golang:latest
+  stage: deploy
+  only:
+    refs:
+      - master
+  script:
+    - ls
     - git clone https://LER0ever:$GITLAB_GIT_TOKEN@gitlab.com/rongyi.io/configurations/websites/HPGO.rongyi.io.git
     - git config --global user.email "i@rongyi.io"
     - git config --global user.name "LER0ever"
@@ -41,4 +50,3 @@ cargo-doc-deploy:
     - git add -A
     - git diff-index --quiet HEAD || git commit -m "HPGO Rust Docs | Auto Deploy | $CI_SERVER_NAME $CI_PIPELINE_ID"
     - git push
-

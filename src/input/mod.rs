@@ -8,7 +8,9 @@ pub mod tensorflow_timeline;
 // import from HLOComputation.to_string() result
 pub mod hlo_string;
 
-use model::model_perf;
+use layerwise::model::model_perf;
+use ir::hlo_ast::HLORoot;
+use std::error::Error;
 
 pub trait LayerwiseModelImporter {
     fn new() -> Self;
@@ -26,7 +28,7 @@ pub trait HLOModelImporter {
     fn ImportFrom(
         &self,
         filename: &str,
-    ) -> ();
+    ) -> Result<HLORoot, Box<Error>>;
 }
 
 pub trait DAGModelImporter {
