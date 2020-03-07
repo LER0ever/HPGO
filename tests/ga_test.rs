@@ -1,11 +1,11 @@
 extern crate HPGO;
 extern crate rayon;
 use rayon::prelude::*;
-use HPGO::analysis::*;
+use HPGO::layerwise::analysis::*;
 use HPGO::environment::*;
 use HPGO::input::*;
-use HPGO::model::*;
-use HPGO::parallelism::*;
+use HPGO::layerwise::model::*;
+use HPGO::layerwise::parallelism::*;
 
 #[test]
 fn test_cur_ga_iter_size() {

@@ -5,9 +5,9 @@ use ordered_float::OrderedFloat;
 use rayon::prelude::*;
 use HPGO::environment::*;
 use HPGO::input::*;
-use HPGO::model::*;
-use HPGO::orchestration::*;
-use HPGO::parallelism::*;
+use HPGO::layerwise::model::*;
+use HPGO::layerwise::orchestration::*;
+use HPGO::layerwise::parallelism::*;
 
 #[test]
 fn test_orchestrate_compute_plan() {

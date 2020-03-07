@@ -1,6 +1,6 @@
 use environment::*;
-use model::*;
-use parallelism::*;
+use layerwise::model::*;
+use layerwise::parallelism::*;
 use rayon::prelude::*;
 use std::collections::BTreeSet;
 

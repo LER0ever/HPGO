@@ -1,4 +1,4 @@
-use model::model_perf;
+use layerwise::model::model_perf;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 

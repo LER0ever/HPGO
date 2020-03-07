@@ -1,6 +1,6 @@
 extern crate HPGO;
 use HPGO::environment::*;
-use HPGO::parallelism::data_parallel;
+use HPGO::layerwise::parallelism::data_parallel;
 
 #[test]
 fn test_all_reduce_time() {

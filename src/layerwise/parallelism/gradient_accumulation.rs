@@ -1,7 +1,7 @@
-use analysis::*;
+use layerwise::analysis::*;
 use environment::*;
-use model::*;
-use parallelism::data_parallel;
+use layerwise::model::*;
+use layerwise::parallelism::data_parallel;
 use std::collections::BTreeSet;
 
 const VERBOSE: bool = true;

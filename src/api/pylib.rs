@@ -1,7 +1,7 @@
 use environment::*;
 use input::*;
-use model::*;
-use orchestration::*;
+use layerwise::model::*;
+use layerwise::orchestration::*;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 

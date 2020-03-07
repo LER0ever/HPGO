@@ -1,7 +1,7 @@
 extern crate HPGO;
 use HPGO::environment::network;
 use HPGO::input::*;
-use HPGO::orchestration::*;
+use HPGO::layerwise::orchestration::*;
 
 #[test]
 fn test_orchestrate_hierarchical_compute_plan() {
