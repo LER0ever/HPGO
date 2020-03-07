@@ -55,7 +55,7 @@ type FunctionCall struct {
 
 type Meta struct {
 	Key        string  `@Ident "="`
-	Value      string  `(@Ident|@VarName|@Number)?`
+	Value      *string `(@Ident|@VarName|@Number)?`
 	DictValue  []Dict  `("{" { @@ } "}")?`
 	ListNums   []int32 `("{" @Number {"," @Number } "}")?`
 	ListSlices []Slice `("{" @@ {"," @@ } "}")?`

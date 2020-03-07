@@ -1,4 +1,4 @@
-module gitlab.com/rongyi.io/work/alibaba/hlo-experiments/parser
+module github.com/LER0ever/HPGO/src/input/hlo-parser
 
 go 1.13
 
