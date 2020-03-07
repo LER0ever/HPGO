@@ -50,7 +50,7 @@ type Instruction struct {
 type FunctionCall struct {
 	ReturnTypes []RichType  `(@@ | "(" @@ { "," @@ } ")" )`
 	Name        string      `@Ident`
-	Params      []RichParam `"(" [ @@ { "," @@ } ] ")"`
+	Params      []RichParam `"(" ( @@ { "," @@ } )? ")"`
 }
 
 type Meta struct {

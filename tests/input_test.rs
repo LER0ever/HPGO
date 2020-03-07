@@ -2,14 +2,14 @@ extern crate HPGO;
 use HPGO::input::*;
 
 #[test]
-fn test_python_env() {
+fn test_torch_python_env() {
     // should not crash
     let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     tgi.ImportFrom("./profiles/xlnet/graph.txt");
 }
 
 #[test]
-fn test_python_import_basic() {
+fn test_torch_python_import_basic() {
     let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom("./profiles/vgg16/graph.txt");
     match result {
@@ -28,4 +28,19 @@ fn test_python_import_basic() {
             panic!();
         }
     }
+}
+
+#[test]
+fn test_hlo_import_basic_json() {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let result = hi.ImportFrom("./tests/test_data/hlo/elemwise.json").unwrap();
+    println!("{:#?}", result);
+}
+
+#[test]
+fn test_hlo_import_full_json() {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let result = hi.ImportFrom("./tests/test_data/hlo/hlo.json").unwrap();
+    // as long as unwrap succeeds
+    // println!("{:#?}", result);
 }
