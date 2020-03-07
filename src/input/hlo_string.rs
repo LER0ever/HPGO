@@ -1,5 +1,5 @@
 use super::HLOModelImporter;
-use layerwise::model::model_perf;
+use ir::hlo_ast;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 
