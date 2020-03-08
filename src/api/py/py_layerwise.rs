@@ -3,7 +3,7 @@ use input::*;
 use layerwise::model::*;
 use layerwise::orchestration::*;
 use pyo3::prelude::*;
-use pyo3::{wrap_pyfunction, wrap_pymodule};
+use pyo3::{wrap_pyfunction};
 
 #[pyfunction]
 fn model_from_torch_graph(filename: &str, pbs: u32, gbs: u32) -> PyResult<model::Model> {

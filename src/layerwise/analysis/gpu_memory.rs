@@ -1,8 +1,8 @@
 use environment::*;
 use layerwise::model::*;
-use layerwise::parallelism::*;
+
 use rayon::prelude::*;
-use std::collections::BTreeSet;
+
 
 pub fn max_single_gpu_batch_size(m: &model::Model) -> u32 {
     // assume m is already under GBS

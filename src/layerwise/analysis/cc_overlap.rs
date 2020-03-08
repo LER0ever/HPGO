@@ -2,7 +2,7 @@ use environment::*;
 use layerwise::model::*;
 use layerwise::parallelism::*;
 use rayon::prelude::*;
-use std::collections::BTreeSet;
+
 
 #[derive(Debug)]
 struct DataBlock {

@@ -1,6 +1,6 @@
 use environment::device;
 use input::*;
-use itertools::sorted;
+
 use layerwise::model::model;
 use layerwise::orchestration::{Orchestrate, OrchestrationResult};
 use ordered_float::OrderedFloat;
@@ -112,8 +112,8 @@ impl AsyncOrchestrate {
         // DP Initialization
         for j in 0..compute_times[0].len() {
             let cur_compute_time = compute_times[0][j];
-            let cur_activation_size = activation_sizes[0][j];
-            let cur_parameter_size = parameter_sizes[0][j];
+            let _cur_activation_size = activation_sizes[0][j];
+            let _cur_parameter_size = parameter_sizes[0][j];
             let max_m = if straight { 1 } else { num_machines };
             for m in 0..max_m {
                 if VERBOSE {
@@ -430,11 +430,11 @@ impl AsyncOrchestrate {
     pub fn compute_bipartition(&self) -> AsyncOrchestrateResult {
         let compute_times = &self.m.perf.compute_times;
         let output_activation_sizes = &self.m.perf.output_activation_sizes;
-        let all_predecessor_ids = &self.m.perf.all_predecessor_ids;
+        let _all_predecessor_ids = &self.m.perf.all_predecessor_ids;
         let d = &self.d;
         let L = compute_times[0].len() as u32;
 
-        let empty: bitset = vec![false; d.num_gpus as usize];
+        let _empty: bitset = vec![false; d.num_gpus as usize];
 
         // let bicards: Vec<(device::ReturnDevices, device::ReturnDevices)> = d
         //     .next_cards_with_replica_helper(empty, num_machines, 2)

@@ -28,7 +28,7 @@ pub trait HLOModelImporter {
     fn ImportFrom(
         &self,
         filename: &str,
-    ) -> Result<HLORoot, Box<Error>>;
+    ) -> Result<HLORoot, Box<dyn Error>>;
 }
 
 pub trait DAGModelImporter {

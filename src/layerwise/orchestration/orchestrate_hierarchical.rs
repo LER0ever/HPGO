@@ -1,4 +1,4 @@
-use environment::device;
+
 use input::*;
 use layerwise::model::model;
 use layerwise::orchestration::orchestrate_async::MatrixCell;
@@ -64,7 +64,7 @@ impl HierarchicalConductor {
         for i in 0..compute_times.len() as usize {
             for j in i..compute_times[0].len() as usize {
                 let cur_compute_time = compute_times[i][j];
-                let cur_activation_size = activation_sizes[i][j];
+                let _cur_activation_size = activation_sizes[i][j];
                 let cur_parameter_size = parameter_sizes[i][j];
                 let max_m = num_machines;
                 for m in 0..max_m as usize {

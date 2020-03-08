@@ -13,7 +13,7 @@ fn test_torch_python_import_basic() {
     let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
     let result = tgi.ImportFrom("./profiles/vgg16/graph.txt");
     match result {
-        (Some(x), Some(y)) => {
+        (Some(x), Some(_y)) => {
             println!("Got result successfully, printing all fields...");
             // NOTE: could've just print x, as it derives Debug
             println!("compute_times: {:?}", x.compute_times);
@@ -40,7 +40,7 @@ fn test_hlo_import_basic_json() {
 #[test]
 fn test_hlo_import_full_json() {
     let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
-    let result = hi.ImportFrom("./tests/test_data/hlo/hlo.json").unwrap();
+    let _result = hi.ImportFrom("./tests/test_data/hlo/hlo.json").unwrap();
     // as long as unwrap succeeds
     // println!("{:#?}", result);
 }

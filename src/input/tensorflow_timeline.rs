@@ -9,7 +9,7 @@ impl LayerwiseModelImporter for TensorflowTimelineImporter {
     }
     fn ImportFrom(
         &self,
-        filename: &str,
+        _filename: &str,
     ) -> (
         Option<model_perf::ModelPerf>,
         Option<model_perf::ModelStates>,

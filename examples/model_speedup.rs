@@ -5,9 +5,9 @@ extern crate ordered_float;
 extern crate rayon;
 use ordered_float::OrderedFloat;
 use rayon::prelude::*;
-use std::cmp::min;
+
 use std::collections::BTreeSet;
-use HPGO::layerwise::analysis::*;
+
 use HPGO::environment::*;
 use HPGO::input::*;
 use HPGO::layerwise::model::*;
@@ -58,7 +58,7 @@ fn test_speedup_at_all_bs(mc: ModelConfig, flat: bool) {
     let res: Vec<_> = mc
         .gbs
         .par_iter()
-        .map(|(gbs)| {
+        .map(|gbs| {
             if VERBOSE {
                 println!("[main]\t Planning in parallel for bs = {} ...", *gbs);
             }
