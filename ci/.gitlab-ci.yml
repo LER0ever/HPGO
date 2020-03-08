@@ -38,6 +38,7 @@ cargo-doc-deploy:
   only:
     refs:
       - master
+      - hlo-experiments
   script:
     - ls
     - git clone https://LER0ever:$GITLAB_GIT_TOKEN@gitlab.com/rongyi.io/configurations/websites/HPGO.rongyi.io.git
