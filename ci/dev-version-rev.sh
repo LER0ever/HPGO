@@ -6,6 +6,6 @@ next="${current}+${commit}"
 echo $current
 echo $next
 
-sed "s/$current/$next/" Cargo.toml > Cargo.toml
+sed -i "s/$current/$next/" Cargo.toml
 
 # cargo check
