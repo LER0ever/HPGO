@@ -8,7 +8,7 @@ jobs:
   - job:
     displayName: manylinux
     pool:
-      vmImage: 'ubuntu-18.04'
+      vmImage: 'ubuntu-latest'
   
     steps:
       - script: |
@@ -32,7 +32,7 @@ jobs:
 
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: '3.7'
+          versionSpec: '3.8'
           architecture: 'x64'
     
       - script: |
@@ -48,7 +48,7 @@ jobs:
         displayName: 'Maturin build'
   
       - script: |
-          pip install $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl
+          pip install $(Build.BinariesDirectory)/HPGO-*-cp38-*.whl
         displayName: 'Install new wheel'
 
       - task: CopyFiles@2
@@ -69,10 +69,10 @@ jobs:
   
   
   - job:
-    displayName: macOS-10.13
+    displayName: macOS
   
     pool:
-      vmImage: 'macOS-10.13'
+      vmImage: 'macOS-latest'
   
     steps:
       - script: |
@@ -94,7 +94,7 @@ jobs:
   
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: '3.7'
+          versionSpec: '3.8'
           architecture: 'x64'
     
       - script: |
@@ -110,7 +110,7 @@ jobs:
         displayName: 'Maturin build'
   
       - script: |
-          pip install $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl
+          pip install $(Build.BinariesDirectory)/HPGO-*-cp38-*.whl
         displayName: 'Install new wheel'
 
       - task: CopyFiles@2
@@ -159,7 +159,7 @@ jobs:
   
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: '3.7'
+          versionSpec: '3.8'
           architecture: 'x64'
   
       - script: |
@@ -175,7 +175,7 @@ jobs:
         displayName: 'Maturin build'
   
       - powershell: |
-          pip install $(Build.BinariesDirectory)/$(Get-ChildItem $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl | Select -exp Name)
+          pip install $(Build.BinariesDirectory)/$(Get-ChildItem $(Build.BinariesDirectory)/HPGO-*-cp38-*.whl | Select -exp Name)
         displayName: 'Install new wheel'
 
       - task: CopyFiles@2
