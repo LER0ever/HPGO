@@ -46,6 +46,7 @@ cargo-doc-deploy:
     - cd HPGO.rongyi.io
     - rm -rf *
     - cp -r ../target/doc/* .
+    - cp ../ci/rust-doc.gitlab-ci.yml .gitlab-ci.yml
     - echo '<!DOCTYPE html><html><head><meta http-equiv="Refresh" content="0; url=/HPGO" /></head><body></body></html>' > index.html
     - git add -A
     - git diff-index --quiet HEAD || git commit -m "HPGO Rust Docs | Auto Deploy | $CI_SERVER_NAME $CI_PIPELINE_ID"

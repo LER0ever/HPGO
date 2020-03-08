@@ -1,0 +1,14 @@
+image: alpine:latest
+
+pages:
+  stage: deploy
+  script:
+  - echo 'Deploying Status Page ...'
+  - mkdir -p .public
+  - cp -r * .public/
+  - mv .public public
+  artifacts:
+    paths:
+    - public
+  only:
+  - master
