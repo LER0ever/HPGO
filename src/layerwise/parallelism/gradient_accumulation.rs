@@ -1,7 +1,7 @@
-use layerwise::analysis::*;
-use environment::*;
-use layerwise::model::*;
-use layerwise::parallelism::data_parallel;
+use crate::layerwise::analysis::*;
+use crate::environment::*;
+use crate::layerwise::model::*;
+use crate::layerwise::parallelism::data_parallel;
 
 
 const VERBOSE: bool = true;

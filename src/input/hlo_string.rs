@@ -1,5 +1,5 @@
 use super::HLOModelImporter;
-use ir::hlo_ast;
+use crate::ir::hlo_ast;
 
 
 use log::{debug};

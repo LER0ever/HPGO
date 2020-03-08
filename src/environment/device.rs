@@ -1,4 +1,4 @@
-use environment::network::GIGABYTE;
+use crate::environment::network::GIGABYTE;
 use pyo3::prelude::*;
 use std::cmp::{max, min};
 use std::collections::{BTreeSet, HashMap};

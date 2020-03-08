@@ -1,6 +1,6 @@
-use environment::*;
-use layerwise::model::*;
-use layerwise::parallelism::*;
+use crate::environment::*;
+use crate::layerwise::model::*;
+use crate::layerwise::parallelism::*;
 use rayon::prelude::*;
 
 

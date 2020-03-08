@@ -6,8 +6,8 @@ use pyo3::{wrap_pymodule};
 pub mod py_layerwise;
 pub mod py_ir;
 
-use api::py::py_layerwise::*;
-use api::py::py_ir::*;
+use crate::api::py::py_layerwise::*;
+use crate::api::py::py_ir::*;
 
 #[pymodule]
 fn HPGO(_py: Python, m: &PyModule) -> PyResult<()> {

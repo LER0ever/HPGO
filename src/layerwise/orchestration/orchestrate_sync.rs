@@ -1,9 +1,9 @@
-use environment::device;
-use input::*;
+use crate::environment::device;
+use crate::input::*;
 
-use layerwise::model::model;
-use layerwise::orchestration::{Orchestrate, OrchestrationResult};
-use layerwise::parallelism::*;
+use crate::layerwise::model::model;
+use crate::layerwise::orchestration::{Orchestrate, OrchestrationResult};
+use crate::layerwise::parallelism::*;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;

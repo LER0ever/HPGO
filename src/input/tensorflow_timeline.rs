@@ -1,5 +1,5 @@
 use super::LayerwiseModelImporter;
-use layerwise::model::model_perf;
+use crate::layerwise::model::model_perf;
 
 struct TensorflowTimelineImporter {}
 
