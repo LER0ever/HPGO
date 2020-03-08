@@ -24,11 +24,16 @@ jobs:
           echo $MY_TAG
           echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
         displayName: "Create tag variable"
-      
+
       - bash: |
           DATE="$(date +%Y-%m-%d)"
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
+
+      - bash: |
+          sh ci/dev-version-rev.sh
+        displayName: "Cargo version revision"
+        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/'))
 
       - task: UsePythonVersion@0
         inputs:
@@ -65,7 +70,7 @@ jobs:
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)"
         displayName: "Upload to PyPi"
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/') startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
   
   
   - job:
@@ -92,6 +97,11 @@ jobs:
           DATE="$(date +%Y-%m-%d)"
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
+
+      - bash: |
+          sh ci/dev-version-rev.sh
+        displayName: "Cargo version revision"
+        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/'))
   
       - task: UsePythonVersion@0
         inputs:
@@ -128,15 +138,8 @@ jobs:
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)"
         displayName: "Upload to PyPi"
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/') startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
 
-      - bash: |
-          sh ci/dev-version-rev.sh
-          cat Cargo.toml
-          maturin build
-          ls target/wheels
-        displayName: 'Experimental Change Revision'
-  
   
   - job: 
     displayName: Windows
@@ -164,6 +167,11 @@ jobs:
           DATE="$(date +%Y-%m-%d)"
           echo "##vso[task.setvariable variable=build.date]$DATE"
         displayName: "Create date variable"
+
+      - bash: |
+          sh ci/dev-version-rev.sh
+        displayName: "Cargo version revision"
+        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/'))
   
       - task: UsePythonVersion@0
         inputs:
@@ -200,4 +208,4 @@ jobs:
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)" --interpreter python
         displayName: "Upload to PyPi"
-        condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/') startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
