@@ -172,7 +172,7 @@ jobs:
   
       - script: |
           maturin build -o $(Build.BinariesDirectory) --interpreter python
-        displayName: 'PyO3-pack build'
+        displayName: 'Maturin build'
   
       - powershell: |
           pip install $(Build.BinariesDirectory)/$(Get-ChildItem $(Build.BinariesDirectory)/HPGO-*-cp37-*.whl | Select -exp Name)
