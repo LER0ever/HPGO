@@ -1,9 +1,9 @@
-use environment::*;
-use input::*;
-use layerwise::model::*;
-use layerwise::orchestration::*;
+use crate::environment::*;
+use crate::input::*;
+use crate::layerwise::model::*;
+use crate::layerwise::orchestration::*;
 use pyo3::prelude::*;
-use pyo3::{wrap_pyfunction, wrap_pymodule};
+use pyo3::{wrap_pyfunction};
 
 #[pyfunction]
 fn model_from_torch_graph(filename: &str, pbs: u32, gbs: u32) -> PyResult<model::Model> {
@@ -42,7 +42,7 @@ fn conductor_from_torch_graph_and_seps(
 }
 
 #[pymodule]
-fn Layerwise(_py: Python, m: &PyModule) -> PyResult<()> {
+fn Layerwise(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_wrapped(wrap_pyfunction!(model_from_torch_graph))?;
     m.add_wrapped(wrap_pyfunction!(devices_from_seps))?;

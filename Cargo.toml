@@ -5,6 +5,7 @@ license = "BSD-3-Clause"
 authors = ["Yi Rong <hi@rongyi.io>"]
 description = "Hybrid Parallelism Global Orchestration"
 repository = "https://github.com/LER0ever/HPGO"
+edition = "2018"
 exclude = [
     "contrib/*"
 ]

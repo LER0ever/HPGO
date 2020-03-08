@@ -1,7 +1,7 @@
-extern crate HPGO;
-extern crate rayon;
+
+
 use rayon::prelude::*;
-use HPGO::layerwise::analysis::*;
+
 use HPGO::environment::*;
 use HPGO::input::*;
 use HPGO::layerwise::model::*;
@@ -76,7 +76,7 @@ fn test_xlnet_speedup_at_all_bs() {
     // Compute Max Batch Size in Parallel
     let res: Vec<_> = gbs
         .par_iter()
-        .map(|(gbs)| {
+        .map(|gbs| {
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", "xlnet", "/graph.txt"].join(""));

@@ -1,7 +1,7 @@
-extern crate HPGO;
-extern crate rayon;
+
+
 use rayon::prelude::*;
-use HPGO::layerwise::analysis::*;
+
 use HPGO::environment::*;
 use HPGO::input::*;
 use HPGO::layerwise::model::*;

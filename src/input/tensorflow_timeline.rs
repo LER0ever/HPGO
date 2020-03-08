@@ -1,5 +1,5 @@
 use super::LayerwiseModelImporter;
-use layerwise::model::model_perf;
+use crate::layerwise::model::model_perf;
 
 struct TensorflowTimelineImporter {}
 
@@ -9,7 +9,7 @@ impl LayerwiseModelImporter for TensorflowTimelineImporter {
     }
     fn ImportFrom(
         &self,
-        filename: &str,
+        _filename: &str,
     ) -> (
         Option<model_perf::ModelPerf>,
         Option<model_perf::ModelStates>,

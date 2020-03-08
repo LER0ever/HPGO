@@ -1,6 +1,6 @@
-use environment::*;
-use layerwise::model::*;
-use layerwise::parallelism::*;
+use crate::environment::*;
+use crate::layerwise::model::*;
+use crate::layerwise::parallelism::*;
 use std::collections::BTreeSet;
 
 const VERBOSE: bool = false;
@@ -32,7 +32,7 @@ pub fn sync_pipeline_speedup_analytical(
     }
 
     let compute_times = &m.perf.compute_times;
-    let activation_sizes = &m.perf.activation_sizes;
+    let _activation_sizes = &m.perf.activation_sizes;
     let parameter_sizes = &m.perf.parameter_sizes;
     let output_activation_sizes = &m.perf.output_activation_sizes;
 
@@ -143,7 +143,7 @@ pub fn sync_pipeline_speedup_recursive(
 ) -> f64 {
     // Shorthands
     let compute_times = &m.perf.compute_times;
-    let activation_sizes = &m.perf.activation_sizes;
+    let _activation_sizes = &m.perf.activation_sizes;
     let parameter_sizes = &m.perf.parameter_sizes;
     let output_activation_sizes = &m.perf.output_activation_sizes;
     let total_compute_time = compute_times[0][compute_times[0].len() - 1];

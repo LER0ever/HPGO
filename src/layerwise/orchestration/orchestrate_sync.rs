@@ -1,9 +1,9 @@
-use environment::device;
-use input::*;
-use itertools::sorted;
-use layerwise::model::model;
-use layerwise::orchestration::{Orchestrate, OrchestrationResult};
-use layerwise::parallelism::*;
+use crate::environment::device;
+use crate::input::*;
+
+use crate::layerwise::model::model;
+use crate::layerwise::orchestration::{Orchestrate, OrchestrationResult};
+use crate::layerwise::parallelism::*;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
@@ -78,10 +78,10 @@ impl SyncOrchestrate {
     fn init_matrix(&self, spa_size: u32, rp: u32, straight: bool) -> Matrix {
         // Shorthands
         let compute_times = &self.m.perf.compute_times;
-        let activation_sizes = &self.m.perf.activation_sizes;
-        let output_activation_sizes = &self.m.perf.output_activation_sizes;
+        let _activation_sizes = &self.m.perf.activation_sizes;
+        let _output_activation_sizes = &self.m.perf.output_activation_sizes;
         let parameter_sizes = &self.m.perf.parameter_sizes;
-        let all_predecessor_ids = &self.m.perf.all_predecessor_ids;
+        let _all_predecessor_ids = &self.m.perf.all_predecessor_ids;
         let mut A: Matrix = vec![];
         let d = &self.d;
         let num_machines = spa_size;

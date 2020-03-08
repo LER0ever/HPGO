@@ -1,4 +1,4 @@
-extern crate HPGO;
+
 use HPGO::environment::*;
 
 #[test]

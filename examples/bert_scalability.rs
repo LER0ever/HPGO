@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 
-extern crate HPGO;
-extern crate ordered_float;
-extern crate rayon;
+
+
+
 use ordered_float::OrderedFloat;
 use rayon::prelude::*;
-use std::cmp::min;
-use std::collections::BTreeSet;
-use HPGO::layerwise::analysis::*;
+
+
+
 use HPGO::environment::*;
 use HPGO::input::*;
 use HPGO::layerwise::model::*;
@@ -37,7 +37,7 @@ fn test_bert_speedup_at_all_bs() {
     // Compute Max Batch Size in Parallel
     let res: Vec<_> = d
         .par_iter()
-        .map(|(cur_d)| {
+        .map(|cur_d| {
             // Construct Model
             let tgi: torch_graph::TorchGraphImporter = LayerwiseModelImporter::new();
             let result = tgi.ImportFrom(&["./profiles/", "bert_48", "/graph.txt"].join(""));
