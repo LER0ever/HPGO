@@ -42,7 +42,7 @@ fn conductor_from_torch_graph_and_seps(
 }
 
 #[pymodule]
-fn Layerwise(_py: Python, m: &PyModule) -> PyResult<()> {
+fn Layerwise(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_wrapped(wrap_pyfunction!(model_from_torch_graph))?;
     m.add_wrapped(wrap_pyfunction!(devices_from_seps))?;

@@ -10,7 +10,7 @@ use crate::api::py::py_layerwise::*;
 use crate::api::py::py_ir::*;
 
 #[pymodule]
-fn HPGO(_py: Python, m: &PyModule) -> PyResult<()> {
+fn HPGO(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("__title__", "HPGO")?;
     m.add("__doc__", "Hybrid Parallelism Global Orchestration")?;
     m.add("__author__", "Yi Rong <hi@rongyi.io>")?;

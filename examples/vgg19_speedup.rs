@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
-extern crate HPGO;
-extern crate ordered_float;
-extern crate rayon;
+
+
+
 use ordered_float::OrderedFloat;
 use rayon::prelude::*;
 

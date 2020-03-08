@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
-extern crate HPGO;
-extern crate structopt;
+
+
 
 use std::path::PathBuf;
 use structopt::StructOpt;
