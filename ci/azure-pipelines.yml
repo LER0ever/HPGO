@@ -129,6 +129,13 @@ jobs:
           maturin publish -u rongyi -p "$(pypi.password)"
         displayName: "Upload to PyPi"
         condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+
+      - bash: |
+          sh ci/dev-version-rev.sh
+          cat Cargo.toml
+          maturin build
+          ls target/wheels
+        displayName: 'Experimental Change Revision'
   
   
   - job: 
