@@ -70,7 +70,7 @@ jobs:
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)"
         displayName: "Upload to PyPi"
-        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/') startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
+        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
   
   
   - job:
@@ -138,7 +138,7 @@ jobs:
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)"
         displayName: "Upload to PyPi"
-        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/') startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
+        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
 
   
   - job: 
@@ -208,4 +208,4 @@ jobs:
       - script: |
           maturin publish -u rongyi -p "$(pypi.password)" --interpreter python
         displayName: "Upload to PyPi"
-        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/') startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
+        condition: and(succeeded(), or(startsWith(variables['Build.SourceBranch'], 'refs/tags/'), startsWith(variables['Build.SourceBranch'], 'refs/heads/')))
