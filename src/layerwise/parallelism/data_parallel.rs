@@ -1,5 +1,5 @@
-use crate::layerwise::analysis::*;
 use crate::environment::*;
+use crate::layerwise::analysis::*;
 use crate::layerwise::model::*;
 use std::collections::BTreeSet;
 

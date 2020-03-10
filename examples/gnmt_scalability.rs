@@ -1,12 +1,7 @@
 #![allow(non_snake_case)]
 
-
-
-
 use ordered_float::OrderedFloat;
 use rayon::prelude::*;
-
-
 
 use HPGO::environment::*;
 use HPGO::input::*;

@@ -1,12 +1,7 @@
 #![allow(non_snake_case)]
 
-
-
-
 use ordered_float::OrderedFloat;
 use rayon::prelude::*;
-
-
 
 use HPGO::environment::*;
 use HPGO::input::*;
@@ -27,7 +22,7 @@ fn test_bert_speedup_at_all_bs() {
     // }
 
     let mut d: Vec<Vec<u32>> = vec![];
-    for i in 2..8+1 {
+    for i in 2..8 + 1 {
         let mut cur_d: Vec<u32> = vec![i];
         if i > 24 {
             cur_d.insert(0, 24);

@@ -1,13 +1,11 @@
-
-
 use pyo3::prelude::*;
-use pyo3::{wrap_pymodule};
+use pyo3::wrap_pymodule;
 
-pub mod py_layerwise;
 pub mod py_ir;
+pub mod py_layerwise;
 
-use crate::api::py::py_layerwise::*;
 use crate::api::py::py_ir::*;
+use crate::api::py::py_layerwise::*;
 
 #[pymodule]
 fn HPGO(_py: Python<'_>, m: &PyModule) -> PyResult<()> {

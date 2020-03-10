@@ -8,8 +8,8 @@ pub mod tensorflow_timeline;
 // import from HLOComputation.to_string() result
 pub mod hlo_string;
 
-use crate::layerwise::model::model_perf;
 use crate::ir::hlo_ast::HLORoot;
+use crate::layerwise::model::model_perf;
 use std::error::Error;
 
 pub trait LayerwiseModelImporter {
@@ -25,16 +25,10 @@ pub trait LayerwiseModelImporter {
 
 pub trait HLOModelImporter {
     fn new() -> Self;
-    fn ImportFrom(
-        &self,
-        filename: &str,
-    ) -> Result<HLORoot, Box<dyn Error>>;
+    fn ImportFrom(&self, filename: &str) -> Result<HLORoot, Box<dyn Error>>;
 }
 
 pub trait DAGModelImporter {
     fn new() -> Self;
-    fn ImportFrom(
-        &self,
-        filename: &str,
-    ) -> ();
+    fn ImportFrom(&self, filename: &str) -> ();
 }

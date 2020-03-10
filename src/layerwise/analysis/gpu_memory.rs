@@ -3,7 +3,6 @@ use crate::layerwise::model::*;
 
 use rayon::prelude::*;
 
-
 pub fn max_single_gpu_batch_size(m: &model::Model) -> u32 {
     // assume m is already under GBS
     let mut param_size: f64 = m.layers.par_iter().map(|s| s.parameter_size).sum();

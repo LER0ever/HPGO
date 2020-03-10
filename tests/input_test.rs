@@ -1,4 +1,3 @@
-
 use HPGO::input::*;
 
 #[test]
@@ -33,7 +32,9 @@ fn test_torch_python_import_basic() {
 #[test]
 fn test_hlo_import_basic_json() {
     let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
-    let result = hi.ImportFrom("./tests/test_data/hlo/elemwise.json").unwrap();
+    let result = hi
+        .ImportFrom("./tests/test_data/hlo/elemwise.json")
+        .unwrap();
     println!("{:#?}", result);
 }
 

@@ -1,8 +1,7 @@
 use super::HLOModelImporter;
 use crate::ir::hlo_ast;
 
-
-use log::{debug};
+use log::debug;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;

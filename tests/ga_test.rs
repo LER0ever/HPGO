@@ -1,5 +1,3 @@
-
-
 use rayon::prelude::*;
 
 use HPGO::environment::*;
