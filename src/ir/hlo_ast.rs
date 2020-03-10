@@ -1,4 +1,9 @@
-use serde::{Serialize, Deserialize};
+use crate::ir::error::DeriveError::*;
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::error::Error;
+
+const REF: &str = "https://ry.sb/tf/xla-op";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HLORoot {
@@ -35,7 +40,7 @@ pub struct FunctionCall {
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
     #[serde(rename(deserialize = "Params"))]
-    pub params: Option<Vec<RichParam>>
+    pub params: Option<Vec<RichParam>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -100,4 +105,39 @@ pub struct RichType {
     pub dimensions: Option<Vec<i32>>,
     #[serde(rename(deserialize = "Layout"))]
     pub layout: Option<Vec<i32>>,
+}
+
+impl Instruction {
+    #[inline]
+    pub fn assert_param_len(&self, l: usize) {
+        assert_eq!(
+            self.function.params.as_ref().unwrap().len(),
+            l,
+            "{} does not take more than 2 operands, ref: {}",
+            self.function.name,
+            REF
+        );
+    }
+
+    #[inline]
+    pub fn key_in_meta(&self, s: &str) -> bool {
+        self.meta.as_ref().unwrap().par_iter().any(|x| x.key == s)
+    }
+
+    #[inline]
+    pub fn assert_key_in_meta(&self, s: &str) {
+        assert_eq!(self.key_in_meta(s), true)
+    }
+    pub fn get_meta_vec(&self, key: &str) -> Result<&Vec<i32>, Box<dyn Error>> {
+        Ok(self
+            .meta
+            .as_ref()
+            .ok_or(OptionNone("inst.meta".into()))?
+            .par_iter()
+            .find(|x| x.key == key)
+            .ok_or(MetaKeyNotFound(key.into()))?
+            .num_list
+            .as_ref()
+            .ok_or(MetaValueNotFound("num_list".into()))?)
+    }
 }

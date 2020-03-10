@@ -33,6 +33,7 @@ log = "0.4"
 fern = "0.5"
 petgraph = "0.5"
 cedarwood = "0.4"
+thiserror = "1.0"
 
 [dependencies.pyo3]
 version = "0.8.5"
