@@ -5,13 +5,13 @@ use std::error::Error;
 
 const REF: &str = "https://ry.sb/tf/xla-op";
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct HLORoot {
     #[serde(rename(deserialize = "Functions"))]
     pub functions: Vec<HLOFunction>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct HLOFunction {
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
@@ -23,7 +23,7 @@ pub struct HLOFunction {
     pub body: Vec<Instruction>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct Instruction {
     #[serde(rename(deserialize = "VarName"))]
     pub var_name: String,
@@ -33,7 +33,7 @@ pub struct Instruction {
     pub meta: Option<Vec<Meta>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct FunctionCall {
     #[serde(rename(deserialize = "ReturnTypes"))]
     pub return_types: Vec<RichType>,
@@ -43,7 +43,7 @@ pub struct FunctionCall {
     pub params: Option<Vec<RichParam>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct Meta {
     #[serde(rename(deserialize = "Key"))]
     pub key: String,
@@ -57,7 +57,7 @@ pub struct Meta {
     pub slice_list: Option<Vec<Slice>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct Dict {
     #[serde(rename(deserialize = "Key"))]
     pub key: String,
@@ -65,7 +65,7 @@ pub struct Dict {
     pub value: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct Slice {
     #[serde(rename(deserialize = "Start"))]
     pub start: i32,
@@ -73,7 +73,7 @@ pub struct Slice {
     pub end: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct Param {
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
@@ -81,7 +81,7 @@ pub struct Param {
     pub param_type: Type,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct Type {
     #[serde(rename(deserialize = "DataType"))]
     pub data_type: String,
@@ -89,7 +89,7 @@ pub struct Type {
     pub dimensions: Option<Vec<i32>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct RichParam {
     #[serde(rename(deserialize = "Type"))]
     pub param_type: RichType,
@@ -97,7 +97,7 @@ pub struct RichParam {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
 pub struct RichType {
     #[serde(rename(deserialize = "DataType"))]
     pub data_type: String,

@@ -8,6 +8,8 @@ pub enum DeriveError {
     MetaKeyNotFound(String),
     #[error("Meta value not found...")]
     MetaValueNotFound(String),
+    #[error("derivation not yet implemented")]
+    DerivationUnimplemented(String),
     #[error("unknown data store error")]
     Unknown,
 }
