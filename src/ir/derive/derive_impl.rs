@@ -131,7 +131,7 @@ impl<'a> Derivation<'a> {
                             (var_name, *x as i8),
                         ],
                     )
-                    .unwrap();
+                    .unwrap(); // TODO: refactor to for loop and use ?
                 });
         }
 
@@ -170,12 +170,13 @@ impl<'a> Derivation<'a> {
             .collect();
         all_dims.push(-1);
 
+        // iterate over all dimensions index, including -1 for replication
         for d in all_dims {
             let mut splits: Vec<(&'a str, i8)> = vec![(var_name, d as i8)];
             for p in params {
                 splits.push((&p.name, d as i8))
             }
-            Self::add_keys(&mut result, splits);
+            Self::add_keys(&mut result, splits)?;
         }
 
         Ok(result)
