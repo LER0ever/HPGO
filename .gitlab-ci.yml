@@ -1,11 +1,11 @@
-image: docker:19.03.7
+image: docker:19.03.8
 
 variables:
   DOCKER_TLS_CERTDIR: "/certs"
   ARTIFACTS_DIR: artifacts
 
 services:
-  - docker:19.03.7-dind
+  - docker:19.03.8-dind
 
 stages:
   - build
