@@ -1,6 +1,9 @@
 use crate::ir::derive::derivation::Derivation;
 use crate::ir::error::DeriveError::*;
 use crate::ir::hlo_ast::*;
+use itertools::all;
+use log::debug;
+use rayon::iter::split;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
@@ -13,7 +16,19 @@ impl<'a> Derivation<'a> {
             | "sine" | "cosine" | "sqrt" | "rsqrt" | "log" | "exponential" | "convert"
             | "compare" | "all-reduce" | "select" => Self::d_elem(inst),
             "reshape" => Self::d_reshape(inst),
-            _ => Self::d_replicate(inst),
+            "parameter" | "constant" | "copy" | "rng" | "iota" | "tuple" => Self::d_identity(inst),
+            "reduce" => Self::d_reduce(inst),
+            "transpose" => Self::d_transpose(inst),
+            "gather" => Self::d_gather(inst),
+            "scatter" => Self::d_scatter(inst),
+            "slice" | "pad" => Self::d_pad_slice(inst),
+            _ => {
+                // println!(
+                //     "Unimplemented derivation for fn {}, falling back to replication",
+                //     inst.function.name.as_str()
+                // );
+                Self::d_replicate(inst)
+            }
             // _ => Err(Box::new(DerivationUnimplemented(
             //     inst.function.name.clone(),
             // ))),
@@ -234,19 +249,31 @@ impl<'a> Derivation<'a> {
         let var_name: &'a str = &inst.var_name;
 
         let mut cur = 0usize;
+        debug!("setting cur = {}", cur);
         let max_look_ahead = 4usize;
         for (i, x) in l_dims.iter().enumerate() {
+            debug!("checking x = {}", *x);
             let mut suc = false;
             for id in (0..max_look_ahead).rev() {
                 // let cur_prod: i32 = r_dims[cur..=cur + id].iter().product();
+                if r_dims.len() > cur + id {
+                    debug!(
+                        "comparing x with {}",
+                        r_dims[cur..=cur + id].iter().product::<i32>()
+                    );
+                }
                 if r_dims.len() > cur + id
                     && *x as i32 == r_dims[cur..=cur + id].iter().product::<i32>()
+                    && ((i != l_dims.len() - 1 && cur + id != r_dims.len() - 1)
+                        || (i == l_dims.len() - 1 && cur + id == r_dims.len() - 1))
+                // last condition is ad-hoc to (3, 35, 1) -> (3, 35, 1, 1)
                 {
                     map_dims.insert(i as i32, (cur..=cur + id).map(|x| x as i32).collect());
                     (cur..=cur + id).for_each(|x| {
                         rev_map_dims.insert(x as i32, i as i32);
                     });
                     cur += id + 1;
+                    debug!("setting cur = {}", cur);
                     suc = true;
                     break;
                 }
@@ -293,8 +320,317 @@ impl<'a> Derivation<'a> {
         Ok(result)
     }
 
+    fn d_reduce(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
+        inst.assert_param_len(2);
+        inst.assert_key_in_meta("dimensions");
+        let mut result: Vec<HashMap<&'a str, i8>> = vec![];
+        let reduce_dims = inst.get_meta_vec("dimensions")?;
+        let var_name: &'a str = &inst.var_name;
+        let all_dims: Vec<i32> = (0..inst
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?[0]
+            .param_type
+            .dimensions
+            .as_ref()
+            .unwrap_or(&vec![])
+            .len() as i32)
+            .collect();
+        let params = inst
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?;
+        all_dims.iter().for_each(|d| {
+            if reduce_dims.contains(d) {
+                Self::add_keys(
+                    &mut result,
+                    vec![
+                        (var_name, -1i8),
+                        (&params[0].name, *d as i8),
+                        (&params[1].name, -1),
+                    ],
+                );
+            } else {
+                let mut split_dim = *d;
+                for rd in reduce_dims.iter() {
+                    if *rd < *d {
+                        split_dim -= 1;
+                    }
+                }
+                Self::add_keys(
+                    &mut result,
+                    vec![
+                        (var_name, split_dim as i8),
+                        (&params[0].name, *d as i8),
+                        (&params[1].name, -1),
+                    ],
+                );
+            }
+        });
+
+        Self::add_keys(&mut result, Self::replicate_split(inst)?)?;
+
+        return Ok(result);
+    }
+
     fn d_transpose(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
-        unimplemented!()
+        inst.assert_param_len(1);
+        inst.assert_key_in_meta("dimensions");
+        let transpose_dims = inst.get_meta_vec("dimensions")?;
+        let all_dims: Vec<i32> = (0..inst
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?[0]
+            .param_type
+            .dimensions
+            .as_ref()
+            .unwrap_or(&vec![])
+            .len() as i32)
+            .collect();
+        assert_eq!(transpose_dims.len(), all_dims.len());
+        let param: &'a str = &inst
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?[0]
+            .name;
+        let var_name: &'a str = &inst.var_name;
+        let mut result: Vec<HashMap<&'a str, i8>> = vec![];
+        all_dims.iter().for_each(|d| {
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (
+                        var_name,
+                        transpose_dims.iter().position(|x| *x == *d).unwrap() as i8,
+                    ),
+                    (param, *d as i8),
+                ],
+            );
+        });
+
+        Self::add_keys(&mut result, Self::replicate_split(inst)?)?;
+
+        Ok(result)
+    }
+
+    fn d_gather(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
+        inst.assert_param_len(2);
+        inst.assert_key_in_meta("offset_dims");
+        assert_eq!(
+            inst.function
+                .params
+                .as_ref()
+                .ok_or(OptionNone("inst.fn.params".into()))?[0]
+                .param_type
+                .dimensions
+                .as_ref()
+                .ok_or(OptionNone("inst.fn.params[0].rich_type.dimensions".into()))?
+                .len(),
+            2
+        );
+        let offset_dims = inst.get_meta_vec("offset_dims")?;
+        assert_eq!(offset_dims.len(), 1);
+        let mut result: Vec<HashMap<&'a str, i8>> = vec![];
+        let params = inst
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?;
+        let var_name: &'a str = &inst.var_name;
+
+        // split at param 0
+        {
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[0].name, 1i8),
+                    (&params[1].name, -1i8),
+                    (var_name, offset_dims[0] as i8),
+                ],
+            )?;
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[0].name, 0i8),
+                    (&params[1].name, -1i8),
+                    (var_name, -1i8),
+                ],
+            )?;
+        }
+
+        // split at param 1
+        {
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[1].name, 0i8),
+                    (&params[0].name, 0i8),
+                    (var_name, 0i8),
+                ],
+            )?;
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[1].name, -1i8),
+                    (&params[0].name, 1i8),
+                    (var_name, 1i8),
+                ],
+            )?;
+        }
+
+        // add replication
+        Self::add_keys(&mut result, Self::replicate_split(inst)?)?;
+
+        Ok(result)
+    }
+
+    fn d_scatter(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
+        inst.assert_param_len(3);
+        let params = inst
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?;
+        let var_name: &'a str = &inst.var_name;
+        assert_eq!(
+            params[0]
+                .param_type
+                .dimensions
+                .as_ref()
+                .ok_or(OptionNone("params[0].dimensions".into()))?
+                .len(),
+            2
+        );
+        assert_eq!(
+            params[2]
+                .param_type
+                .dimensions
+                .as_ref()
+                .ok_or(OptionNone("params[0].dimensions".into()))?
+                .len(),
+            2
+        );
+        let mut result: Vec<HashMap<&'a str, i8>> = vec![];
+
+        // split at param 0
+        {
+            // 0, 0
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[0].name, 0),
+                    (&params[1].name, -1),
+                    (&params[2].name, -1),
+                    (var_name, 0),
+                ],
+            )?;
+            // 0, 1
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[0].name, 1),
+                    (&params[1].name, -1),
+                    (&params[2].name, 1),
+                    (var_name, 1),
+                ],
+            )?;
+        }
+
+        // split at param 1, dim 1
+        {
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[1].name, -1),
+                    (&params[0].name, 0),
+                    (&params[2].name, 0),
+                    (var_name, 0),
+                ],
+            )?;
+        }
+
+        // split at param 2
+        {
+            // 2, 1
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[2].name, 1),
+                    (&params[0].name, 1),
+                    (&params[1].name, -1),
+                    (var_name, 1),
+                ],
+            )?;
+            // 2, -1
+            Self::add_keys(
+                &mut result,
+                vec![
+                    (&params[2].name, -1),
+                    (&params[0].name, 0),
+                    (&params[1].name, -1),
+                    (var_name, 0),
+                ],
+            )?;
+        }
+
+        Self::add_keys(&mut result, Self::replicate_split(inst)?)?;
+
+        Ok(result)
+    }
+
+    fn d_pad_slice(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
+        match inst.function.name.as_str() {
+            "pad" => inst.assert_param_len(2),
+            "slice" => inst.assert_param_len(1),
+            _ => assert_eq!(0, 1, "this fn cannot be derived using pad_slice"),
+        }
+        let var_name: &'a str = &inst.var_name;
+        let params = inst
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?;
+        let param_dims = params[0]
+            .param_type
+            .dimensions
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params[0].param_type.dimensions".into()))?;
+        let output_dims = inst.function.return_types[0]
+            .dimensions
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        assert_eq!(param_dims.len(), output_dims.len());
+
+        let mut result: Vec<HashMap<&'a str, i8>> = vec![];
+
+        let diff_index: Vec<i32> = param_dims
+            .iter()
+            .enumerate()
+            .filter_map(|(i, x)| {
+                if param_dims[i] != output_dims[i] {
+                    Some(i as i32)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for d in (0..output_dims.len() as i32) {
+            if !diff_index.contains(&d) {
+                let mut splits: Vec<(&'a str, i8)> =
+                    vec![(&params[0].name, d as i8), (var_name, d as i8)];
+                if params.len() == 2 {
+                    splits.push((&params[1].name, -1));
+                }
+                Self::add_keys(&mut result, splits)?;
+            }
+        }
+
+        Ok(result)
     }
 
     fn replicate_split(inst: &'a Instruction) -> Result<Vec<(&'a str, i8)>, Box<dyn Error>> {
@@ -317,6 +653,27 @@ impl<'a> Derivation<'a> {
     fn d_replicate(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
         let mut result: Vec<HashMap<&'a str, i8>> = vec![];
         Self::add_keys(&mut result, Self::replicate_split(inst)?)?;
+
+        Ok(result)
+    }
+
+    fn d_identity(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
+        let mut result: Vec<HashMap<&'a str, i8>> = vec![];
+        let var_name: &'a str = &inst.var_name;
+
+        let mut all_dims: Vec<i32> = (0..inst.function.return_types[0]
+            .dimensions
+            .as_ref()
+            .unwrap_or(&vec![])
+            .len() as i32)
+            .collect();
+        all_dims.push(-1);
+
+        // iterate over all dimensions index, including -1 for replication
+        for d in all_dims {
+            let mut splits: Vec<(&'a str, i8)> = vec![(var_name, d as i8)];
+            Self::add_keys(&mut result, splits)?;
+        }
 
         Ok(result)
     }

@@ -11,6 +11,7 @@ use rayon::prelude::*;
 use crate::ir::derive::Derivation;
 use crate::ir::error::DeriveError::OptionNone;
 use crate::ir::hlo_ast::*;
+use petgraph::visit::GetAdjacencyMatrix;
 
 pub type node_type<'a> = (&'a str, i8);
 pub type edge_type<'a> = Vec<(&'a Instruction, &'a HashMap<&'a str, i8>)>;
@@ -53,23 +54,23 @@ impl<'a> VarGraph2D<'a> {
 
     fn inst_to_edges(&mut self, inst: &'a Instruction) -> Result<(), Box<dyn Error>> {
         let res = self.d.derive_infer(inst)?;
-        let mut all_vars: Vec<&'a str> = inst
-            .function
-            .params
-            .as_ref()
-            .ok_or(OptionNone("inst.fn.params".into()))?
-            .iter()
-            .map(|x| x.name.as_str())
-            .collect();
-        all_vars.push(inst.var_name.as_str());
+        // let mut all_vars: Vec<&'a str> = inst
+        //     .function
+        //     .params
+        //     .as_ref()
+        //     .ok_or(OptionNone("inst.fn.params".into()))?
+        //     .iter()
+        //     .map(|x| x.name.as_str())
+        //     .collect();
+        // all_vars.push(inst.var_name.as_str());
         // std::hash::Hash(&res[0]);
 
         self.node_edge_cache.insert(
             inst,
             res.iter()
                 .flat_map(|m| {
-                    all_vars
-                        .iter()
+                    // m.keys()
+                    m.keys()
                         .tuple_combinations()
                         .map(move |(a, b)| ((*a, m[a]), (*b, m[b]), inst, m))
                 })
@@ -111,17 +112,12 @@ impl<'a> VarGraph2D<'a> {
         true
     }
 
-    fn func_to_edges(
-        &mut self,
-        f: &'a HLOFunction,
-    ) -> bool {
+    fn func_to_edges(&mut self, f: &'a HLOFunction) -> bool {
         debug!("Processing fn {}", f.name);
         f.body
             .iter()
             .enumerate()
-            .map(|(index, i)| {
-                self.update_graph_from_inst(index, i)
-            })
+            .map(|(index, i)| self.update_graph_from_inst(index, i))
             .all(|x| x == true)
     }
 
