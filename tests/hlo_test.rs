@@ -101,6 +101,26 @@ fn test_hlo_derive_scatter() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn test_hlo_derive_concat() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let ast = hi.ImportFrom("./tests/test_data/hlo/concat.json")?;
+    let mut target_inst = &ast.functions[0].body[0];
+    let result = Derivation::d(target_inst)?;
+    for x in &result {
+        println!("{:?}", x);
+    }
+    println!();
+
+    target_inst = &ast.functions[0].body[1];
+    let result = Derivation::d(target_inst)?;
+    for x in &result {
+        println!("{:?}", x);
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_hlo_derive_cache() -> Result<(), Box<dyn Error>> {
     let mut d = Derivation::new();
 

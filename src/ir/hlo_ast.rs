@@ -128,16 +128,53 @@ impl Instruction {
     pub fn assert_key_in_meta(&self, s: &str) {
         assert_eq!(self.key_in_meta(s), true)
     }
+
+    #[inline]
+    pub fn get_all_params(&self) -> Result<&Vec<RichParam>, Box<dyn Error>> {
+        let params = self
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?;
+        Ok(&params)
+    }
+
+    #[inline]
+    pub fn get_param(&self, i: usize) -> Result<&RichParam, Box<dyn Error>> {
+        let params = self
+            .function
+            .params
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.params".into()))?;
+        Ok(&params[i])
+    }
+
     pub fn get_meta_vec(&self, key: &str) -> Result<&Vec<i32>, Box<dyn Error>> {
         Ok(self
             .meta
             .as_ref()
             .ok_or(OptionNone("inst.meta".into()))?
             .par_iter()
-            .find(|x| x.key == key)
+            .find_any(|x| x.key == key)
             .ok_or(MetaKeyNotFound(key.into()))?
             .num_list
             .as_ref()
             .ok_or(MetaValueNotFound("num_list".into()))?)
+    }
+}
+
+impl RichParam {
+    pub fn get_all_dims_index(&self) -> Result<Vec<i32>, Box<dyn Error>> {
+        let all_dims: Vec<i32> = (0..self.get_dims().unwrap_or(&vec![]).len() as i32).collect();
+        Ok(all_dims)
+    }
+
+    pub fn get_dims(&self) -> Result<&Vec<i32>, Box<dyn Error>> {
+        let dims: &Vec<i32> = self
+            .param_type
+            .dimensions
+            .as_ref()
+            .ok_or(OptionNone("rich_param.param_type.dimensions".into()))?;
+        Ok(dims)
     }
 }

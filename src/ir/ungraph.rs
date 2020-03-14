@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::error::Error;
 
 use itertools::Itertools;
@@ -9,21 +9,20 @@ use petgraph::prelude::*;
 use rayon::prelude::*;
 
 use crate::ir::derive::Derivation;
-use crate::ir::error::DeriveError::OptionNone;
-use crate::ir::hlo_ast::*;
-use petgraph::visit::GetAdjacencyMatrix;
 
-pub type node_type<'a> = (&'a str, i8);
-pub type edge_type<'a> = Vec<(&'a Instruction, &'a HashMap<&'a str, i8>)>;
+use crate::ir::hlo_ast::*;
+
+pub type NodeType<'a> = (&'a str, i8);
+pub type EdgeType<'a> = Vec<(&'a Instruction, &'a HashMap<&'a str, i8>)>;
 
 pub struct VarGraph2D<'a> {
-    pub g: UnGraph<node_type<'a>, edge_type<'a>>,
+    pub g: UnGraph<NodeType<'a>, EdgeType<'a>>,
     pub node_id: HashMap<(&'a str, i8), NodeIndex>,
     pub node_edge_cache: HashMap<
         &'a Instruction,
         Vec<(
-            node_type<'a>,
-            node_type<'a>,
+            NodeType<'a>,
+            NodeType<'a>,
             &'a Instruction,
             &'a HashMap<&'a str, i8>,
         )>,
@@ -36,7 +35,7 @@ pub struct VarGraph2D<'a> {
 impl<'a> VarGraph2D<'a> {
     pub fn new(d: &'a Derivation) -> VarGraph2D<'a> {
         VarGraph2D {
-            g: UnGraph::<node_type, edge_type>::new_undirected(),
+            g: UnGraph::<NodeType, EdgeType>::new_undirected(),
             node_id: HashMap::new(),
             node_edge_cache: HashMap::new(),
             ast: d.ast.unwrap(),
@@ -75,8 +74,8 @@ impl<'a> VarGraph2D<'a> {
                         .map(move |(a, b)| ((*a, m[a]), (*b, m[b]), inst, m))
                 })
                 .collect::<Vec<(
-                    node_type<'a>,
-                    node_type<'a>,
+                    NodeType<'a>,
+                    NodeType<'a>,
                     &'a Instruction,
                     &'a HashMap<&'a str, i8>,
                 )>>(),
@@ -91,8 +90,8 @@ impl<'a> VarGraph2D<'a> {
             self.inst_to_edges(i).unwrap();
         }
         let node_edge_result: Vec<(
-            node_type<'a>,
-            node_type<'a>,
+            NodeType<'a>,
+            NodeType<'a>,
             &'a Instruction,
             &'a HashMap<&'a str, i8>,
         )> = self.node_edge_cache[i].iter().map(|x| x.clone()).collect();
@@ -121,7 +120,7 @@ impl<'a> VarGraph2D<'a> {
             .all(|x| x == true)
     }
 
-    pub fn build_from_hlo(&mut self) -> Result<&UnGraph<node_type, edge_type>, Box<dyn Error>> {
+    pub fn build_from_hlo(&mut self) -> Result<&UnGraph<NodeType, EdgeType>, Box<dyn Error>> {
         self.g.clear();
         let ok = self
             .ast
@@ -138,7 +137,7 @@ impl<'a> VarGraph2D<'a> {
     pub fn build_from_function(
         &mut self,
         fn_name: &str,
-    ) -> Result<&UnGraph<node_type, edge_type>, Box<dyn Error>> {
+    ) -> Result<&UnGraph<NodeType, EdgeType>, Box<dyn Error>> {
         self.g.clear();
         let ok = self
             .ast
