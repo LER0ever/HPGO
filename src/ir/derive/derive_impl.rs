@@ -199,7 +199,7 @@ impl<'a> Derivation<'a> {
             .dimensions
             .as_ref()
             .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
-        let (mut l_dims, mut r_dims) = (&vec![], &vec![]);
+        let (l_dims, r_dims): (&Vec<i32>, &Vec<i32>);
         if before_dims.len() < after_dims.len() {
             l_dims = before_dims;
             r_dims = after_dims;

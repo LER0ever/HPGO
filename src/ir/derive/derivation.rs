@@ -1,15 +1,8 @@
 use crate::ir::error::DeriveError::*;
+use crate::ir::hlo_ast::*;
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
-
-use rayon::prelude::*;
-
-use crate::ir::error::DeriveError;
-use crate::ir::hlo_ast::*;
-use itertools::Itertools;
-use log::debug;
-use std::borrow::Borrow;
-use std::env::var;
 
 pub type Split<'a> = (&'a str, i8);
 

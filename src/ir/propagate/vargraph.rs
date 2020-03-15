@@ -1,22 +1,21 @@
-use std::collections::HashMap;
-use std::error::Error;
-
+use crate::ir::derive::Derivation;
+use crate::ir::hlo_ast::*;
 use itertools::Itertools;
 use log::debug;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::UnGraph;
 use petgraph::prelude::*;
 use rayon::prelude::*;
-
-use crate::ir::derive::Derivation;
-
-use crate::ir::hlo_ast::*;
+use std::collections::HashMap;
+use std::error::Error;
 
 pub type NodeType<'a> = (&'a str, i8);
-pub type EdgeType<'a> = Vec<(&'a Instruction, &'a HashMap<&'a str, i8>)>;
+pub type EdgeColor<'a> = &'a HashMap<&'a str, i8>;
+pub type EdgeTypeSingle<'a> = (&'a Instruction, EdgeColor<'a>);
+pub type EdgeType<'a> = Vec<EdgeTypeSingle<'a>>;
 
-pub struct VarGraph2D<'a> {
-    pub g: UnGraph<NodeType<'a>, EdgeType<'a>>,
+pub struct VarGraph3D<'a> {
+    pub graph: UnGraph<NodeType<'a>, EdgeType<'a>>,
     pub node_id: HashMap<(&'a str, i8), NodeIndex>,
     pub node_edge_cache: HashMap<
         &'a Instruction,
@@ -32,10 +31,10 @@ pub struct VarGraph2D<'a> {
     pub d: &'a Derivation<'a>,
 }
 
-impl<'a> VarGraph2D<'a> {
-    pub fn new(d: &'a Derivation) -> VarGraph2D<'a> {
-        VarGraph2D {
-            g: UnGraph::<NodeType, EdgeType>::new_undirected(),
+impl<'a> VarGraph3D<'a> {
+    pub fn new(d: &'a Derivation) -> VarGraph3D<'a> {
+        VarGraph3D {
+            graph: UnGraph::<NodeType, EdgeType>::new_undirected(),
             node_id: HashMap::new(),
             node_edge_cache: HashMap::new(),
             ast: d.ast.unwrap(),
@@ -43,14 +42,16 @@ impl<'a> VarGraph2D<'a> {
         }
     }
 
-    fn node_id(&mut self, name: &'a str, dim: i8) -> NodeIndex {
+    /// return the node_id, create one if not exist
+    pub fn node_id(&mut self, name: &'a str, dim: i8) -> NodeIndex {
         if !self.node_id.contains_key(&(name, dim)) {
             self.node_id
-                .insert((name, dim), self.g.add_node((name, dim)));
+                .insert((name, dim), self.graph.add_node((name, dim)));
         }
         return self.node_id[&(name, dim)];
     }
 
+    /// given an instruction, cache every edges produced by the instruction.
     fn inst_to_edges(&mut self, inst: &'a Instruction) -> Result<(), Box<dyn Error>> {
         let res = self.d.derive_infer(inst)?;
         // let mut all_vars: Vec<&'a str> = inst
@@ -62,7 +63,6 @@ impl<'a> VarGraph2D<'a> {
         //     .map(|x| x.name.as_str())
         //     .collect();
         // all_vars.push(inst.var_name.as_str());
-        // std::hash::Hash(&res[0]);
 
         self.node_edge_cache.insert(
             inst,
@@ -84,6 +84,7 @@ impl<'a> VarGraph2D<'a> {
         Ok(())
     }
 
+    /// take the result from inst_to_edges and update the global graph
     fn update_graph_from_inst(&mut self, index: usize, i: &'a Instruction) -> bool {
         debug!("Processing inst {}", index);
         if !self.node_edge_cache.contains_key(i) {
@@ -96,14 +97,16 @@ impl<'a> VarGraph2D<'a> {
             &'a HashMap<&'a str, i8>,
         )> = self.node_edge_cache[i].iter().map(|x| x.clone()).collect();
         // TODO: the above code made a copy of the resulting vec for no good fkn reason
+
         for (ta, tb, tc, td) in node_edge_result {
+            // println!("[debug] edge {},{} - {},{}", ta.0, ta.1, tb.0, tb.1);
             let a = self.node_id(ta.0, ta.1);
             let b = self.node_id(tb.0, tb.1);
-            let e = self.g.find_edge(a, b);
+            let e = self.graph.find_edge(a, b);
             if e.is_none() {
-                self.g.add_edge(a, b, vec![(tc, td)]);
+                self.graph.add_edge(a, b, vec![(tc, td)]);
             } else {
-                let ew = self.g.edge_weight_mut(e.unwrap()).unwrap();
+                let ew = self.graph.edge_weight_mut(e.unwrap()).unwrap();
                 ew.push((tc, td));
             }
         }
@@ -111,6 +114,7 @@ impl<'a> VarGraph2D<'a> {
         true
     }
 
+    // do graph update for every instruction in the function
     fn func_to_edges(&mut self, f: &'a HLOFunction) -> bool {
         debug!("Processing fn {}", f.name);
         f.body
@@ -121,7 +125,7 @@ impl<'a> VarGraph2D<'a> {
     }
 
     pub fn build_from_hlo(&mut self) -> Result<&UnGraph<NodeType, EdgeType>, Box<dyn Error>> {
-        self.g.clear();
+        self.graph.clear();
         let ok = self
             .ast
             .functions
@@ -129,7 +133,7 @@ impl<'a> VarGraph2D<'a> {
             .map(|f| self.func_to_edges(f))
             .all(|x| x == true);
         match ok {
-            true => Ok(&self.g),
+            true => Ok(&self.graph),
             false => Err("Graph Construction Error".into()),
         }
     }
@@ -138,7 +142,7 @@ impl<'a> VarGraph2D<'a> {
         &mut self,
         fn_name: &str,
     ) -> Result<&UnGraph<NodeType, EdgeType>, Box<dyn Error>> {
-        self.g.clear();
+        self.graph.clear();
         let ok = self
             .ast
             .functions
@@ -147,13 +151,13 @@ impl<'a> VarGraph2D<'a> {
             .map(|f| self.func_to_edges(f))
             .all(|x| x == true);
         match ok {
-            true => Ok(&self.g),
+            true => Ok(&self.graph),
             false => Err("Graph Construction Error".into()),
         }
     }
 
     pub fn export_to_dot(&self) -> Result<String, Box<dyn Error>> {
-        let dot = Dot::with_config(&self.g, &[Config::EdgeIndexLabel]); // Config::EdgeNoLabel
+        let dot = Dot::with_config(&self.graph, &[Config::EdgeIndexLabel]); // Config::EdgeNoLabel
         Ok(format!("{:?}", dot))
     }
 }

@@ -25,7 +25,7 @@ maturin-build-dind:
 cargo-doc-build:
   stage: build
   script:
-    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'yum install -y git; rustup default nightly; cargo doc --no-deps' # to target/doc
+    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'yum install -y git; rustup default nightly; cargo doc --no-deps --document-private-items' # to target/doc
   artifacts:
     name: "$CI_BUILD_NAME-doc"
     paths:

@@ -43,6 +43,9 @@ res = c.py_orchestrate()
 print(res)
 ```
 
+## Contribution
+Pull requests are welcomed! 
+
 ## License
 
 This project is open sourced under the terms of BSD-3-Clause, details of which can be found in the [`LICENSE`](LICENSE) file

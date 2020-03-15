@@ -17,3 +17,13 @@ pub enum DeriveError {
     #[error("unknown data store error")]
     Unknown,
 }
+
+#[derive(Error, Debug)]
+pub enum PropagationError {
+    #[error("Option variable returns unexpected None...")]
+    OptionNone(String),
+    #[error("Visiting an already visited node, with incompatible params")]
+    AlreadyVisitedIncompatible(String),
+    #[error("unknown propagation error")]
+    Unknown,
+}

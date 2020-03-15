@@ -1,7 +1,8 @@
 use std::error::Error;
 use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
-use HPGO::ir::ungraph::VarGraph2D;
+use HPGO::ir::propagate::propagate::*;
+use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
 
 #[test]
@@ -10,7 +11,7 @@ fn test_hlo_export_dot() -> Result<(), Box<dyn Error>> {
     let ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
     let mut d = Derivation::new_with_ast(&ast);
     d.cache_all_derive(&ast);
-    let mut g = VarGraph2D::new(&d);
+    let mut g = VarGraph3D::new(&d);
 
     g.build_from_function("%fused_computation.9.clone")?;
     print!("{}", g.export_to_dot()?);
@@ -128,5 +129,30 @@ fn test_hlo_derive_cache() -> Result<(), Box<dyn Error>> {
     let ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
     d.cache_all_derive(&ast)?;
     print!("cache has {} entries", d.derive_cache.len());
+    Ok(())
+}
+
+#[test]
+fn test_hlo_propagation_fn() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
+    let mut d = Derivation::new_with_ast(&ast);
+    d.cache_all_derive(&ast)?;
+    let mut g = VarGraph3D::new(&d);
+    g.build_from_hlo()?;
+    let fn_name = "%fused_computation.4164.clone";
+    // let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
+    let f = g
+        .ast
+        .functions
+        .iter()
+        .filter(|f| f.name == fn_name)
+        .next()
+        .unwrap();
+    let n = g.node_id("%param_0.14511", 0i8);
+    let mut p = Propagate::new(&g);
+    let result = p.propagate(f, n)?;
+    println!("{:#?}", result);
+
     Ok(())
 }
