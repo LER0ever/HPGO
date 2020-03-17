@@ -1,7 +1,6 @@
 use std::error::Error;
 use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
-use HPGO::ir::propagate::propagate::*;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
 
@@ -139,8 +138,8 @@ fn test_hlo_propagation_fn() -> Result<(), Box<dyn Error>> {
     let mut d = Derivation::new_with_ast(&ast);
     d.cache_all_derive(&ast)?;
     let mut g = VarGraph3D::new(&d);
-    g.build_from_hlo()?;
-    let fn_name = "%fused_computation.4164.clone";
+    let fn_name = "%fused_computation.2280";
+    g.build_from_function(fn_name)?;
     // let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
     let f = g
         .ast
@@ -149,10 +148,12 @@ fn test_hlo_propagation_fn() -> Result<(), Box<dyn Error>> {
         .filter(|f| f.name == fn_name)
         .next()
         .unwrap();
-    let n = g.node_id("%param_0.14511", 0i8);
     let mut p = Propagate::new(&g);
-    let result = p.propagate(f, n)?;
-    println!("{:#?}", result);
+    let result = p.propagate(f)?;
+    println!("returns {} results", result.len());
+    for (i, r) in result.iter().enumerate() {
+        println!("{} :: {:?}", i, r);
+    }
 
     Ok(())
 }

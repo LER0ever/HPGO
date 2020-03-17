@@ -1,43 +1,139 @@
 use crate::ir::error::PropagationError::*;
-use crate::ir::hlo_ast::{HLOFunction, Instruction};
+use crate::ir::hlo_ast::{HLOFunction, Instruction, Param};
 use crate::ir::propagate::vargraph::*;
+use log::debug;
 use petgraph::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
-pub struct Propagate<'a> {
-    pub vargraph: &'a VarGraph3D<'a>,
-    pub ungraph: &'a UnGraph<NodeType<'a>, EdgeType<'a>>,
-    // pub v_node: HashMap<&'a str, HashSet<i8>>,
-    // pub v_inst: HashMap<&'a Instruction, EdgeColor<'a>>,
-}
-
-impl<'a> Propagate<'a> {
-    pub fn new(g: &'a VarGraph3D<'a>) -> Propagate<'a> {
-        Propagate {
-            vargraph: g,
-            ungraph: &g.graph,
-        }
-    }
-
-    pub fn merge_with(a: &mut HashMap<&'a str, HashSet<i8>>, b: HashMap<&'a str, HashSet<i8>>) {
-        for (k, v) in b.iter() {
+impl<'a> VarGraph3D<'a> {
+    fn merge_with(a: &mut HashMap<&'a str, HashSet<i8>>, b: &HashMap<&'a str, HashSet<i8>>) {
+        for (k, v) in b {
             if a.contains_key(k) {
-                a[k].union(&v);
+                debug!("map: adding {:?} to ({}, {:?})", v, k, a[k]);
+                let new_set: HashSet<i8> = a[k].union(&v).cloned().collect();
+                *a.get_mut(k).unwrap() = new_set;
+                debug!("map: now {} -> {:?}", k, a[k]);
             } else {
+                debug!("map: new {} -> {:?}", k, v);
                 a.insert(k, v.clone());
             }
         }
     }
 
+    fn intersect_with(
+        a: &mut HashMap<&'a str, HashSet<i8>>,
+        b: &HashMap<&'a str, HashSet<i8>>,
+    ) -> bool {
+        for (k, v) in b {
+            if a.contains_key(k) {
+                debug!("map: adding {:?} to ({}, {:?})", v, k, a[k]);
+                let new_set: HashSet<i8> = a[k].intersection(&v).cloned().collect();
+                *a.get_mut(k).unwrap() = new_set;
+                if a[k].len() == 0 {
+                    debug!("set intersection results in empty");
+                    return false;
+                }
+                debug!("map: now {} -> {:?}", k, a[k]);
+            } else {
+                debug!("map: new {} -> {:?}", k, v);
+                a.insert(k, v.clone());
+            }
+        }
+
+        true
+    }
+
     pub fn propagate(
         &mut self,
-        _f: &'a HLOFunction,
-        start_node: NodeIndex,
-    ) -> Result<HashMap<&'a str, HashSet<i8>>, Box<dyn Error>> {
-        let result =
-            self.propagate_dfs(start_node, HashMap::new(), HashMap::new(), HashMap::new())?;
+        f: &'a HLOFunction,
+    ) -> Result<Vec<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
+        let return_var = &f.body[f.body.len() - 1].var_name;
+        let result = self.propagate_re(0, &HashMap::new(), &f.params, Some(return_var))?;
         Ok(result)
+    }
+
+    fn propagate_re(
+        &mut self,
+        index: usize,
+        m_constraits: &HashMap<&'a str, HashSet<i8>>,
+        params: &'a Vec<Param>,
+        return_var: Option<&'a str>,
+    ) -> Result<Vec<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
+        debug!("re @ index {}, m.len() = {}", index, m_constraits.len());
+        let mut ret: Vec<HashMap<&'a str, HashSet<i8>>> = vec![];
+
+        // construct the solution space for current index
+        let mut dim_list: Vec<i8>;
+        let param_name = params[index].name.as_str();
+        if m_constraits.contains_key(param_name) {
+            dim_list = m_constraits[param_name].iter().cloned().collect();
+        } else {
+            dim_list = (0..params[0]
+                .param_type
+                .dimensions
+                .as_ref()
+                .unwrap_or(&vec![])
+                .len() as i8)
+                .collect();
+        }
+        if !dim_list.contains(&-1i8) {
+            dim_list.push(-1i8);
+        }
+
+        if index + 1 == params.len() {
+            for d in dim_list.iter() {
+                let node = self.get_node_id(param_name, *d);
+                if node.is_none() {
+                    println!("failed to get node_id for ({},{})", param_name, d);
+                    continue;
+                }
+                let node_id = node.unwrap();
+                let result = self.propagate_dfs(
+                    node_id,
+                    HashMap::new(),
+                    HashMap::new(),
+                    HashMap::new(),
+                    m_constraits,
+                    vec![],
+                )?;
+                if let Some(m) = result {
+                    ret.push(m);
+                }
+            }
+            return Ok(ret);
+        }
+
+        for d in dim_list {
+            let node = self.get_node_id(param_name, d);
+            if node.is_none() {
+                println!("failed to get node_id for ({},{})", param_name, d);
+                continue;
+            }
+            let node_id = node.unwrap();
+            let result = self.propagate_dfs(
+                node_id,
+                HashMap::new(),
+                HashMap::new(),
+                HashMap::new(),
+                m_constraits,
+                vec![],
+            )?;
+            if result.is_none() {
+                continue;
+            }
+            let m = result.unwrap();
+            let sub_res = self.propagate_re(index + 1, &m, params, return_var)?;
+            for ssr in sub_res {
+                let mut m_copied = m.clone();
+                let suc = Self::intersect_with(&mut m_copied, &ssr);
+                if suc {
+                    ret.push(m_copied);
+                }
+            }
+        }
+
+        Ok(ret)
     }
 
     /// Perform regulated DFS given f the starting node, and m the constraint map
@@ -47,15 +143,18 @@ impl<'a> Propagate<'a> {
         mut m: HashMap<&'a str, HashSet<i8>>,
         mut v_node: HashMap<&'a str, i8>,
         v_inst: HashMap<&'a Instruction, EdgeColor<'a>>,
-    ) -> Result<HashMap<&'a str, HashSet<i8>>, Box<dyn Error>> {
-        let w = self.ungraph.node_weight(f).unwrap();
-        println!(
-            "dfs({}, {}), m.len() = {}, v.len() = ({}, {})",
+        m_constraits: &HashMap<&'a str, HashSet<i8>>,
+        mut debug_chain: std::vec::Vec<(&'a str, i8)>,
+    ) -> Result<Option<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
+        let w = self.graph.node_weight(f).unwrap();
+        debug!(
+            "dfs({}, {}), m.len() = {}, v.len() = ({}, {})\nchain = {:?}",
             w.0,
             w.1,
             m.len(),
             v_node.len(),
-            v_inst.len()
+            v_inst.len(),
+            debug_chain,
         );
         // NOTE: add the current node to v_node
         if v_node.contains_key(w.0) {
@@ -74,8 +173,13 @@ impl<'a> Propagate<'a> {
         }
         m.insert(w.0, [w.1].iter().cloned().collect());
 
+        // DEBUG: add node to debug_chain
+        debug_chain.push((w.0, w.1));
+
         // NOTE: process out edges
-        let next_edges = self.ungraph.edges(f);
+        let next_edges = self.graph.edges(f);
+        let mut suc_once = -1i8;
+        // let mut sub_results: HashMap<&'a str, HashSet<i8>> = HashMap::new();
         for e in next_edges {
             let ew = e.weight();
             // NOTE: check if we've walked this instruction, but not this color
@@ -83,26 +187,30 @@ impl<'a> Propagate<'a> {
             {
                 let mut valid_edge = true;
                 for (i, c) in ew {
-                    if v_inst.contains_key(i) && v_inst[i].eq(c) {
+                    if v_inst.contains_key(i) && !v_inst[i].eq(c) {
                         valid_edge = false;
                     }
                 }
                 if !valid_edge {
+                    debug!("dfs({}, {}), abandoning edge {:?}", w.0, w.1, e.id(),);
                     continue;
                 }
             }
-            // TODO: check if node is within constraint
-            {}
 
-            let edge_endpoints = self.ungraph.edge_endpoints(e.id()).unwrap();
+            let edge_endpoints = self.graph.edge_endpoints(e.id()).unwrap();
             let next_node = if edge_endpoints.0 == f {
                 edge_endpoints.1
             } else {
                 edge_endpoints.0
             };
             // NOTE: check if we've visited other dimensions of the same node
-            let nw = self.ungraph.node_weight(next_node).unwrap();
+            let nw = self.graph.node_weight(next_node).unwrap();
             if v_node.contains_key(nw.0) {
+                continue;
+            }
+
+            // NOTE: check if node is within constraint
+            if m_constraits.contains_key(nw.0) && !m_constraits[nw.0].contains(&nw.1) {
                 continue;
             }
 
@@ -117,24 +225,34 @@ impl<'a> Propagate<'a> {
                 }
             }
 
-            let new_map =
-                self.propagate_dfs(next_node, m.clone(), v_node.clone(), v_inst_copied)?;
-            Self::merge_with(&mut m, new_map);
+            let new_map = self.propagate_dfs(
+                next_node,
+                m.clone(),
+                v_node.clone(),
+                v_inst_copied,
+                m_constraits,
+                debug_chain.clone(),
+            )?;
+
+            // error handling, suc flag switching
+            if new_map.is_none() {
+                if suc_once == -1 {
+                    suc_once = 0;
+                }
+                continue;
+            }
+            suc_once = 1;
+            Self::merge_with(&mut m, &new_map.unwrap());
         }
-        Ok(m)
+        // Self::merge_with(&mut m, sub_results);
+        // println!("printing m before return");
+        // for (k, v) in m.iter() {
+        // 	println!("{} -> {:?}", k, v);
+        // }
+        if suc_once == 0 {
+            Ok(None)
+        } else {
+            Ok(Some(m))
+        }
     }
 }
-
-// impl<'a> VarGraph3D<'a> {
-//     /// propagates the given function, and returns the resulting posible splits,
-//     /// as if it was a single instruction with a function call.
-//     pub fn propagate(
-//         &mut self,
-//         f: &'a HLOFunction,
-//     ) -> Result<HashMap<&'a str, HashSet<i8>>, Box<dyn Error>> {
-//         let node_id = self.node_id(&f.params[0].name, 0i8);
-//         let p = Propagate::new(&self);
-//         let result = p.propagate_dfs(node_id, HashMap::new(), HashMap::new(), HashMap::new())?;
-//         Ok(result.clone())
-//     }
-// }
