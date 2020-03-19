@@ -7,8 +7,8 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graph::UnGraph;
 use petgraph::prelude::*;
 use rayon::prelude::*;
-use std::cell::{Ref, RefCell};
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
 pub type NodeType<'a> = (&'a str, i8);
@@ -32,6 +32,7 @@ pub struct VarGraph3D<'a> {
     pub ast: &'a HLORoot,
     pub d: &'a Derivation<'a>,
 
+    pub visited: RefCell<Vec<HashMap<&'a str, HashSet<i8>>>>,
     pub fusion_inst: Vec<&'a Instruction>,
     pub fusion_map: HashMap<&'a Instruction, Vec<HashMap<&'a str, i8>>>,
 }
@@ -43,8 +44,9 @@ impl<'a> VarGraph3D<'a> {
             node_id: HashMap::new(),
             node_edge_cache: HashMap::new(),
             ast: d.ast.unwrap(),
-            d: d,
+            d,
 
+            visited: RefCell::new(vec![]),
             fusion_inst: vec![],
             fusion_map: HashMap::new(),
         }
@@ -60,16 +62,11 @@ impl<'a> VarGraph3D<'a> {
     }
 
     pub fn get_node_id(&self, name: &'a str, dim: i8) -> Option<NodeIndex> {
-        if self.node_id.contains_key(&(name, dim)) {
-            return Some(self.node_id[&(name, dim)]);
+        return if self.node_id.contains_key(&(name, dim)) {
+            Some(self.node_id[&(name, dim)])
         } else {
-            if !name.contains("%") {
-                return self.get_node_id(format!("%{}", name).as_str(), dim);
-            // return self.get_node_id(, dim);
-            } else {
-                return None;
-            }
-        }
+            None
+        };
     }
 
     pub fn update_node_edge_cache(
@@ -142,6 +139,7 @@ impl<'a> VarGraph3D<'a> {
 
     pub fn construct_fusion_map(&mut self) -> Result<(), Box<dyn Error>> {
         let fis = self.fusion_inst.clone();
+        println!("fis len {}", fis.len());
         for fi in fis {
             fi.assert_key_in_meta("calls");
             let fn_name: &'a str = fi
@@ -161,16 +159,19 @@ impl<'a> VarGraph3D<'a> {
                 .find(|x| &x.name == fn_name)
                 .unwrap();
             let return_var = &F.body[F.body.len() - 1].var_name;
+            println!("processing propagation of inst {:?}", fi);
             let result = self.propagate(F)?;
             let mut flattened_result: Vec<HashMap<&'a str, i8>> = vec![];
+            println!("processing result {} of inst {:?}", result.len(), fi);
             for m in result {
+                println!("processing map: {:?}", m);
                 let mut flattened_map: HashMap<&'a str, i8> = HashMap::new();
                 for (k, v) in m {
                     if k == return_var {
                         flattened_map.insert(&fi.var_name, v.iter().cloned().next().unwrap());
                     } else {
                         for (i, p) in F.params.iter().enumerate() {
-                            if &p.name == k {
+                            if k.contains(&p.name) {
                                 flattened_map.insert(
                                     &fi.function.params.as_ref().unwrap()[i].name,
                                     v.iter().cloned().next().unwrap(),
@@ -214,6 +215,9 @@ impl<'a> VarGraph3D<'a> {
 
     // do graph update for every instruction in the function
     fn func_to_edges(&mut self, f: &'a HLOFunction) -> bool {
+        if f.name.contains("XlaCompiledKernel") && !f.name.contains("ComputeTask") {
+            return true;
+        }
         debug!("Processing fn {}", f.name);
         f.body
             .iter()

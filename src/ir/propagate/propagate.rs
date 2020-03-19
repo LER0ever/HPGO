@@ -3,6 +3,7 @@ use crate::ir::hlo_ast::{HLOFunction, Instruction, Param};
 use crate::ir::propagate::vargraph::*;
 use log::debug;
 use petgraph::prelude::*;
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
@@ -60,16 +61,27 @@ impl<'a> VarGraph3D<'a> {
         params: &'a Vec<Param>,
         return_var: Option<&'a str>,
     ) -> Result<Vec<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
-        debug!("re @ index {}, m.len() = {}", index, m_constraits.len());
+        println!("re @ index {}, m.len() = {}", index, m_constraits.len());
         let mut ret: Vec<HashMap<&'a str, HashSet<i8>>> = vec![];
 
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
         let param_name = params[index].name.as_str();
         if m_constraits.contains_key(param_name) {
+            println!(
+                "range contraints: {} -> {}",
+                params[index]
+                    .param_type
+                    .dimensions
+                    .as_ref()
+                    .unwrap_or(&vec![])
+                    .len()
+                    + 1,
+                m_constraits[param_name].len()
+            );
             dim_list = m_constraits[param_name].iter().cloned().collect();
         } else {
-            dim_list = (0..params[0]
+            dim_list = (0..params[index]
                 .param_type
                 .dimensions
                 .as_ref()
@@ -89,6 +101,7 @@ impl<'a> VarGraph3D<'a> {
                     continue;
                 }
                 let node_id = node.unwrap();
+                self.visited = RefCell::new(vec![]);
                 let result = self.propagate_dfs(
                     node_id,
                     HashMap::new(),
@@ -104,13 +117,14 @@ impl<'a> VarGraph3D<'a> {
             return Ok(ret);
         }
 
-        for d in dim_list {
-            let node = self.get_node_id(param_name, d);
+        for d in dim_list.iter() {
+            let node = self.get_node_id(param_name, *d);
             if node.is_none() {
                 println!("failed to get node_id for ({},{})", param_name, d);
                 continue;
             }
             let node_id = node.unwrap();
+            self.visited = RefCell::new(vec![]);
             let result = self.propagate_dfs(
                 node_id,
                 HashMap::new(),
@@ -172,6 +186,12 @@ impl<'a> VarGraph3D<'a> {
             // m[w.0].insert(w.1);
         }
         m.insert(w.0, [w.1].iter().cloned().collect());
+
+        if self.visited.borrow().contains(&m) {
+            debug!("visited! visit len() = {}", self.visited.borrow().len());
+            return Ok(None);
+        }
+        self.visited.borrow_mut().push(m.clone());
 
         // DEBUG: add node to debug_chain
         debug_chain.push((w.0, w.1));
