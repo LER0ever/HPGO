@@ -138,7 +138,8 @@ fn test_hlo_propagation_fn() -> Result<(), Box<dyn Error>> {
     let mut d = Derivation::new_with_ast(&ast);
     d.cache_all_derive(&ast)?;
     let mut g = VarGraph3D::new(&d);
-    let fn_name = "%fused_computation.2280";
+    // let fn_name = "%fused_computation.2280";
+    let fn_name = "%fused_computation.3484.clone";
     g.build_from_function(fn_name)?;
     // let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
     let f = g
@@ -148,8 +149,7 @@ fn test_hlo_propagation_fn() -> Result<(), Box<dyn Error>> {
         .filter(|f| f.name == fn_name)
         .next()
         .unwrap();
-    let mut p = Propagate::new(&g);
-    let result = p.propagate(f)?;
+    let result = g.propagate(f)?;
     println!("returns {} results", result.len());
     for (i, r) in result.iter().enumerate() {
         println!("{} :: {:?}", i, r);

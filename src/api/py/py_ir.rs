@@ -1,3 +1,4 @@
+use crate::ir::hlo_ast::HLORoot;
 use pyo3::prelude::*;
 
 #[pymodule]
