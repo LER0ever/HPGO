@@ -31,23 +31,24 @@ impl<'a> Derivation<'a> {
         d
     }
 
-    pub fn cache_all_derive(&mut self, ast_root: &'a HLORoot) -> Result<(), Box<dyn Error>> {
-        self.derive_cache
-            .par_extend(ast_root.functions.par_iter().flat_map(|f| {
+    pub fn cache_ast(
+        ast_root: &'a HLORoot,
+    ) -> Result<Vec<(&'a Instruction, Vec<HashMap<&'a str, i8>>)>, Box<dyn Error>> {
+        let result = ast_root
+            .functions
+            .par_iter()
+            .flat_map(|f| {
                 f.body
                     .par_iter()
-                    .map(|i| {
-                        (
-                            i,
-                            Self::d(i).unwrap(),
-                            // Self::d(i).unwrap_or({
-                            //     println!("derivation failed for inst with fn {}, var_name {}", i.function.name, i.var_name);
-                            //     vec![]
-                            // }),
-                        )
-                    }) // TODO: use ? after finishing all d_s
+                    .map(|i| (i, Self::d(i).unwrap())) // TODO: use ? after finishing all d_s
                     .collect::<Vec<(&'a Instruction, Vec<HashMap<&'a str, i8>>)>>()
-            }));
+            })
+            .collect::<Vec<(&'a Instruction, Vec<HashMap<&'a str, i8>>)>>();
+        Ok(result)
+    }
+
+    pub fn cache_all_derive(&mut self, ast_root: &'a HLORoot) -> Result<(), Box<dyn Error>> {
+        self.derive_cache.par_extend(Self::cache_ast(ast_root)?);
         Ok(())
     }
 
