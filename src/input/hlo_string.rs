@@ -1,7 +1,9 @@
 use super::HLOModelImporter;
 use crate::ir::hlo_ast;
 
+use crate::ir::hlo_ast::HLORoot;
 use log::debug;
+use rayon::prelude::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
@@ -20,7 +22,13 @@ impl HLOModelImporter for HLOStructuredJsonImporter {
         debug!("[input]\tImporting Participle Json from Go...");
         let file = File::open(Path::new(filename))?;
         let reader = BufReader::new(file);
-        let ast_root = serde_json::from_reader(reader)?;
+        let mut ast_root: HLORoot = serde_json::from_reader(reader)?;
+        // augment function param name with %
+        ast_root.functions.par_iter_mut().for_each(|f| {
+            f.params.iter_mut().for_each(|p| {
+                p.augment_name();
+            });
+        });
         Ok(ast_root)
     }
 }
