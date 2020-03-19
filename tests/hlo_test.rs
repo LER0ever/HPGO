@@ -140,7 +140,7 @@ fn test_hlo_propagation_fn() -> Result<(), Box<dyn Error>> {
     let mut g = VarGraph3D::new(&d);
     // let fn_name = "%fused_computation.2280";
     // let fn_name = "%fused_computation.2737.clone";
-    let fn_name = "%fused_computation.4974.clone";
+    let fn_name = "%fused_computation.2271.clone";
     g.build_from_function(fn_name)?;
     // let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
     let f = g

@@ -54,18 +54,16 @@ impl<'a> VarGraph3D<'a> {
         Ok(result)
     }
 
-    fn propagate_re(
+    pub fn propagate_re(
         &mut self,
         index: usize,
         m_constraits: &HashMap<&'a str, HashSet<i8>>,
         params: &'a Vec<Param>,
         return_var: Option<&'a str>,
     ) -> Result<Vec<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
-        debug!(
-            "re @ index {}, m.len() = {}",
-            index,
-            m_constraits.len(),
-        );
+        if params.len() > 500 {
+            println!("re @ index {}, m.len() = {}", index, m_constraits.len(),);
+        }
         let mut ret: Vec<HashMap<&'a str, HashSet<i8>>> = vec![];
 
         // construct the solution space for current index
@@ -93,7 +91,7 @@ impl<'a> VarGraph3D<'a> {
                 .len() as i8)
                 .collect();
             if !dim_list.contains(&-1i8) {
-                dim_list.push(-1i8);
+                dim_list.insert(0, -1i8);
             }
         }
 
@@ -105,6 +103,9 @@ impl<'a> VarGraph3D<'a> {
                     continue;
                 }
                 let node_id = node.unwrap();
+                if params.len() > 500 {
+                    println!("dfs @ node ({}, {}), m.len() = {}", param_name, d, m_constraits.len(),);
+                }
                 self.visited = RefCell::new(vec![]);
                 let result = self.propagate_dfs(
                     node_id,
@@ -126,6 +127,9 @@ impl<'a> VarGraph3D<'a> {
             if node.is_none() {
                 println!("failed to get node_id for ({},{})", param_name, d);
                 continue;
+            }
+            if params.len() > 500 {
+                println!("dfs @ node ({}, {}), m.len() = {}", param_name, d, m_constraits.len(),);
             }
             let node_id = node.unwrap();
             self.visited = RefCell::new(vec![]);
@@ -160,7 +164,7 @@ impl<'a> VarGraph3D<'a> {
         f: NodeIndex,
         mut m: HashMap<&'a str, HashSet<i8>>,
         mut v_node: HashMap<&'a str, i8>,
-        v_inst: HashMap<&'a Instruction, EdgeColor<'a>>,
+        v_inst: HashMap<i32, i32>,
         m_constraits: &HashMap<&'a str, HashSet<i8>>,
         mut debug_chain: std::vec::Vec<(&'a str, i8)>,
     ) -> Result<Option<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
@@ -211,7 +215,7 @@ impl<'a> VarGraph3D<'a> {
             {
                 let mut valid_edge = true;
                 for (i, c) in ew {
-                    if v_inst.contains_key(i) && !v_inst[i].eq(c) {
+                    if v_inst.contains_key(i) && !v_inst[i] == *c {
                         valid_edge = false;
                     }
                 }
@@ -243,9 +247,9 @@ impl<'a> VarGraph3D<'a> {
             let mut v_inst_copied = v_inst.clone();
             for (i, c) in ew {
                 if v_inst.contains_key(i) {
-                    assert_eq!(v_inst[i].eq(c), true);
+                    assert_eq!(v_inst[i] == *c, true);
                 } else {
-                    v_inst_copied.insert(i, c);
+                    v_inst_copied.insert(*i, *c);
                 }
             }
 

@@ -14,27 +14,22 @@ use std::error::Error;
 pub type NodeType<'a> = (&'a str, i8);
 pub type EdgeColor<'a> = &'a HashMap<&'a str, i8>;
 pub type EdgeTypeSingle<'a> = (&'a Instruction, EdgeColor<'a>);
-pub type EdgeType<'a> = Vec<EdgeTypeSingle<'a>>;
+// pub type EdgeType<'a> = Vec<EdgeTypeSingle<'a>>;
+pub type EdgeType = Vec<(i32, i32)>;
 
 pub struct VarGraph3D<'a> {
-    pub graph: UnGraph<NodeType<'a>, EdgeType<'a>>,
+    pub graph: UnGraph<NodeType<'a>, EdgeType>,
     pub node_id: HashMap<(&'a str, i8), NodeIndex>,
-    pub node_edge_cache: HashMap<
-        &'a Instruction,
-        Vec<(
-            NodeType<'a>,
-            NodeType<'a>,
-            &'a Instruction,
-            &'a HashMap<&'a str, i8>,
-        )>,
-    >,
+    pub node_edge_cache: HashMap<&'a Instruction, Vec<(NodeType<'a>, NodeType<'a>, i32, i32)>>,
+    pub edge_color_id: i32,
+    pub inst_id: HashMap<&'a Instruction, i32>,
     // pub edge_id: HashMap<(NodeIndex, NodeIndex), EdgeIndex>,
     pub ast: &'a HLORoot,
     pub d: &'a Derivation<'a>,
 
     pub visited: RefCell<Vec<HashMap<&'a str, HashSet<i8>>>>,
     pub fusion_inst: Vec<&'a Instruction>,
-    pub fusion_map: HashMap<&'a Instruction, Vec<HashMap<&'a str, i8>>>,
+    pub fusion_map: RefCell<HashMap<&'a Instruction, Vec<HashMap<&'a str, i8>>>>,
 }
 
 impl<'a> VarGraph3D<'a> {
@@ -43,12 +38,14 @@ impl<'a> VarGraph3D<'a> {
             graph: UnGraph::<NodeType, EdgeType>::new_undirected(),
             node_id: HashMap::new(),
             node_edge_cache: HashMap::new(),
+            edge_color_id: 0,
+            inst_id: HashMap::new(),
             ast: d.ast.unwrap(),
             d,
 
             visited: RefCell::new(vec![]),
             fusion_inst: vec![],
-            fusion_map: HashMap::new(),
+            fusion_map: RefCell::new(HashMap::new()),
         }
     }
 
@@ -74,22 +71,47 @@ impl<'a> VarGraph3D<'a> {
         inst: &'a Instruction,
         res: &'a Vec<HashMap<&'a str, i8>>,
     ) {
+        let mut cur_edge_color_id = self.edge_color_id;
+        let cur_inst_id = self.inst_id[inst];
         self.node_edge_cache.insert(
             inst,
             res.iter()
                 .flat_map(|m| {
                     // m.keys()
-                    m.keys()
-                        .tuple_combinations()
-                        .map(move |(a, b)| ((*a, m[a]), (*b, m[b]), inst, m))
+
+                    let ret = m.keys().tuple_combinations().map(move |(a, b)| {
+                        ((*a, m[a]), (*b, m[b]), cur_edge_color_id, cur_inst_id)
+                    });
+                    cur_edge_color_id += 1;
+                    ret
                 })
-                .collect::<Vec<(
-                    NodeType<'a>,
-                    NodeType<'a>,
-                    &'a Instruction,
-                    &'a HashMap<&'a str, i8>,
-                )>>(),
+                .collect::<Vec<(NodeType<'a>, NodeType<'a>, i32, i32)>>(),
         );
+        self.edge_color_id = cur_edge_color_id;
+    }
+
+    pub fn update_node_edge_cache_for_fusion(
+        &mut self,
+        inst: &'a Instruction,
+        res: Vec<HashMap<&'a str, i8>>,
+    ) {
+        let mut cur_edge_color_id = self.edge_color_id;
+        let cur_inst_id = self.inst_id[inst];
+        self.node_edge_cache.insert(
+            inst,
+            res.iter()
+                .flat_map(|m| {
+                    // m.keys()
+
+                    let ret = m.keys().tuple_combinations().map(move |(a, b)| {
+                        ((*a, m[a]), (*b, m[b]), cur_edge_color_id, cur_inst_id)
+                    });
+                    cur_edge_color_id += 1;
+                    ret
+                })
+                .collect::<Vec<(NodeType<'a>, NodeType<'a>, i32, i32)>>(),
+        );
+        self.edge_color_id = cur_edge_color_id;
     }
 
     /// given an instruction, cache every edges produced by the instruction.
@@ -108,17 +130,13 @@ impl<'a> VarGraph3D<'a> {
     }
 
     /// take the result from inst_to_edges and update the global graph
-    pub fn update_graph_from_inst(&mut self, index: usize, i: &'a Instruction) -> bool {
-        debug!("Processing inst {}", index);
+    pub fn update_graph_from_inst(&mut self, i: &'a Instruction) -> bool {
+        debug!("Processing inst {}", self.inst_id[i]);
         if !self.node_edge_cache.contains_key(i) {
             self.inst_to_edges(i).unwrap();
         }
-        let node_edge_result: Vec<(
-            NodeType<'a>,
-            NodeType<'a>,
-            &'a Instruction,
-            &'a HashMap<&'a str, i8>,
-        )> = self.node_edge_cache[i].iter().map(|x| x.clone()).collect();
+        let node_edge_result: Vec<(NodeType<'a>, NodeType<'a>, i32, i32)> =
+            self.node_edge_cache[i].iter().map(|x| x.clone()).collect();
         // TODO: the above code made a copy of the resulting vec for no good fkn reason
 
         for (ta, tb, tc, td) in node_edge_result {
@@ -159,15 +177,15 @@ impl<'a> VarGraph3D<'a> {
                 .find(|x| &x.name == fn_name)
                 .unwrap();
             let return_var = &F.body[F.body.len() - 1].var_name;
-            debug!("processing propagation of inst {:?}", fi);
+            // debug!("processing propagation of inst {:?}", fi);
             let result = self.propagate(F)?;
             let mut flattened_result: Vec<HashMap<&'a str, i8>> = vec![];
-            debug!("processing result {} of inst {:?}", result.len(), fi);
+            // debug!("processing result {} of inst {:?}", result.len(), fi);
             // if result.len() == 0 {
             //     println!("result len 0, inst: {:?}, FL {:?}", fi, F);
             // }
             for m in result {
-                debug!("processing map: {:?}", m);
+                // debug!("processing map: {:?}", m);
                 let mut flattened_map: HashMap<&'a str, i8> = HashMap::new();
                 for (k, v) in m {
                     if k == return_var {
@@ -188,19 +206,21 @@ impl<'a> VarGraph3D<'a> {
                 }
                 flattened_result.push(flattened_map);
             }
-            self.fusion_map.insert(fi, flattened_result);
+            self.fusion_map
+                .borrow_mut()
+                .insert(fi, flattened_result.clone());
 
             // self.d.derive_cache.insert(fi, flattened_result);
             // self.d.derive_cache.insert(fi, flattened_result);
             // let ref_result = &self.fusion_map[fi];
-            // self.update_node_edge_cache(fi, ref_result);
-            // self.update_graph_from_inst(0, fi);
+            self.update_node_edge_cache_for_fusion(fi, flattened_result);
+            self.update_graph_from_inst(fi);
         }
 
-        // fusion_map.iter().for_each(|(k, v)| {
+        // for (k, v) in self.fusion_map.borrow().iter() {
         //     self.update_node_edge_cache(k, v);
         //     self.update_graph_from_inst(0, k);
-        // });
+        // }
         Ok(())
     }
 
@@ -211,7 +231,7 @@ impl<'a> VarGraph3D<'a> {
         // }
 
         println!("Fusion Map:");
-        self.fusion_map.iter().for_each(|(k, v)| {
+        self.fusion_map.borrow().iter().for_each(|(k, v)| {
             println!("{:?} -> {:?}", k.get_meta_str("calls").unwrap(), v);
         });
 
@@ -227,13 +247,20 @@ impl<'a> VarGraph3D<'a> {
         debug!("Processing fn {}", f.name);
         f.body
             .iter()
-            .enumerate()
-            .map(|(index, i)| self.update_graph_from_inst(index, i))
+            .map(|i| self.update_graph_from_inst(i))
             .all(|x| x == true)
     }
 
     pub fn build_from_hlo(&mut self) -> Result<&UnGraph<NodeType, EdgeType>, Box<dyn Error>> {
         self.graph.clear();
+        // init inst id
+        let mut cur_inst_id = 0i32;
+        self.ast.functions.iter().for_each(|f| {
+            f.body.iter().for_each(|i| {
+                self.inst_id.insert(i, cur_inst_id);
+                cur_inst_id += 1;
+            });
+        });
         let ok = self
             .ast
             .functions
@@ -252,6 +279,19 @@ impl<'a> VarGraph3D<'a> {
         fn_name: &str,
     ) -> Result<&UnGraph<NodeType, EdgeType>, Box<dyn Error>> {
         self.graph.clear();
+
+        let mut cur_inst_id = 0i32;
+        let f = self
+            .ast
+            .functions
+            .iter()
+            .find(|f| f.name == fn_name)
+            .unwrap();
+        f.body.iter().for_each(|i| {
+            self.inst_id.insert(i, cur_inst_id);
+            cur_inst_id += 1;
+        });
+
         let ok = self
             .ast
             .functions
