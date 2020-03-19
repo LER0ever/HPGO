@@ -2,7 +2,7 @@ use crate::ir::derive::Derivation;
 use crate::ir::error::DeriveError::{MetaKeyNotFound, OptionNone};
 use crate::ir::hlo_ast::*;
 use itertools::Itertools;
-use log::debug;
+use log::{debug, info, warn};
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::UnGraph;
 use petgraph::prelude::*;
@@ -139,7 +139,7 @@ impl<'a> VarGraph3D<'a> {
 
     pub fn construct_fusion_map(&mut self) -> Result<(), Box<dyn Error>> {
         let fis = self.fusion_inst.clone();
-        println!("fis len {}", fis.len());
+        println!("total fusion len {}", fis.len());
         for fi in fis {
             fi.assert_key_in_meta("calls");
             let fn_name: &'a str = fi
@@ -159,12 +159,15 @@ impl<'a> VarGraph3D<'a> {
                 .find(|x| &x.name == fn_name)
                 .unwrap();
             let return_var = &F.body[F.body.len() - 1].var_name;
-            println!("processing propagation of inst {:?}", fi);
+            debug!("processing propagation of inst {:?}", fi);
             let result = self.propagate(F)?;
             let mut flattened_result: Vec<HashMap<&'a str, i8>> = vec![];
-            println!("processing result {} of inst {:?}", result.len(), fi);
+            debug!("processing result {} of inst {:?}", result.len(), fi);
+            // if result.len() == 0 {
+            //     println!("result len 0, inst: {:?}, FL {:?}", fi, F);
+            // }
             for m in result {
-                println!("processing map: {:?}", m);
+                debug!("processing map: {:?}", m);
                 let mut flattened_map: HashMap<&'a str, i8> = HashMap::new();
                 for (k, v) in m {
                     if k == return_var {
@@ -172,6 +175,9 @@ impl<'a> VarGraph3D<'a> {
                     } else {
                         for (i, p) in F.params.iter().enumerate() {
                             if k.contains(&p.name) {
+                                if v.len() > 1 {
+                                    println!("resulting set has more than 1 element, we are losing solution space: inst = {:?} | k = {}, v = {:?}", fi, k, v);
+                                }
                                 flattened_map.insert(
                                     &fi.function.params.as_ref().unwrap()[i].name,
                                     v.iter().cloned().next().unwrap(),
@@ -206,7 +212,7 @@ impl<'a> VarGraph3D<'a> {
 
         println!("Fusion Map:");
         self.fusion_map.iter().for_each(|(k, v)| {
-            println!("{:?} -> {:?}", k, v);
+            println!("{:?} -> {:?}", k.get_meta_str("calls").unwrap(), v);
         });
 
         // unimplemented!()

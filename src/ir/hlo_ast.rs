@@ -202,6 +202,19 @@ impl Instruction {
             .as_ref()
             .ok_or(MetaValueNotFound("num_list".into()))?)
     }
+
+    pub fn get_meta_str(&self, key: &str) -> Result<String, Box<dyn Error>> {
+        Ok(self
+            .meta
+            .as_ref()
+            .ok_or(OptionNone("inst.meta".into()))?
+            .par_iter()
+            .find_any(|x| x.key == key)
+            .ok_or(MetaKeyNotFound(key.into()))?
+            .str_value
+            .clone()
+            .ok_or(MetaValueNotFound("str_value".into()))?)
+    }
 }
 
 impl RichParam {

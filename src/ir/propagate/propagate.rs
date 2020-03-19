@@ -61,14 +61,18 @@ impl<'a> VarGraph3D<'a> {
         params: &'a Vec<Param>,
         return_var: Option<&'a str>,
     ) -> Result<Vec<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
-        println!("re @ index {}, m.len() = {}", index, m_constraits.len());
+        debug!(
+            "re @ index {}, m.len() = {}",
+            index,
+            m_constraits.len(),
+        );
         let mut ret: Vec<HashMap<&'a str, HashSet<i8>>> = vec![];
 
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
         let param_name = params[index].name.as_str();
         if m_constraits.contains_key(param_name) {
-            println!(
+            debug!(
                 "range contraints: {} -> {}",
                 params[index]
                     .param_type
@@ -88,9 +92,9 @@ impl<'a> VarGraph3D<'a> {
                 .unwrap_or(&vec![])
                 .len() as i8)
                 .collect();
-        }
-        if !dim_list.contains(&-1i8) {
-            dim_list.push(-1i8);
+            if !dim_list.contains(&-1i8) {
+                dim_list.push(-1i8);
+            }
         }
 
         if index + 1 == params.len() {
