@@ -1,108 +1,149 @@
 use crate::ir::error::DeriveError::*;
+use pyo3::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 const REF: &str = "https://ry.sb/tf/xla-op";
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct HLORoot {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Functions"))]
     pub functions: Vec<HLOFunction>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct HLOFunction {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Params"))]
     pub params: Vec<Param>,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "ReturnTypes"))]
     pub return_types: Vec<Type>,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Body"))]
     pub body: Vec<Instruction>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct Instruction {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "VarName"))]
     pub var_name: String,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Fn"))]
     pub function: FunctionCall,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Meta"))]
     pub meta: Option<Vec<Meta>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct FunctionCall {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "ReturnTypes"))]
     pub return_types: Vec<RichType>,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Params"))]
     pub params: Option<Vec<RichParam>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct Meta {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Key"))]
     pub key: String,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Value"))]
     pub str_value: Option<String>,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "DictValue"))]
     pub dict_value: Option<Vec<Dict>>,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "ListNums"))]
     pub num_list: Option<Vec<i32>>,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "ListSlices"))]
     pub slice_list: Option<Vec<Slice>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct Dict {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Key"))]
     pub key: String,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Value"))]
     pub value: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct Slice {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Start"))]
     pub start: i32,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "End"))]
     pub end: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct Param {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Type"))]
     pub param_type: Type,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct Type {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "DataType"))]
     pub data_type: String,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Dimensions"))]
     pub dimensions: Option<Vec<i32>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct RichParam {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Type"))]
     pub param_type: RichType,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct RichType {
+    #[pyo3(get)]
     #[serde(rename(deserialize = "DataType"))]
     pub data_type: String,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Dimensions"))]
     pub dimensions: Option<Vec<i32>>,
+    #[pyo3(get)]
     #[serde(rename(deserialize = "Layout"))]
     pub layout: Option<Vec<i32>>,
 }
@@ -176,5 +217,14 @@ impl RichParam {
             .as_ref()
             .ok_or(OptionNone("rich_param.param_type.dimensions".into()))?;
         Ok(dims)
+    }
+}
+
+impl Param {
+    pub fn augment_name(&mut self) {
+        if self.name.contains("%") {
+            return;
+        }
+        self.name = format!("%{}", self.name);
     }
 }
