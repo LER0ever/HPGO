@@ -3,6 +3,7 @@ use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
+use std::collections::HashMap;
 
 #[test]
 fn test_hlo_export_dot() -> Result<(), Box<dyn Error>> {
@@ -151,6 +152,38 @@ fn test_hlo_propagation_fn() -> Result<(), Box<dyn Error>> {
         .next()
         .unwrap();
     let result = g.propagate(f)?;
+    println!("returns {} results", result.len());
+    for (i, r) in result.iter().enumerate() {
+        println!("{} :: {:?}", i, r);
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_hlo_compute_task_dfs() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
+    let mut d = Derivation::new_with_ast(&ast);
+    d.cache_all_derive(&ast)?;
+    let mut g = VarGraph3D::new(&d);
+    // let fn_name = "%fused_computation.2280";
+    // let fn_name = "%fused_computation.2737.clone";
+    // let fn_name = "%fused_computation.2271.clone";
+    g.build_from_hlo()?;
+    g.construct_fusion_map()?;
+    let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
+    let node_id = g.get_node_id("%arg3456.0", 1).unwrap();
+    let result = g.propagate_dfs(
+        node_id,
+        HashMap::new(),
+        HashMap::new(),
+        HashMap::new(),
+        &HashMap::new(),
+        vec![],
+        true, // true if
+    )?.unwrap();
+
     println!("returns {} results", result.len());
     for (i, r) in result.iter().enumerate() {
         println!("{} :: {:?}", i, r);

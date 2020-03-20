@@ -7,6 +7,8 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
+const VERBOSE_THRESHOLD: usize = 700;
+
 impl<'a> VarGraph3D<'a> {
     fn merge_with(a: &mut HashMap<&'a str, HashSet<i8>>, b: &HashMap<&'a str, HashSet<i8>>) {
         for (k, v) in b {
@@ -61,7 +63,7 @@ impl<'a> VarGraph3D<'a> {
         params: &'a Vec<Param>,
         return_var: Option<&'a str>,
     ) -> Result<Vec<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
-        if params.len() > 500 {
+        if params.len() > 300 {
             println!("re @ index {}, m.len() = {}", index, m_constraits.len(),);
         }
         let mut ret: Vec<HashMap<&'a str, HashSet<i8>>> = vec![];
@@ -103,9 +105,6 @@ impl<'a> VarGraph3D<'a> {
                     continue;
                 }
                 let node_id = node.unwrap();
-                if params.len() > 500 {
-                    println!("dfs @ node ({}, {}), m.len() = {}", param_name, d, m_constraits.len(),);
-                }
                 self.visited = RefCell::new(vec![]);
                 let result = self.propagate_dfs(
                     node_id,
@@ -114,6 +113,7 @@ impl<'a> VarGraph3D<'a> {
                     HashMap::new(),
                     m_constraits,
                     vec![],
+                    params.len() > VERBOSE_THRESHOLD, // true if
                 )?;
                 if let Some(m) = result {
                     ret.push(m);
@@ -128,9 +128,6 @@ impl<'a> VarGraph3D<'a> {
                 println!("failed to get node_id for ({},{})", param_name, d);
                 continue;
             }
-            if params.len() > 500 {
-                println!("dfs @ node ({}, {}), m.len() = {}", param_name, d, m_constraits.len(),);
-            }
             let node_id = node.unwrap();
             self.visited = RefCell::new(vec![]);
             let result = self.propagate_dfs(
@@ -140,6 +137,7 @@ impl<'a> VarGraph3D<'a> {
                 HashMap::new(),
                 m_constraits,
                 vec![],
+                params.len() > VERBOSE_THRESHOLD, // true if
             )?;
             if result.is_none() {
                 continue;
@@ -167,17 +165,21 @@ impl<'a> VarGraph3D<'a> {
         v_inst: HashMap<i32, i32>,
         m_constraits: &HashMap<&'a str, HashSet<i8>>,
         mut debug_chain: std::vec::Vec<(&'a str, i8)>,
+        verbose: bool,
     ) -> Result<Option<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
         let w = self.graph.node_weight(f).unwrap();
-        debug!(
-            "dfs({}, {}), m.len() = {}, v.len() = ({}, {})\nchain = {:?}",
-            w.0,
-            w.1,
-            m.len(),
-            v_node.len(),
-            v_inst.len(),
-            debug_chain,
-        );
+        if verbose {
+            println!(
+                "dfs({}, {}), m.len() = {}, v.len() = ({}, {})\nchain = {:?}",
+                w.0,
+                w.1,
+                m.len(),
+                v_node.len(),
+                v_inst.len(),
+                debug_chain,
+            );
+        }
+
         // NOTE: add the current node to v_node
         if v_node.contains_key(w.0) {
             return Err(Box::new(AlreadyVisitedIncompatible(format!(
@@ -260,6 +262,7 @@ impl<'a> VarGraph3D<'a> {
                 v_inst_copied,
                 m_constraits,
                 debug_chain.clone(),
+                verbose,
             )?;
 
             // error handling, suc flag switching
