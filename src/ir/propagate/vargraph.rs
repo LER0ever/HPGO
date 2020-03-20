@@ -306,7 +306,7 @@ impl<'a> VarGraph3D<'a> {
     }
 
     pub fn export_to_dot(&self) -> Result<String, Box<dyn Error>> {
-        let dot = Dot::with_config(&self.graph, &[Config::EdgeIndexLabel]); // Config::EdgeNoLabel
+        let dot = Dot::with_config(&self.graph, &[]); // Config::EdgeNoLabel or Config::EdgeIndexLabel
         Ok(format!("{:?}", dot))
     }
 }
