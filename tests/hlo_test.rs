@@ -3,7 +3,7 @@ use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 
 #[test]
 fn test_hlo_export_dot() -> Result<(), Box<dyn Error>> {
@@ -176,10 +176,10 @@ fn test_hlo_compute_task_dfs() -> Result<(), Box<dyn Error>> {
     let node_id = g.get_node_id("%arg3456.0", 1).unwrap();
     let result = g.propagate_dfs(
         node_id,
+        BTreeMap::new(),
         HashMap::new(),
         HashMap::new(),
-        HashMap::new(),
-        &HashMap::new(),
+        &BTreeMap::new(),
         vec![],
         true, // true if
     )?.unwrap();

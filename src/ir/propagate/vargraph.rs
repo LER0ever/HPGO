@@ -8,7 +8,7 @@ use petgraph::graph::UnGraph;
 use petgraph::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, BTreeMap, BTreeSet};
 use std::error::Error;
 
 pub type NodeType<'a> = (&'a str, i8);
@@ -27,7 +27,7 @@ pub struct VarGraph3D<'a> {
     pub ast: &'a HLORoot,
     pub d: &'a Derivation<'a>,
 
-    pub visited: RefCell<Vec<HashMap<&'a str, HashSet<i8>>>>,
+    pub visited: RefCell<HashSet<BTreeMap<&'a str, BTreeSet<i8>>>>,
     pub fusion_inst: Vec<&'a Instruction>,
     pub fusion_map: RefCell<HashMap<&'a Instruction, Vec<HashMap<&'a str, i8>>>>,
 }
@@ -43,7 +43,7 @@ impl<'a> VarGraph3D<'a> {
             ast: d.ast.unwrap(),
             d,
 
-            visited: RefCell::new(vec![]),
+            visited: RefCell::new(HashSet::new()),
             fusion_inst: vec![],
             fusion_map: RefCell::new(HashMap::new()),
         }
@@ -80,7 +80,7 @@ impl<'a> VarGraph3D<'a> {
                     // m.keys()
 
                     let ret = m.keys().tuple_combinations().map(move |(a, b)| {
-                        ((*a, m[a]), (*b, m[b]), cur_edge_color_id, cur_inst_id)
+                        ((*a, m[a]), (*b, m[b]), cur_inst_id, cur_edge_color_id)
                     });
                     cur_edge_color_id += 1;
                     ret
@@ -104,7 +104,7 @@ impl<'a> VarGraph3D<'a> {
                     // m.keys()
 
                     let ret = m.keys().tuple_combinations().map(move |(a, b)| {
-                        ((*a, m[a]), (*b, m[b]), cur_edge_color_id, cur_inst_id)
+                        ((*a, m[a]), (*b, m[b]), cur_inst_id, cur_edge_color_id)
                     });
                     cur_edge_color_id += 1;
                     ret

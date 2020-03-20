@@ -5,16 +5,17 @@ use log::debug;
 use petgraph::prelude::*;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 
 const VERBOSE_THRESHOLD: usize = 700;
 
 impl<'a> VarGraph3D<'a> {
-    fn merge_with(a: &mut HashMap<&'a str, HashSet<i8>>, b: &HashMap<&'a str, HashSet<i8>>) {
+    fn merge_with(a: &mut BTreeMap<&'a str, BTreeSet<i8>>, b: &BTreeMap<&'a str, BTreeSet<i8>>) {
         for (k, v) in b {
             if a.contains_key(k) {
                 debug!("map: adding {:?} to ({}, {:?})", v, k, a[k]);
-                let new_set: HashSet<i8> = a[k].union(&v).cloned().collect();
+                let new_set: BTreeSet<i8> = a[k].union(&v).cloned().collect();
                 *a.get_mut(k).unwrap() = new_set;
                 debug!("map: now {} -> {:?}", k, a[k]);
             } else {
@@ -25,13 +26,13 @@ impl<'a> VarGraph3D<'a> {
     }
 
     fn intersect_with(
-        a: &mut HashMap<&'a str, HashSet<i8>>,
-        b: &HashMap<&'a str, HashSet<i8>>,
+        a: &mut BTreeMap<&'a str, BTreeSet<i8>>,
+        b: &BTreeMap<&'a str, BTreeSet<i8>>,
     ) -> bool {
         for (k, v) in b {
             if a.contains_key(k) {
                 debug!("map: adding {:?} to ({}, {:?})", v, k, a[k]);
-                let new_set: HashSet<i8> = a[k].intersection(&v).cloned().collect();
+                let new_set: BTreeSet<i8> = a[k].intersection(&v).cloned().collect();
                 *a.get_mut(k).unwrap() = new_set;
                 if a[k].len() == 0 {
                     debug!("set intersection results in empty");
@@ -50,23 +51,23 @@ impl<'a> VarGraph3D<'a> {
     pub fn propagate(
         &mut self,
         f: &'a HLOFunction,
-    ) -> Result<Vec<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
+    ) -> Result<Vec<BTreeMap<&'a str, BTreeSet<i8>>>, Box<dyn Error>> {
         let return_var = &f.body[f.body.len() - 1].var_name;
-        let result = self.propagate_re(0, &HashMap::new(), &f.params, Some(return_var))?;
+        let result = self.propagate_re(0, &BTreeMap::new(), &f.params, Some(return_var))?;
         Ok(result)
     }
 
     pub fn propagate_re(
         &mut self,
         index: usize,
-        m_constraits: &HashMap<&'a str, HashSet<i8>>,
+        m_constraits: &BTreeMap<&'a str, BTreeSet<i8>>,
         params: &'a Vec<Param>,
         return_var: Option<&'a str>,
-    ) -> Result<Vec<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
+    ) -> Result<Vec<BTreeMap<&'a str, BTreeSet<i8>>>, Box<dyn Error>> {
         if params.len() > 300 {
             println!("re @ index {}, m.len() = {}", index, m_constraits.len(),);
         }
-        let mut ret: Vec<HashMap<&'a str, HashSet<i8>>> = vec![];
+        let mut ret: Vec<BTreeMap<&'a str, BTreeSet<i8>>> = vec![];
 
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
@@ -93,7 +94,7 @@ impl<'a> VarGraph3D<'a> {
                 .len() as i8)
                 .collect();
             if !dim_list.contains(&-1i8) {
-                dim_list.insert(0, -1i8);
+                dim_list.push(-1i8);
             }
         }
 
@@ -105,10 +106,10 @@ impl<'a> VarGraph3D<'a> {
                     continue;
                 }
                 let node_id = node.unwrap();
-                self.visited = RefCell::new(vec![]);
+                self.visited = RefCell::new(HashSet::new());
                 let result = self.propagate_dfs(
                     node_id,
-                    HashMap::new(),
+                    BTreeMap::new(),
                     HashMap::new(),
                     HashMap::new(),
                     m_constraits,
@@ -129,10 +130,10 @@ impl<'a> VarGraph3D<'a> {
                 continue;
             }
             let node_id = node.unwrap();
-            self.visited = RefCell::new(vec![]);
+            self.visited = RefCell::new(HashSet::new());
             let result = self.propagate_dfs(
                 node_id,
-                HashMap::new(),
+                BTreeMap::new(),
                 HashMap::new(),
                 HashMap::new(),
                 m_constraits,
@@ -160,23 +161,26 @@ impl<'a> VarGraph3D<'a> {
     pub fn propagate_dfs(
         &self,
         f: NodeIndex,
-        mut m: HashMap<&'a str, HashSet<i8>>,
+        mut m: BTreeMap<&'a str, BTreeSet<i8>>,
         mut v_node: HashMap<&'a str, i8>,
         v_inst: HashMap<i32, i32>,
-        m_constraits: &HashMap<&'a str, HashSet<i8>>,
+        m_constraits: &BTreeMap<&'a str, BTreeSet<i8>>,
         mut debug_chain: std::vec::Vec<(&'a str, i8)>,
         verbose: bool,
-    ) -> Result<Option<HashMap<&'a str, HashSet<i8>>>, Box<dyn Error>> {
+    ) -> Result<Option<BTreeMap<&'a str, BTreeSet<i8>>>, Box<dyn Error>> {
         let w = self.graph.node_weight(f).unwrap();
-        if verbose {
+        if verbose && debug_chain.len() < 500 {
+            let indent = (0..debug_chain.len()/4).map(|_| " ").collect::<String>();
             println!(
-                "dfs({}, {}), m.len() = {}, v.len() = ({}, {})\nchain = {:?}",
+                "{}{}dfs({}, {}), m.len() = {}, v.len() = ({}, {}), visited.len() = {}",
+                debug_chain.len(),
+                indent,
                 w.0,
                 w.1,
                 m.len(),
                 v_node.len(),
                 v_inst.len(),
-                debug_chain,
+                self.visited.borrow().len(),
             );
         }
 
@@ -201,7 +205,7 @@ impl<'a> VarGraph3D<'a> {
             debug!("visited! visit len() = {}", self.visited.borrow().len());
             return Ok(None);
         }
-        self.visited.borrow_mut().push(m.clone());
+        self.visited.borrow_mut().insert(m.clone());
 
         // DEBUG: add node to debug_chain
         debug_chain.push((w.0, w.1));
@@ -217,7 +221,7 @@ impl<'a> VarGraph3D<'a> {
             {
                 let mut valid_edge = true;
                 for (i, c) in ew {
-                    if v_inst.contains_key(i) && !v_inst[i] == *c {
+                    if v_inst.contains_key(i) && v_inst[i] != *c {
                         valid_edge = false;
                     }
                 }
@@ -249,6 +253,7 @@ impl<'a> VarGraph3D<'a> {
             let mut v_inst_copied = v_inst.clone();
             for (i, c) in ew {
                 if v_inst.contains_key(i) {
+                    // println!("v_inst check {} vs {}", v_inst[i], c);
                     assert_eq!(v_inst[i] == *c, true);
                 } else {
                     v_inst_copied.insert(*i, *c);

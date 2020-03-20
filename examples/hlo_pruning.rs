@@ -4,7 +4,7 @@ use HPGO::input::*;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
 use HPGO::ir::hlo_ast::Param;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashSet, HashMap, BTreeMap};
 
 fn get_split_vars() -> Vec<&'static str> {
     return vec![
@@ -767,7 +767,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
     println!("got {} target params out of {} all", target_params.len(), split_vars.len());
-    let result = g.propagate_re(0, &HashMap::new(), &target_params, None)?;
+    let result = g.propagate_re(0, &BTreeMap::new(), &target_params, None)?;
 
     println!("main returns {} results", result.len());
     for (i, r) in result.iter().enumerate() {
