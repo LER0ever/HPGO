@@ -8,7 +8,7 @@ use petgraph::graph::UnGraph;
 use petgraph::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet, BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::error::Error;
 
 pub type NodeType<'a> = (&'a str, i8);

@@ -4,11 +4,12 @@ use crate::ir::propagate::vargraph::*;
 use log::debug;
 use petgraph::prelude::*;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
 use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
-const VERBOSE_THRESHOLD: usize = 700;
+const VERBOSE_THRESHOLD: usize = 1000;
+const DFS_RETURN_THRESHOLD: usize = 9000;
 
 impl<'a> VarGraph3D<'a> {
     fn merge_with(a: &mut BTreeMap<&'a str, BTreeSet<i8>>, b: &BTreeMap<&'a str, BTreeSet<i8>>) {
@@ -65,7 +66,7 @@ impl<'a> VarGraph3D<'a> {
         return_var: Option<&'a str>,
     ) -> Result<Vec<BTreeMap<&'a str, BTreeSet<i8>>>, Box<dyn Error>> {
         if params.len() > 300 {
-            println!("re @ index {}, m.len() = {}", index, m_constraits.len(),);
+            println!("re {} @ index {}, m.len() = {}", params[index].name.as_str(), index, m_constraits.len(),);
         }
         let mut ret: Vec<BTreeMap<&'a str, BTreeSet<i8>>> = vec![];
 
@@ -117,6 +118,10 @@ impl<'a> VarGraph3D<'a> {
                     params.len() > VERBOSE_THRESHOLD, // true if
                 )?;
                 if let Some(m) = result {
+                    if params.len() > 300 {
+                        println!("result += {:?}", m);
+                    }
+
                     ret.push(m);
                 }
             }
@@ -131,6 +136,10 @@ impl<'a> VarGraph3D<'a> {
             }
             let node_id = node.unwrap();
             self.visited = RefCell::new(HashSet::new());
+            if params.len() > 300 {
+                println!("dfs {} , {}", param_name, *d);
+            }
+
             let result = self.propagate_dfs(
                 node_id,
                 BTreeMap::new(),
@@ -144,6 +153,15 @@ impl<'a> VarGraph3D<'a> {
                 continue;
             }
             let m = result.unwrap();
+            if params.len() > 300 {
+                let mc = m.clone();
+                for p in params.iter() {
+                    if mc.contains_key(p.name.as_str()) {
+                        print!("\"{}\": {:?}, ", p.name.as_str(), mc[p.name.as_str()]);
+                    }
+                }
+                println!("");
+            }
             let sub_res = self.propagate_re(index + 1, &m, params, return_var)?;
             for ssr in sub_res {
                 let mut m_copied = m.clone();
@@ -169,8 +187,8 @@ impl<'a> VarGraph3D<'a> {
         verbose: bool,
     ) -> Result<Option<BTreeMap<&'a str, BTreeSet<i8>>>, Box<dyn Error>> {
         let w = self.graph.node_weight(f).unwrap();
-        if verbose && debug_chain.len() < 500 {
-            let indent = (0..debug_chain.len()/4).map(|_| " ").collect::<String>();
+        if (verbose && debug_chain.len() < 500){
+            let indent = (0..debug_chain.len() / 4).map(|_| " ").collect::<String>();
             println!(
                 "{}{}dfs({}, {}), m.len() = {}, v.len() = ({}, {}), visited.len() = {}",
                 debug_chain.len(),
@@ -182,6 +200,9 @@ impl<'a> VarGraph3D<'a> {
                 v_inst.len(),
                 self.visited.borrow().len(),
             );
+        }
+        if self.visited.borrow().len() >= DFS_RETURN_THRESHOLD {
+            return Ok(Some(m));
         }
 
         // NOTE: add the current node to v_node
@@ -290,5 +311,18 @@ impl<'a> VarGraph3D<'a> {
         } else {
             Ok(Some(m))
         }
+    }
+
+    pub fn propagate_bfs(
+        &self,
+        f: NodeIndex,
+        mut m: BTreeMap<&'a str, BTreeSet<i8>>,
+        mut v_node: HashMap<&'a str, i8>,
+        v_inst: HashMap<i32, i32>,
+        m_constraits: &BTreeMap<&'a str, BTreeSet<i8>>,
+        mut debug_chain: std::vec::Vec<(&'a str, i8)>,
+        verbose: bool,
+    ) -> Result<Option<BTreeMap<&'a str, BTreeSet<i8>>>, Box<dyn Error>> {
+
     }
 }
