@@ -4,12 +4,43 @@ use crate::ir::propagate::vargraph::*;
 use log::debug;
 use petgraph::prelude::*;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, BTreeSet};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::error::Error;
 
 const VERBOSE_THRESHOLD: usize = 1000;
 const DFS_RETURN_THRESHOLD: usize = 9000;
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub struct State<'a> {
+    visited_node: BTreeMap<&'a str, i8>,
+    last_node: NodeIndex,
+    visited_inst: BTreeMap<i32, i32>,
+}
+
+impl<'a> State<'a> {
+    pub fn from_node(name: &'a str, dim: i8, index: NodeIndex) -> Self {
+        let mut vn: BTreeMap<&'a str, i8> = BTreeMap::new();
+        vn.insert(name, dim);
+        State {
+            visited_node: vn,
+            last_node: index,
+            visited_inst: BTreeMap::new(),
+        }
+    }
+
+    pub fn add_node(&mut self, name: &'a str, dim: i8, index: NodeIndex) {
+        self.visited_node.insert(name, dim);
+        self.last_node = index;
+    }
+
+    pub fn add_edge(&mut self, inst_id: i32, edge_color: i32) {
+        if self.visited_inst.contains_key(&inst_id) {
+            // assert_eq!(self.visited_inst[&inst_id], edge_color);
+        } else {
+            self.visited_inst.insert(inst_id, edge_color);
+        }
+    }
+}
 
 impl<'a> VarGraph3D<'a> {
     fn merge_with(a: &mut BTreeMap<&'a str, BTreeSet<i8>>, b: &BTreeMap<&'a str, BTreeSet<i8>>) {
@@ -70,6 +101,8 @@ impl<'a> VarGraph3D<'a> {
         }
         let mut ret: Vec<BTreeMap<&'a str, BTreeSet<i8>>> = vec![];
 
+        let bfs_switch = true;
+
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
         let param_name = params[index].name.as_str();
@@ -107,23 +140,29 @@ impl<'a> VarGraph3D<'a> {
                     continue;
                 }
                 let node_id = node.unwrap();
-                self.visited = RefCell::new(HashSet::new());
-                let result = self.propagate_dfs(
-                    node_id,
-                    BTreeMap::new(),
-                    HashMap::new(),
-                    HashMap::new(),
-                    m_constraits,
-                    vec![],
-                    params.len() > VERBOSE_THRESHOLD, // true if
-                )?;
-                if let Some(m) = result {
-                    if params.len() > 300 {
-                        println!("result += {:?}", m);
-                    }
+                if bfs_switch {
+                    let result = self.propagate_bfs(node_id, m_constraits, true)?;
+                    ret.push(result);
+                } else {
+                    self.visited = RefCell::new(HashSet::new());
+                    let result = self.propagate_dfs(
+                        node_id,
+                        BTreeMap::new(),
+                        HashMap::new(),
+                        HashMap::new(),
+                        m_constraits,
+                        vec![],
+                        params.len() > VERBOSE_THRESHOLD, // true if
+                    )?;
+                    if let Some(m) = result {
+                        if params.len() > 300 {
+                            println!("result += {:?}", m);
+                        }
 
-                    ret.push(m);
+                        ret.push(m);
+                    }
                 }
+
             }
             return Ok(ret);
         }
@@ -135,24 +174,29 @@ impl<'a> VarGraph3D<'a> {
                 continue;
             }
             let node_id = node.unwrap();
-            self.visited = RefCell::new(HashSet::new());
-            if params.len() > 300 {
-                println!("dfs {} , {}", param_name, *d);
-            }
+            let mut m: BTreeMap<&'a str, BTreeSet<i8>> = BTreeMap::new();
+            if bfs_switch {
+                m = self.propagate_bfs(node_id, m_constraits, true)?;
+            } else {
+                self.visited = RefCell::new(HashSet::new());
+                if params.len() > 300 {
+                    println!("dfs {} , {}", param_name, *d);
+                }
 
-            let result = self.propagate_dfs(
-                node_id,
-                BTreeMap::new(),
-                HashMap::new(),
-                HashMap::new(),
-                m_constraits,
-                vec![],
-                params.len() > VERBOSE_THRESHOLD, // true if
-            )?;
-            if result.is_none() {
-                continue;
+                let result = self.propagate_dfs(
+                    node_id,
+                    BTreeMap::new(),
+                    HashMap::new(),
+                    HashMap::new(),
+                    m_constraits,
+                    vec![],
+                    params.len() > VERBOSE_THRESHOLD, // true if
+                )?;
+                if result.is_none() {
+                    continue;
+                }
+                m = result.unwrap();
             }
-            let m = result.unwrap();
             if params.len() > 300 {
                 let mc = m.clone();
                 for p in params.iter() {
@@ -316,13 +360,90 @@ impl<'a> VarGraph3D<'a> {
     pub fn propagate_bfs(
         &self,
         f: NodeIndex,
-        mut m: BTreeMap<&'a str, BTreeSet<i8>>,
-        mut v_node: HashMap<&'a str, i8>,
-        v_inst: HashMap<i32, i32>,
         m_constraits: &BTreeMap<&'a str, BTreeSet<i8>>,
-        mut debug_chain: std::vec::Vec<(&'a str, i8)>,
         verbose: bool,
-    ) -> Result<Option<BTreeMap<&'a str, BTreeSet<i8>>>, Box<dyn Error>> {
+    ) -> Result<BTreeMap<&'a str, BTreeSet<i8>>, Box<dyn Error>> {
+        // State: 1. All Visited Nodes, 2. Last Visited Node, 3. Visited Inst and Color
+        //type State<'a> = (BTreeMap<&'a str, i8>, &'a str, BTreeMap<i32, i32>);
 
+        // bfs globals
+        let mut m: BTreeMap<&'a str, BTreeSet<i8>> = BTreeMap::new();
+        let mut q: VecDeque<State<'a>> = VecDeque::new();
+        let mut v: HashSet<State<'a>> = HashSet::new();
+        let mut v_node: HashSet<(&'a str, i8)> = HashSet::new();
+        // NOTE: could change one of the above to be references, saves 1/2 space
+
+        // first node
+        let w = self.graph.node_weight(f).unwrap();
+        let cur_state = State::from_node(w.0, w.1, f);
+        v.insert(cur_state.clone());
+        q.push_back(cur_state);
+        while !q.is_empty() {
+            let s = q.pop_front().unwrap();
+            let cn = self.graph.node_weight(s.last_node).unwrap();
+            v_node.insert((cn.0, cn.1));
+
+            println!("bfs({}, {}) L{}, v_node: {}", cn.0, cn.1, s.visited_node.len(), v_node.len());
+
+            // add cn to m
+            if m.contains_key(cn.0) {
+                m.get_mut(cn.0).unwrap().insert(cn.1);
+            } else {
+                m.insert(cn.0, [cn.1].iter().cloned().collect());
+            }
+
+            let next_edges = self.graph.edges(s.last_node);
+            for e in next_edges {
+                let ew = e.weight();
+                // NOTE: check if we've walked this inst, but with different color
+                let mut valid_edge = true;
+                for (i, c) in ew {
+                    if s.visited_inst.contains_key(i) && s.visited_inst[i] != *c {
+                        valid_edge = false;
+                    }
+                }
+                if !valid_edge {
+                    debug!("bfs({}, {}), abandoning edge {:?}", cn.0, cn.1, e.id());
+                    continue;
+                }
+
+
+                // NOTE: get next node
+                let edge_endpoints = self.graph.edge_endpoints(e.id()).unwrap();
+                let next_node = if edge_endpoints.0 == s.last_node {
+                    edge_endpoints.1
+                } else {
+                    edge_endpoints.0
+                };
+                let nw = self.graph.node_weight(next_node).unwrap();
+
+                // NOTE: check if we've visited other dimensions of this node
+                if s.visited_node.contains_key(nw.0) {
+                    continue;
+                }
+
+                // NOTE: check if node is within constraints
+                if m_constraits.contains_key(nw.0) && !m_constraits[nw.0].contains(&nw.1) {
+                    continue;
+                }
+
+                // NOTE: add current edge to v_inst,
+                let mut next_state = s.clone();
+                for (i, c) in ew {
+                    next_state.add_edge(*i, *c);
+                }
+                next_state.add_node(nw.0, nw.1, next_node);
+                if !v.contains(&next_state) {
+                    v.insert(next_state.clone());
+                    q.push_back(next_state);
+                } else {
+                    println!("bfs({}, {} | L{}) state visited: {:?}", w.0, w.1, next_state.visited_node.len(), next_state.last_node);
+                }
+            } // end for e in ew
+        }
+
+
+
+        return Ok(m);
     }
 }
