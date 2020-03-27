@@ -151,8 +151,9 @@ impl<'a> VarGraph3D<'a> {
                             return None;
                         }
                         let node_id = node.unwrap();
-                        let result =
-                            self.propagate_bfs(node_id, m_constraits, params.len() > 300).unwrap();
+                        let result = self
+                            .propagate_bfs(node_id, m_constraits, params.len() > 300)
+                            .unwrap();
                         if params.len() > 300 {
                             println!("result += {:?}", result);
                         }
@@ -176,7 +177,9 @@ impl<'a> VarGraph3D<'a> {
                         return vec![];
                     }
                     let node_id = node.unwrap();
-                    let m = self.propagate_bfs(node_id, m_constraits, params.len() > 300).unwrap();
+                    let m = self
+                        .propagate_bfs(node_id, m_constraits, params.len() > 300)
+                        .unwrap();
 
                     if params.len() > 300 {
                         let mc = m.clone();
@@ -187,7 +190,9 @@ impl<'a> VarGraph3D<'a> {
                         }
                         println!("");
                     }
-                    let sub_res = self.propagate_remt(index + 1, &m, params, return_var).unwrap();
+                    let sub_res = self
+                        .propagate_remt(index + 1, &m, params, return_var)
+                        .unwrap();
                     let mut sub_ret: Vec<BTreeMap<&'a str, BTreeSet<i8>>> = vec![];
                     for ssr in sub_res {
                         let mut m_copied = m.clone();
@@ -479,6 +484,33 @@ impl<'a> VarGraph3D<'a> {
     //     }
     // }
 
+    pub fn propagate_bsids(
+        &self,
+        f: NodeIndex,
+        m_constraints: &BTreeMap<&'a str, BTreeSet<i8>>,
+        verbose: bool,
+    ) {
+        // IDS globals
+        let mut m: BTreeMap<&'a str, BTreeSet<i8>> = BTreeMap::new();
+        let mut q: VecDeque<State<'a>> = VecDeque::new();
+        let mut v: HashSet<NodeType<'a>> = HashSet::new();
+
+        // first node
+        let w = self.graph.node_weight(f).unwrap();
+        let cur_state = State::from_node(w.0, w.1, f);
+        v.insert(*w);
+        q.push_back(cur_state);
+
+        // search
+        while !q.is_empty() {
+            let s = q.pop_front().unwrap();
+            let cn = self.graph.node_weight(s.last_node).unwrap();
+            v.insert((cn.0, cn.1));
+        }
+
+        unimplemented!()
+    }
+
     pub fn propagate_bfs(
         &self,
         f: NodeIndex,
@@ -509,15 +541,16 @@ impl<'a> VarGraph3D<'a> {
             iter += 1;
             if verbose {
                 let cur_depth = s.visited_node.len();
+                debug!(
+                    "bfs({}, {}) L{}, v_node: {}",
+                    w.0,
+                    w.1,
+                    cur_depth,
+                    v_node.len()
+                );
                 if cur_depth > max_depth {
                     max_depth = cur_depth;
-                    println!(
-                        "bfs({}, {}) L{}, v_node: {}",
-                        w.0,
-                        w.1,
-                        cur_depth,
-                        v_node.len()
-                    );
+
                 } else {
                     // if iter % 100 == 0 {
                     //     print!(".");
@@ -581,6 +614,10 @@ impl<'a> VarGraph3D<'a> {
                     edge_endpoints.0
                 };
                 let nw = self.graph.node_weight(next_node).unwrap();
+
+                if v_node.contains(nw) {
+                    continue;
+                }
 
                 // NOTE: check if we've visited other dimensions of this node
                 if s.visited_node.contains_key(nw.0) {

@@ -235,8 +235,7 @@ impl<'a> VarGraph3D<'a> {
                 }
                 flattened_result.push(flattened_map);
             }
-            self.fusion_map
-                .insert(fi, flattened_result.clone());
+            self.fusion_map.insert(fi, flattened_result.clone());
 
             // self.d.derive_cache.insert(fi, flattened_result);
             // self.d.derive_cache.insert(fi, flattened_result);

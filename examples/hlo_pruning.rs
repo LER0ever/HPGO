@@ -2,10 +2,10 @@ use std::error::Error;
 use HPGO::input::*;
 // use HPGO::ir::propagate::propagate::Propagate;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::time::{Duration, Instant};
 use HPGO::ir::hlo_ast::Param;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
-use std::time::{Instant, Duration};
 
 fn get_split_vars() -> Vec<&'static str> {
     return vec![
