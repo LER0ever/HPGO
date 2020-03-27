@@ -985,7 +985,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut target_params: Vec<Param> = vec![];
     f.params.iter().for_each(|p| {
         if split_vars.contains(p.name.as_str())
-        /*&& !qkv_constraits.contains_key(p.name.as_str())*/
+        && !qkv_constraits.contains_key(p.name.as_str())
         {
             target_params.push(p.clone());
         }
@@ -996,7 +996,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         split_vars.len()
     );
     let now = Instant::now();
-    let result = g.propagate_remt(0, &BTreeMap::new(), &target_params, None)?;
+    let result = g.propagate_remt(0, &qkv_constraits, &target_params, None)?;
     println!(
         "[propagation]\t Propagate REMT on AST Root... {}s",
         now.elapsed().as_secs()
