@@ -1,10 +1,11 @@
 use std::error::Error;
 use HPGO::input::*;
 // use HPGO::ir::propagate::propagate::Propagate;
-use std::collections::{BTreeMap, HashMap, HashSet, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use HPGO::ir::hlo_ast::Param;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
+use std::time::{Instant, Duration};
 
 fn get_split_vars() -> Vec<&'static str> {
     return vec![
@@ -983,7 +984,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let f = g.ast.functions.iter().find(|f| f.name == fn_name).unwrap();
     let mut target_params: Vec<Param> = vec![];
     f.params.iter().for_each(|p| {
-        if split_vars.contains(p.name.as_str()) && !qkv_constraits.contains_key(p.name.as_str()) {
+        if split_vars.contains(p.name.as_str())
+        /*&& !qkv_constraits.contains_key(p.name.as_str())*/
+        {
             target_params.push(p.clone());
         }
     });
@@ -992,8 +995,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         target_params.len(),
         split_vars.len()
     );
-        let result = g.propagate_re(0, &qkv_constraits, &target_params, None)?;
-
+    let now = Instant::now();
+    let result = g.propagate_remt(0, &BTreeMap::new(), &target_params, None)?;
+    println!(
+        "[propagation]\t Propagate REMT on AST Root... {}s",
+        now.elapsed().as_secs()
+    );
     println!("main returns {} results", result.len());
     for (i, r) in result.iter().enumerate() {
         println!("{} :: {:?}", i, r);

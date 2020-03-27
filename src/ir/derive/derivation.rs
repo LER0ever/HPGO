@@ -3,6 +3,7 @@ use crate::ir::hlo_ast::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
+use std::time::{Duration, Instant};
 
 pub type Split<'a> = (&'a str, i8);
 
@@ -48,7 +49,12 @@ impl<'a> Derivation<'a> {
     }
 
     pub fn cache_all_derive(&mut self, ast_root: &'a HLORoot) -> Result<(), Box<dyn Error>> {
+        let now = Instant::now();
         self.derive_cache.par_extend(Self::cache_ast(ast_root)?);
+        println!(
+            "[derivation]\t Cache Derivation for AST... {}ms",
+            now.elapsed().as_millis()
+        );
         Ok(())
     }
 

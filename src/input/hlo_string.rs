@@ -2,12 +2,13 @@ use super::HLOModelImporter;
 use crate::ir::hlo_ast;
 
 use crate::ir::hlo_ast::HLORoot;
-use log::debug;
+use log::{debug, info};
 use rayon::prelude::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
+use std::time::{Duration, Instant};
 
 const VERBOSE: bool = true;
 
@@ -20,6 +21,7 @@ impl HLOModelImporter for HLOStructuredJsonImporter {
 
     fn ImportFrom(&self, filename: &str) -> Result<hlo_ast::HLORoot, Box<dyn Error>> {
         debug!("[input]\tImporting Participle Json from Go...");
+        let now = Instant::now();
         let file = File::open(Path::new(filename))?;
         let reader = BufReader::new(file);
         let mut ast_root: HLORoot = serde_json::from_reader(reader)?;
@@ -29,6 +31,10 @@ impl HLOModelImporter for HLOStructuredJsonImporter {
                 p.augment_name();
             });
         });
+        println!(
+            "[input]\t Reading from Go-generated Participle Json... {}ms",
+            now.elapsed().as_millis()
+        );
         Ok(ast_root)
     }
 }

@@ -10,6 +10,7 @@ use rayon::prelude::*;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::error::Error;
+use std::time::Instant;
 
 pub type NodeType<'a> = (&'a str, i8);
 pub type EdgeColor<'a> = &'a HashMap<&'a str, i8>;
@@ -23,13 +24,15 @@ pub struct VarGraph3D<'a> {
     pub node_edge_cache: HashMap<&'a Instruction, Vec<(NodeType<'a>, NodeType<'a>, i32, i32)>>,
     pub edge_color_id: i32,
     pub inst_id: HashMap<&'a Instruction, i32>,
+    pub color_cover: HashMap<i32, HashSet<EdgeIndex>>,
+    pub color_connect: HashMap<i32, HashSet<NodeIndex>>,
     // pub edge_id: HashMap<(NodeIndex, NodeIndex), EdgeIndex>,
     pub ast: &'a HLORoot,
     pub d: &'a Derivation<'a>,
 
-    pub visited: RefCell<HashSet<BTreeMap<&'a str, BTreeSet<i8>>>>,
+    // pub visited: RefCell<HashSet<BTreeMap<&'a str, BTreeSet<i8>>>>,
     pub fusion_inst: Vec<&'a Instruction>,
-    pub fusion_map: RefCell<HashMap<&'a Instruction, Vec<HashMap<&'a str, i8>>>>,
+    pub fusion_map: HashMap<&'a Instruction, Vec<HashMap<&'a str, i8>>>,
 }
 
 impl<'a> VarGraph3D<'a> {
@@ -42,10 +45,12 @@ impl<'a> VarGraph3D<'a> {
             inst_id: HashMap::new(),
             ast: d.ast.unwrap(),
             d,
+            color_cover: HashMap::new(),
+            color_connect: HashMap::new(),
 
-            visited: RefCell::new(HashSet::new()),
+            // visited: RefCell::new(HashSet::new()),
             fusion_inst: vec![],
-            fusion_map: RefCell::new(HashMap::new()),
+            fusion_map: HashMap::new(),
         }
     }
 
@@ -150,12 +155,36 @@ impl<'a> VarGraph3D<'a> {
                 let ew = self.graph.edge_weight_mut(e.unwrap()).unwrap();
                 ew.push((tc, td));
             }
+            // add to color cover
+            if self.color_cover.contains_key(&td) {
+                self.color_cover
+                    .get_mut(&td)
+                    .unwrap()
+                    .insert(self.graph.find_edge(a, b).unwrap());
+            } else {
+                self.color_cover.insert(
+                    td,
+                    [self.graph.find_edge(a, b).unwrap()]
+                        .iter()
+                        .cloned()
+                        .collect(),
+                );
+            }
+            // add to color connect
+            if self.color_connect.contains_key(&td) {
+                self.color_connect.get_mut(&td).unwrap().insert(a);
+                self.color_connect.get_mut(&td).unwrap().insert(b);
+            } else {
+                self.color_connect
+                    .insert(td, [a, b].iter().cloned().collect());
+            }
         }
 
         true
     }
 
     pub fn construct_fusion_map(&mut self) -> Result<(), Box<dyn Error>> {
+        let now = Instant::now();
         let fis = self.fusion_inst.clone();
         println!("total fusion len {}", fis.len());
         for fi in fis {
@@ -207,7 +236,6 @@ impl<'a> VarGraph3D<'a> {
                 flattened_result.push(flattened_map);
             }
             self.fusion_map
-                .borrow_mut()
                 .insert(fi, flattened_result.clone());
 
             // self.d.derive_cache.insert(fi, flattened_result);
@@ -216,7 +244,10 @@ impl<'a> VarGraph3D<'a> {
             self.update_node_edge_cache_for_fusion(fi, flattened_result);
             self.update_graph_from_inst(fi);
         }
-
+        println!(
+            "[vargraph]\t Construct Fusion Map... {}ms",
+            now.elapsed().as_millis()
+        );
         // for (k, v) in self.fusion_map.borrow().iter() {
         //     self.update_node_edge_cache(k, v);
         //     self.update_graph_from_inst(0, k);
@@ -231,7 +262,7 @@ impl<'a> VarGraph3D<'a> {
         // }
 
         println!("Fusion Map:");
-        self.fusion_map.borrow().iter().for_each(|(k, v)| {
+        self.fusion_map.iter().for_each(|(k, v)| {
             println!("{:?} -> {:?}", k.get_meta_str("calls").unwrap(), v);
         });
 
@@ -252,6 +283,7 @@ impl<'a> VarGraph3D<'a> {
     }
 
     pub fn build_from_hlo(&mut self) -> Result<&UnGraph<NodeType, EdgeType>, Box<dyn Error>> {
+        let now = Instant::now();
         self.graph.clear();
         // init inst id
         let mut cur_inst_id = 0i32;
@@ -267,7 +299,10 @@ impl<'a> VarGraph3D<'a> {
             .iter()
             .map(|f| self.func_to_edges(f))
             .all(|x| x == true);
-
+        println!(
+            "[vargraph]\t Build Graph from Function... {}ms",
+            now.elapsed().as_millis()
+        );
         match ok {
             true => Ok(&self.graph),
             false => Err("Graph Construction Error".into()),
@@ -278,6 +313,7 @@ impl<'a> VarGraph3D<'a> {
         &mut self,
         fn_name: &str,
     ) -> Result<&UnGraph<NodeType, EdgeType>, Box<dyn Error>> {
+        let now = Instant::now();
         self.graph.clear();
 
         let mut cur_inst_id = 0i32;
@@ -299,6 +335,10 @@ impl<'a> VarGraph3D<'a> {
             .filter(|f| f.name == fn_name)
             .map(|f| self.func_to_edges(f))
             .all(|x| x == true);
+        println!(
+            "[vargraph]\t Build Graph from Function... {}ms",
+            now.elapsed().as_millis()
+        );
         match ok {
             true => Ok(&self.graph),
             false => Err("Graph Construction Error".into()),
