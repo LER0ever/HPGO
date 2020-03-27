@@ -540,17 +540,17 @@ impl<'a> VarGraph3D<'a> {
             v_node.insert((cn.0, cn.1));
             iter += 1;
             if verbose {
-                let cur_depth = s.visited_node.len();
-                debug!(
-                    "bfs({}, {}) L{}, v_node: {}",
-                    w.0,
-                    w.1,
-                    cur_depth,
-                    v_node.len()
-                );
-                if cur_depth > max_depth {
+                let cur_depth = v_node.len();
+                if cur_depth >= max_depth {
                     max_depth = cur_depth;
-
+                    println!(
+                        "bfs({}, {}) L{}, v_node: {}, q: {}",
+                        w.0,
+                        w.1,
+                        cur_depth,
+                        v_node.len(),
+                        q.len(),
+                    );
                 } else {
                     // if iter % 100 == 0 {
                     //     print!(".");
