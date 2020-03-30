@@ -122,6 +122,19 @@ fn test_hlo_derive_concat() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn test_hlo_derive_broadcast() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let ast = hi.ImportFrom("./tests/test_data/hlo/broadcast.json")?;
+    let mut target_inst = &ast.functions[0].body[0];
+    let result = Derivation::d(target_inst)?;
+    for x in &result {
+        println!("{:?}", x);
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_hlo_derive_cache() -> Result<(), Box<dyn Error>> {
     let mut d = Derivation::new();
 
@@ -176,16 +189,11 @@ fn test_hlo_compute_task_dfs() -> Result<(), Box<dyn Error>> {
     let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
     let node_id = g.get_node_id("%arg3456.0", 1).unwrap();
     let result = g
-        .propagate_dfs(
+        .propagate_bfs(
             node_id,
-            BTreeMap::new(),
-            HashMap::new(),
-            HashMap::new(),
             &BTreeMap::new(),
-            vec![],
             true, // true if
-        )?
-        .unwrap();
+        )?;
 
     println!("returns {} results", result.len());
     for (i, r) in result.iter().enumerate() {
