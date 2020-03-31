@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 
 pub type Split<'a> = (&'a str, i8);
 
+#[derive(Debug, Clone)]
 pub struct Derivation<'a> {
     pub lazy_cache: bool,
     pub derive_cache: HashMap<&'a Instruction, Vec<HashMap<&'a str, i8>>>,

@@ -5,9 +5,13 @@ use pyo3::exceptions;
 use pyo3::prelude::*;
 use std::error::Error;
 
+#[pyclass]
+#[derive(Debug, Clone)]
 pub struct IRConductor {
+    #[pyo3(get)]
     pub ast: HLORoot,
 }
+
 
 impl IRConductor {
     /// Construct a new IRConductor for working with HLO/MLIR model planning
