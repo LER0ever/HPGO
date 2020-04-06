@@ -1,17 +1,32 @@
+use crate::ir::error::ASTError;
 use crate::ir::error::DeriveError::*;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
 const REF: &str = "https://ry.sb/tf/xla-op";
+// MOTE: did not use HashSet here because PyO3 does not impl IntoPyResult
+pub type VarPos = (usize, Vec<usize>);
 
 #[pyclass]
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
 pub struct HLORoot {
     #[pyo3(get)]
     #[serde(rename(deserialize = "Functions"))]
     pub functions: Vec<HLOFunction>,
+
+    // relying on the fact that Function Names are unique
+    #[pyo3(get)]
+    pub func_id: HashMap<String, usize>,
+    #[pyo3(get)]
+    pub inst_id: HashMap<Instruction, usize>,
+    #[pyo3(get)]
+    pub inst_local_id: HashMap<Instruction, usize>,
+    // relying on the fact that Variable Names are unique
+    #[pyo3(get)]
+    pub var_pos: HashMap<String, VarPos>,
 }
 
 #[pyclass]
@@ -146,6 +161,63 @@ pub struct RichType {
     #[pyo3(get)]
     #[serde(rename(deserialize = "Layout"))]
     pub layout: Option<Vec<i32>>,
+}
+
+impl HLORoot {
+    pub fn cache_positional_func(&mut self) -> Result<(), Box<dyn Error>> {
+        if self.func_id.len() != 0 {
+            return Err(Box::new(ASTError::CacheFuncTwice));
+        }
+        self.func_id.extend(
+            self.functions
+                .iter()
+                .enumerate()
+                .map(|(i, f)| (f.name.clone(), i)),
+        );
+        assert_eq!(self.func_id.len() > 0, true);
+        Ok(())
+    }
+
+    pub fn cache_positional_inst(&mut self) -> Result<(), Box<dyn Error>> {
+        if self.inst_id.len() != 0 {
+            return Err(Box::new(ASTError::CacheInstTwice));
+        }
+        // workaround to increase index before returning
+        let mut index = -1;
+        let f_pos =
+            self.functions.iter().flat_map(|f| {
+                let mut local_index = -1;
+                f.body.iter().map(|i| {
+                    index += 1;
+                    local_index += 1;
+                    (i.clone(), index as usize, local_index as usize)
+                }).collect::<Vec<(Instruction, usize, usize)>>()
+            }).collect::<Vec<(Instruction, usize, usize)>>();
+        self.inst_id.par_extend(
+            f_pos.par_iter().map(|(inst, index, _)| {
+                (inst.clone(), *index)
+            })
+        );
+        self.inst_local_id.par_extend(
+            f_pos.par_iter().map(|(inst, _, local_index)| {
+                (inst.clone(), *local_index)
+            })
+        );
+        assert_eq!(self.inst_id.len() > 0, true);
+        Ok(())
+    }
+
+    pub fn cache_var_position(&mut self) -> Result<(), Box<dyn Error>> {
+        if self.var_pos.len() != 0 {
+            return Err(Box::new(ASTError::CacheVarPosTwice));
+        }
+        // self.functions.iter().flat_map(|f| {
+        //     f.body.iter().map(|i| {
+        //         (i.var_name.clone(), self.inst_id[i])
+        //     }).collect()
+        // });
+        unimplemented!()
+    }
 }
 
 impl Instruction {

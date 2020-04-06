@@ -27,3 +27,15 @@ pub enum PropagationError {
     #[error("unknown propagation error")]
     Unknown,
 }
+
+#[derive(Error, Debug)]
+pub enum ASTError {
+    #[error("AST Function Positional Caching called twice!")]
+    CacheFuncTwice,
+    #[error("AST Instruction Positional Caching called twice!")]
+    CacheInstTwice,
+    #[error("AST Variable Positional Caching called twice!")]
+    CacheVarPosTwice,
+    #[error("Unknown AST Operation Error...")]
+    Unknown,
+}

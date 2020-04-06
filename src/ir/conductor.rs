@@ -12,12 +12,11 @@ pub struct IRConductor {
     pub ast: HLORoot,
 }
 
-
 impl IRConductor {
     /// Construct a new IRConductor for working with HLO/MLIR model planning
     pub fn new() -> Self {
         IRConductor {
-            ast: HLORoot { functions: vec![] },
+            ast: HLORoot::default(),
         }
     }
 

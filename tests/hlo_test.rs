@@ -188,12 +188,11 @@ fn test_hlo_compute_task_dfs() -> Result<(), Box<dyn Error>> {
     g.construct_fusion_map()?;
     let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
     let node_id = g.get_node_id("%arg3456.0", 1).unwrap();
-    let result = g
-        .propagate_bfs(
-            node_id,
-            &BTreeMap::new(),
-            true, // true if
-        )?;
+    let result = g.propagate_bfs(
+        node_id,
+        &BTreeMap::new(),
+        true, // true if
+    )?;
 
     println!("returns {} results", result.len());
     for (i, r) in result.iter().enumerate() {

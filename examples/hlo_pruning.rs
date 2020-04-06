@@ -984,9 +984,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let f = g.ast.functions.iter().find(|f| f.name == fn_name).unwrap();
     let mut target_params: Vec<Param> = vec![];
     f.params.iter().for_each(|p| {
-        if split_vars.contains(p.name.as_str())
-        && !qkv_constraits.contains_key(p.name.as_str())
-        {
+        if split_vars.contains(p.name.as_str()) && !qkv_constraits.contains_key(p.name.as_str()) {
             target_params.push(p.clone());
         }
     });
