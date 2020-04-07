@@ -10,8 +10,7 @@ use HPGO::ir::*;
 fn test_ast_positional_cache() -> Result<(), Box<dyn Error>> {
     let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
     let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
-    ast.cache_positional_func()?;
-    ast.cache_positional_inst()?;
+    ast.cache_all_positional()?;
     let now = Instant::now();
     // checks func_id and inst_local_id
     for i in 0..ast.functions.len() {
@@ -20,6 +19,7 @@ fn test_ast_positional_cache() -> Result<(), Box<dyn Error>> {
             assert_eq!(j, ast.inst_local_id[&ast.functions[i].body[j]]);
         }
     }
+    println!("[test]\t variable cache contains {} elements", ast.var_pos.len());
     println!(
         "[test]\t AST Positional Check {}ms",
         now.elapsed().as_millis()

@@ -5,6 +5,8 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
+use log::debug;
+use std::time::{Duration, Instant};
 
 const REF: &str = "https://ry.sb/tf/xla-op";
 // MOTE: did not use HashSet here because PyO3 does not impl IntoPyResult
@@ -218,12 +220,50 @@ impl HLORoot {
         if self.var_pos.len() != 0 {
             return Err(Box::new(ASTError::CacheVarPosTwice));
         }
-        // self.functions.iter().flat_map(|f| {
-        //     f.body.iter().map(|i| {
-        //         (i.var_name.clone(), self.inst_id[i])
-        //     }).collect()
-        // });
-        unimplemented!()
+        let mut var_map: HashMap<String, VarPos> = HashMap::new();
+        fn add_to_map(var_map: &mut HashMap<String, VarPos>, var_name: String, func_id: usize, inst_local_id: usize) {
+            if !var_map.contains_key(&var_name) {
+                var_map.insert(var_name, (func_id, [inst_local_id].iter().cloned().collect()));
+            } else {
+                assert_eq!(var_map[&var_name].0, func_id);
+                if !var_map[&var_name].1.contains(&inst_local_id) {
+                    let mut cur_ids = var_map[&var_name].1.clone();
+                    cur_ids.push(inst_local_id);
+                    *var_map.get_mut(&var_name).unwrap() = (func_id, cur_ids);
+                }
+            }
+        }
+        for i in 0..self.functions.len() {
+            debug!("caching function {}: {}", i, self.functions[i].name);
+            for j in 0..self.functions[i].body.len() {
+                let inst = &self.functions[i].body[j];
+                add_to_map(&mut var_map, inst.var_name.clone(), i, j);
+                let all_params = inst.get_all_params();
+                if all_params.is_err() {
+                    continue;
+                }
+                for p in all_params?.iter() {
+                    if !p.name.contains("%") {
+                        continue;
+                    }
+                    add_to_map(&mut var_map, p.name.clone(), i, j);
+                }
+            }
+        }
+        self.var_pos = var_map;
+        Ok(())
+    }
+
+    pub fn cache_all_positional(&mut self) -> Result<(), Box<dyn Error>> {
+        let now = Instant::now();
+        self.cache_positional_func()?;
+        self.cache_positional_inst()?;
+        self.cache_var_position()?;
+        println!(
+            "[cache]\t AST Positional Cache {}ms",
+            now.elapsed().as_millis()
+        );
+        Ok(())
     }
 }
 
