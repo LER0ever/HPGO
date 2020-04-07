@@ -12,6 +12,7 @@ pub type VarPos = (usize, Vec<usize>);
 
 #[pyclass]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
+#[serde(default)]
 pub struct HLORoot {
     #[pyo3(get)]
     #[serde(rename(deserialize = "Functions"))]
@@ -184,24 +185,30 @@ impl HLORoot {
         }
         // workaround to increase index before returning
         let mut index = -1;
-        let f_pos =
-            self.functions.iter().flat_map(|f| {
+        let f_pos = self
+            .functions
+            .iter()
+            .flat_map(|f| {
                 let mut local_index = -1;
-                f.body.iter().map(|i| {
-                    index += 1;
-                    local_index += 1;
-                    (i.clone(), index as usize, local_index as usize)
-                }).collect::<Vec<(Instruction, usize, usize)>>()
-            }).collect::<Vec<(Instruction, usize, usize)>>();
-        self.inst_id.par_extend(
-            f_pos.par_iter().map(|(inst, index, _)| {
-                (inst.clone(), *index)
+                f.body
+                    .iter()
+                    .map(|i| {
+                        index += 1;
+                        local_index += 1;
+                        (i.clone(), index as usize, local_index as usize)
+                    })
+                    .collect::<Vec<(Instruction, usize, usize)>>()
             })
+            .collect::<Vec<(Instruction, usize, usize)>>();
+        self.inst_id.par_extend(
+            f_pos
+                .par_iter()
+                .map(|(inst, index, _)| (inst.clone(), *index)),
         );
         self.inst_local_id.par_extend(
-            f_pos.par_iter().map(|(inst, _, local_index)| {
-                (inst.clone(), *local_index)
-            })
+            f_pos
+                .par_iter()
+                .map(|(inst, _, local_index)| (inst.clone(), *local_index)),
         );
         assert_eq!(self.inst_id.len() > 0, true);
         Ok(())

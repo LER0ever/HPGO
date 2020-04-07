@@ -1,9 +1,31 @@
 use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
+use std::time::{Duration, Instant};
 use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
+
+#[test]
+fn test_ast_positional_cache() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
+    ast.cache_positional_func()?;
+    ast.cache_positional_inst()?;
+    let now = Instant::now();
+    // checks func_id and inst_local_id
+    for i in 0..ast.functions.len() {
+        assert_eq!(i, ast.func_id[&ast.functions[i].name]);
+        for j in 0..ast.functions[i].body.len() {
+            assert_eq!(j, ast.inst_local_id[&ast.functions[i].body[j]]);
+        }
+    }
+    println!(
+        "[test]\t AST Positional Check {}ms",
+        now.elapsed().as_millis()
+    );
+    Ok(())
+}
 
 #[test]
 fn test_hlo_export_dot() -> Result<(), Box<dyn Error>> {
