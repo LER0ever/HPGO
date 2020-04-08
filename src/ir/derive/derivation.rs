@@ -59,6 +59,29 @@ impl<'a> Derivation<'a> {
         Ok(())
     }
 
+    pub fn cache_export(
+        &self,
+    ) -> Result<HashMap<Instruction, Vec<HashMap<String, i8>>>, Box<dyn Error>> {
+        if self.derive_cache.len() == 0 {
+            println!("[derive]\t cache_all_derive not run before trying to get the result");
+            return Err(Box::new(CacheNotAvailable()));
+        }
+        let mut result: HashMap<Instruction, Vec<HashMap<String, i8>>> = HashMap::new();
+        result.par_extend(self.derive_cache.par_iter().map(|(k, v)| {
+            let inst: Instruction = k.clone().to_owned();
+            let mut v_exp: Vec<HashMap<String, i8>> = vec![];
+            for m in v {
+                let mut m_exp: HashMap<String, i8> = HashMap::new();
+                for (kk, vv) in m {
+                    m_exp.insert(kk.to_string(), *vv);
+                }
+                v_exp.push(m_exp);
+            }
+            (inst, v_exp)
+        }));
+        Ok(result)
+    }
+
     pub fn derive(
         &mut self,
         inst: &'a Instruction,

@@ -14,6 +14,8 @@ pub enum DeriveError {
     ASTNotPresent(),
     #[error("Instruction cache miss even after a full AOT generation")]
     InstNotInCache(String),
+    #[error("Caching not run before trying to get the result")]
+    CacheNotAvailable(),
     #[error("unknown data store error")]
     Unknown,
 }
