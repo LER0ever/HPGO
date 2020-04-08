@@ -6,6 +6,7 @@ use std::error::Error;
 use std::time::{Duration, Instant};
 
 pub type Split<'a> = (&'a str, i8);
+pub type DeriveCache = HashMap<InstPos, Vec<HashMap<String, i8>>>;
 
 #[derive(Debug, Clone)]
 pub struct Derivation<'a> {
@@ -61,14 +62,15 @@ impl<'a> Derivation<'a> {
 
     pub fn cache_export(
         &self,
-    ) -> Result<HashMap<Instruction, Vec<HashMap<String, i8>>>, Box<dyn Error>> {
+    ) -> Result<DeriveCache, Box<dyn Error>> {
         if self.derive_cache.len() == 0 {
             println!("[derive]\t cache_all_derive not run before trying to get the result");
             return Err(Box::new(CacheNotAvailable()));
         }
-        let mut result: HashMap<Instruction, Vec<HashMap<String, i8>>> = HashMap::new();
+        let mut result: HashMap<InstPos, Vec<HashMap<String, i8>>> = HashMap::new();
         result.par_extend(self.derive_cache.par_iter().map(|(k, v)| {
             let inst: Instruction = k.clone().to_owned();
+            let pos = self.ast.unwrap().inst_pos[&inst];
             let mut v_exp: Vec<HashMap<String, i8>> = vec![];
             for m in v {
                 let mut m_exp: HashMap<String, i8> = HashMap::new();
@@ -77,25 +79,20 @@ impl<'a> Derivation<'a> {
                 }
                 v_exp.push(m_exp);
             }
-            (inst, v_exp)
+            (pos, v_exp)
         }));
         Ok(result)
     }
 
     pub fn derive(
-        &mut self,
-        inst: &'a Instruction,
-    ) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
-        if self.derive_cache.contains_key(inst) {
-            Ok(self.derive_cache[inst].clone())
+        derive_cache: &DeriveCache,
+        func_id: usize,
+        inst_id: usize,
+    ) -> Result<&Vec<HashMap<String, i8>>, Box<dyn Error>> {
+        if derive_cache.contains_key(&(func_id, inst_id)) {
+            Ok(&derive_cache[&(func_id, inst_id)])
         } else {
-            self.cache_all_derive(self.ast.ok_or(ASTNotPresent())?)?;
-            assert_eq!(
-                self.derive_cache.contains_key(inst),
-                true,
-                "Instruction cache miss even after a full AOT generation"
-            );
-            self.derive(inst)
+            Err(Box::new(InstNotInCache(format!("{:?}", (func_id, inst_id)))))
         }
     }
 
