@@ -33,6 +33,24 @@ fn test_ast_positional_cache() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn test_derive_cache() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
+    ast.cache_all_positional()?;
+    let now = Instant::now();
+    let mut d = Derivation::new_with_ast(&ast);
+    println!(
+        "[test]\t Derive AOT Cache {}ms",
+        now.elapsed().as_millis()
+    );
+    let cache_result = d.cache_export()?;
+    println!("[test]\t Derive Cache has {} entries", cache_result.len());
+    assert_eq!(cache_result.len() > 0, true);
+
+    Ok(())
+}
+
+#[test]
 fn test_hlo_export_dot() -> Result<(), Box<dyn Error>> {
     let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
     let ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
