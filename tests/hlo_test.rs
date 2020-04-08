@@ -17,9 +17,14 @@ fn test_ast_positional_cache() -> Result<(), Box<dyn Error>> {
         assert_eq!(i, ast.func_id[&ast.functions[i].name]);
         for j in 0..ast.functions[i].body.len() {
             assert_eq!(j, ast.inst_local_id[&ast.functions[i].body[j]]);
+            assert_eq!(i, ast.inst_pos[&ast.functions[i].body[j]].0);
+            assert_eq!(j, ast.inst_pos[&ast.functions[i].body[j]].1);
         }
     }
-    println!("[test]\t variable cache contains {} elements", ast.var_pos.len());
+    println!(
+        "[test]\t variable cache contains {} elements",
+        ast.var_pos.len()
+    );
     println!(
         "[test]\t AST Positional Check {}ms",
         now.elapsed().as_millis()

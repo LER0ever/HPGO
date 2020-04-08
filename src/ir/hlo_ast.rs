@@ -1,16 +1,17 @@
 use crate::ir::error::ASTError;
 use crate::ir::error::DeriveError::*;
+use log::debug;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
-use log::debug;
 use std::time::{Duration, Instant};
 
 const REF: &str = "https://ry.sb/tf/xla-op";
 // MOTE: did not use HashSet here because PyO3 does not impl IntoPyResult
 pub type VarPos = (usize, Vec<usize>);
+pub type InstPos = (usize, usize);
 
 #[pyclass]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
@@ -27,6 +28,8 @@ pub struct HLORoot {
     pub inst_id: HashMap<Instruction, usize>,
     #[pyo3(get)]
     pub inst_local_id: HashMap<Instruction, usize>,
+    #[pyo3(get)]
+    pub inst_pos: HashMap<Instruction, InstPos>,
     // relying on the fact that Variable Names are unique
     #[pyo3(get)]
     pub var_pos: HashMap<String, VarPos>,
@@ -190,27 +193,34 @@ impl HLORoot {
         let f_pos = self
             .functions
             .iter()
-            .flat_map(|f| {
-                let mut local_index = -1;
+            .enumerate()
+            .flat_map(|(ind_f, f)| {
+                // let mut local_index = -1;
                 f.body
                     .iter()
-                    .map(|i| {
+                    .enumerate()
+                    .map(|(ind_i, i)| {
                         index += 1;
-                        local_index += 1;
-                        (i.clone(), index as usize, local_index as usize)
+                        // local_index += 1;
+                        (i.clone(), index as usize, ind_f, ind_i)
                     })
-                    .collect::<Vec<(Instruction, usize, usize)>>()
+                    .collect::<Vec<(Instruction, usize, usize, usize)>>()
             })
-            .collect::<Vec<(Instruction, usize, usize)>>();
+            .collect::<Vec<(Instruction, usize, usize, usize)>>();
         self.inst_id.par_extend(
             f_pos
                 .par_iter()
-                .map(|(inst, index, _)| (inst.clone(), *index)),
+                .map(|(inst, index, _, _)| (inst.clone(), *index)),
         );
         self.inst_local_id.par_extend(
             f_pos
                 .par_iter()
-                .map(|(inst, _, local_index)| (inst.clone(), *local_index)),
+                .map(|(inst, _, _, local_index)| (inst.clone(), *local_index)),
+        );
+        self.inst_pos.par_extend(
+            f_pos
+                .par_iter()
+                .map(|(inst, _, ind_f, ind_i)| (inst.clone(), (*ind_f, *ind_i))),
         );
         assert_eq!(self.inst_id.len() > 0, true);
         Ok(())
@@ -221,9 +231,17 @@ impl HLORoot {
             return Err(Box::new(ASTError::CacheVarPosTwice));
         }
         let mut var_map: HashMap<String, VarPos> = HashMap::new();
-        fn add_to_map(var_map: &mut HashMap<String, VarPos>, var_name: String, func_id: usize, inst_local_id: usize) {
+        fn add_to_map(
+            var_map: &mut HashMap<String, VarPos>,
+            var_name: String,
+            func_id: usize,
+            inst_local_id: usize,
+        ) {
             if !var_map.contains_key(&var_name) {
-                var_map.insert(var_name, (func_id, [inst_local_id].iter().cloned().collect()));
+                var_map.insert(
+                    var_name,
+                    (func_id, [inst_local_id].iter().cloned().collect()),
+                );
             } else {
                 assert_eq!(var_map[&var_name].0, func_id);
                 if !var_map[&var_name].1.contains(&inst_local_id) {
