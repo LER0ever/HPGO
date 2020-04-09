@@ -3,8 +3,8 @@ use std::error::Error;
 use std::time::{Duration, Instant};
 use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
-use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::propagate::ast_propagate;
+use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
 
 #[test]
@@ -40,10 +40,7 @@ fn test_derive_cache() -> Result<(), Box<dyn Error>> {
     ast.cache_all_positional()?;
     let now = Instant::now();
     let mut d = Derivation::new_with_ast(&ast);
-    println!(
-        "[test]\t Derive AOT Cache {}ms",
-        now.elapsed().as_millis()
-    );
+    println!("[test]\t Derive AOT Cache {}ms", now.elapsed().as_millis());
     let cache_result = d.cache_export()?;
     println!("[test]\t Derive Cache has {} entries", cache_result.len());
     assert_eq!(cache_result.len() > 0, true);

@@ -60,9 +60,7 @@ impl<'a> Derivation<'a> {
         Ok(())
     }
 
-    pub fn cache_export(
-        &self,
-    ) -> Result<DeriveCache, Box<dyn Error>> {
+    pub fn cache_export(&self) -> Result<DeriveCache, Box<dyn Error>> {
         if self.derive_cache.len() == 0 {
             println!("[derive]\t cache_all_derive not run before trying to get the result");
             return Err(Box::new(CacheNotAvailable()));
@@ -92,7 +90,10 @@ impl<'a> Derivation<'a> {
         if derive_cache.contains_key(&(func_id, inst_id)) {
             Ok(&derive_cache[&(func_id, inst_id)])
         } else {
-            Err(Box::new(InstNotInCache(format!("{:?}", (func_id, inst_id)))))
+            Err(Box::new(InstNotInCache(format!(
+                "{:?}",
+                (func_id, inst_id)
+            ))))
         }
     }
 
