@@ -1,3 +1,4 @@
 pub mod fusion;
-pub mod propagate;
 pub mod vargraph;
+pub mod graph_propagate;
+pub mod ast_propagate;
