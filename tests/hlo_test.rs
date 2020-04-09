@@ -54,8 +54,9 @@ fn test_tree_propagation() -> Result<(), Box<dyn Error>> {
     let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
     ast.cache_all_positional()?;
 
-    let fn_name = "%fused_computation.2271";
-    let p_name = "%param_0.13598";
+    // let fn_name = "%fused_computation.2271";
+    let fn_name = "%fused_computation.4776.clone";
+    // let p_name = "%param_0.13598";
     // let f = ast
     //     .functions
     //     .iter()
@@ -64,9 +65,15 @@ fn test_tree_propagation() -> Result<(), Box<dyn Error>> {
     //     .unwrap();
     let fid = ast.func_id[fn_name];
 
+    let params = &ast.functions[fid].params.clone();
     let pc = ast_propagate::Context::new(ast);
-    let bfs_result = pc.propagate_bfs(fid, p_name, 1, &HashMap::new())?;
-    println!("{:#?}", bfs_result);
+    let remt_result = pc.propagate_remt(fid, &params, 0, &HashMap::new())?;
+    // let bfs_result = pc.propagate_bfs(fid, p_name, 1, &HashMap::new())?;
+    println!("remt returns {} solutions", remt_result.len());
+    for (i, r) in remt_result.iter().enumerate() {
+        println!("{} -> {:?}", i, r);
+    }
+    // println!("{:?}", remt_result);
     Ok(())
 }
 

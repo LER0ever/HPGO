@@ -1,6 +1,6 @@
 use crate::ir::derive::{Derivation, DeriveCache};
 use crate::ir::error::PropagationError::*;
-use crate::ir::hlo_ast::HLORoot;
+use crate::ir::hlo_ast::{HLORoot, Param};
 use log::debug;
 use petgraph::prelude::*;
 use rayon::prelude::*;
@@ -46,7 +46,7 @@ impl Context {
         // make a copy of constraint map, pending return.
         let mut m = constraints.clone();
         // NOTE: check compliance with constraint
-        if m.contains_key(p_name) && m[p_name].contains(&split) {
+        if m.contains_key(p_name) && !m[p_name].contains(&split) {
             return Ok(None); // conflict with constraint
         }
         assert_eq!(!m.contains_key(p_name) || m[p_name].contains(&split), true);
@@ -63,18 +63,18 @@ impl Context {
             let (v, s) = q.pop_front().unwrap();
             let v_pos = &self.ast.var_pos[&v].1;
             if BFS_DEBUG {
-                println!("bfs({}, {}) exploring {} positions", v, s, v_pos.len());
+                println!("\tbfs({}, {}) exploring {} positions", v, s, v_pos.len());
             }
             // iterate over all positions of the variable
             for vp in v_pos {
-                if BFS_DEBUG {
-                    println!("exploring inst ({}, {})", func_id, vp);
-                }
+                // if BFS_DEBUG {
+                //     println!("exploring inst ({}, {})", func_id, vp);
+                // }
                 let v_derive: Vec<(HashMap<String, i8>, usize)> =
                     self.derive(func_id, *vp, &v, s)?;
-                if BFS_DEBUG {
-                    println!("v_derive has {} entries", v_derive.len());
-                }
+                // if BFS_DEBUG {
+                //     println!("v_derive has {} entries", v_derive.len());
+                // }
                 let mut derive_aggregated: HashMap<String, HashSet<i8>> = HashMap::new();
                 // let mut v_inst_valid = true;
                 // for (d, i) in v_derive {
@@ -98,17 +98,17 @@ impl Context {
                         }
                     }
                 }
-                if BFS_DEBUG {
-                    println!("aggregated derive has {} entries", derive_aggregated.len());
-                }
+                // if BFS_DEBUG {
+                //     println!("aggregated derive has {} entries", derive_aggregated.len());
+                // }
 
                 for (d_k, d_v) in derive_aggregated {
                     if d_k == v {
                         continue;
                     }
-                    if BFS_DEBUG {
-                        println!("d_k: {}, d_v: {:?}", d_k, d_v );
-                    }
+                    // if BFS_DEBUG {
+                    //     println!("d_k: {}, d_v: {:?}", d_k, d_v );
+                    // }
 
                     if d_v.len() == 1 {
                         let d_value = d_v.iter().next().unwrap();
@@ -145,7 +145,8 @@ impl Context {
                             m.insert(d_k.clone(), d_v.clone());
                         } else {
                             // m contains d_k, performing intersection
-                            let intersected_v: HashSet<_> = d_v.intersection(&m[d_kstr]).cloned().collect();
+                            let intersected_v: HashSet<_> =
+                                d_v.intersection(&m[d_kstr]).cloned().collect();
                             if intersected_v.len() == 1 {
                                 // intersection yields 1 elem
                                 *m.get_mut(d_kstr).unwrap() = intersected_v.clone();
@@ -167,6 +168,159 @@ impl Context {
         Ok(Some(m))
     }
 
+    pub fn propagate_remt(
+        &self,
+        func_id: usize,
+        params: &Vec<Param>,
+        index: usize,
+        m_constraints: &HashMap<String, HashSet<i8>>,
+    ) -> Result<Vec<HashMap<String, HashSet<i8>>>, Box<dyn Error>> {
+        // if params.len() > 300 {
+
+        // }
+        let mut ret: Vec<HashMap<String, HashSet<i8>>> = vec![];
+
+        let bfs_switch = true;
+
+        // construct the solution space for current index
+        let mut dim_list: Vec<i8>;
+        let param_name = params[index].name.as_str();
+        if m_constraints.contains_key(param_name) {
+            debug!(
+                "range contraints: {} -> {}",
+                params[index]
+                    .param_type
+                    .dimensions
+                    .as_ref()
+                    .unwrap_or(&vec![])
+                    .len()
+                    + 1,
+                m_constraints[param_name].len()
+            );
+            dim_list = m_constraints[param_name].iter().cloned().collect();
+        } else {
+            dim_list = (0..params[index]
+                .param_type
+                .dimensions
+                .as_ref()
+                .unwrap_or(&vec![])
+                .len() as i8)
+                .collect();
+            if !dim_list.contains(&-1i8) {
+                dim_list.push(-1i8);
+            }
+        }
+
+        if index + 1 == params.len() {
+            ret.par_extend(
+                dim_list
+                    .par_iter()
+                    .map(|d| {
+                        println!(
+                            "remt! ({}, {}) @ index {}, m.len() = {}",
+                            params[index].name.as_str(),
+                            d,
+                            index,
+                            m_constraints.len(),
+                        );
+
+                        let bfs_result = self
+                            .propagate_bfs(func_id, param_name, *d, m_constraints)
+                            .unwrap();
+                        if bfs_result.is_none() {
+                            println!(" > bfs returns conflict");
+                            return None;
+                        }
+                        let result = bfs_result.unwrap();
+                        // if params.len() > 300 {
+                            println!("- result += {:?}", result);
+                        // }
+                        return Some(result);
+                        // ret.push(result);
+                    })
+                    .filter(|x| x.is_some())
+                    .map(|x| x.unwrap()),
+            );
+
+            return Ok(ret);
+        }
+
+        ret.par_extend(
+            dim_list
+                .par_iter()
+                .flat_map(|d| {
+                    println!(
+                        "remt ({}, {}) @ index {}, m.len() = {}",
+                        params[index].name.as_str(),
+                        d,
+                        index,
+                        m_constraints.len(),
+                    );
+
+                    let bfs_result = self
+                        .propagate_bfs(func_id, param_name, *d, m_constraints)
+                        .unwrap();
+                    if bfs_result.is_none() {
+                        println!(" > bfs returns conflict");
+                        return vec![];
+                    }
+                    let m = bfs_result.unwrap();
+
+                    // if params.len() > 300 {
+                    let mc = m.clone();
+                    println!(" > {:?}", mc);
+                    // print!(" :");
+                    // for p in params.iter() {
+                    //     if mc.contains_key(p.name.as_str()) {
+                    //         print!("\"{}\": {:?}, ", p.name.as_str(), mc[p.name.as_str()]);
+                    //     }
+                    // }
+                    // println!();
+                    // }
+                    let sub_res = self.propagate_remt(func_id, params, index + 1, &m).unwrap();
+                    let mut sub_ret: Vec<HashMap<String, HashSet<i8>>> = vec![];
+                    for ssr in sub_res {
+                        let mut m_copied = m.clone();
+                        println!(" intersecting\n  |{:?}\n  |{:?}", m_copied, ssr);
+                        let suc = Self::intersect_with(&mut m_copied, &ssr);
+                        if suc {
+                            println!("  |=> {:?}", m_copied);
+                            sub_ret.push(m_copied);
+                        } else {
+                            println!("  |=> Failed");
+                        }
+                    }
+                    return sub_ret;
+                })
+                .collect::<Vec<HashMap<String, HashSet<i8>>>>(),
+        );
+
+        Ok(ret)
+    }
+
+    fn intersect_with(
+        a: &mut HashMap<String, HashSet<i8>>,
+        b: &HashMap<String, HashSet<i8>>,
+    ) -> bool {
+        for (k, v) in b {
+            if a.contains_key(k) {
+                debug!("map: adding {:?} to ({}, {:?})", v, k, a[k]);
+                let new_set: HashSet<i8> = a[k].intersection(&v).cloned().collect();
+                *a.get_mut(k).unwrap() = new_set;
+                if a[k].len() == 0 {
+                    debug!("set intersection results in empty");
+                    return false;
+                }
+                debug!("map: now {} -> {:?}", k, a[k]);
+            } else {
+                debug!("map: new {} -> {:?}", k, v);
+                a.insert(k.to_string(), v.clone());
+            }
+        }
+
+        true
+    }
+
     fn derive(
         &self,
         func_id: usize,
@@ -183,7 +337,7 @@ impl Context {
                 result.push((d.clone(), i));
             }
         });
-        println!("derive({}, {}, {}, {}) returning {} out of {} results", func_id, inst_id, var_name, split, result.len(), inst_derive.len());
+        // println!("derive({}, {}, {}, {}) returning {} out of {} results", func_id, inst_id, var_name, split, result.len(), inst_derive.len());
         Ok(result)
     }
 }
