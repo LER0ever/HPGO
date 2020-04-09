@@ -54,7 +54,7 @@ impl<'a> Derivation<'a> {
         let now = Instant::now();
         self.derive_cache.par_extend(Self::cache_ast(ast_root)?);
         println!(
-            "[derivation]\t Cache Derivation for AST... {}ms",
+            "[derive]\t Derivation AOT Cache for AST... {}ms",
             now.elapsed().as_millis()
         );
         Ok(())

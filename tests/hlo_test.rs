@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
+use HPGO::ir::propagate::ast_propagate;
 use HPGO::ir::*;
 
 #[test]
@@ -47,6 +48,16 @@ fn test_derive_cache() -> Result<(), Box<dyn Error>> {
     println!("[test]\t Derive Cache has {} entries", cache_result.len());
     assert_eq!(cache_result.len() > 0, true);
 
+    Ok(())
+}
+
+#[test]
+fn test_tree_propagation() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
+    ast.cache_all_positional()?;
+
+    let pc = ast_propagate::Context::new(ast);
     Ok(())
 }
 
