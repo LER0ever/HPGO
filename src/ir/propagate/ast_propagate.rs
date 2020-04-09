@@ -8,10 +8,14 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
 use std::ops::Deref;
 use std::time::{Duration, Instant};
+use pyo3::prelude::*;
 
+#[pyclass]
+#[derive(Clone, Debug, Default)]
 pub struct Context {
     ast: HLORoot,
-    derive: DeriveCache,
+    #[pyo3(get)]
+    pub derive: DeriveCache,
 }
 
 impl Context {
@@ -321,7 +325,7 @@ impl Context {
         true
     }
 
-    fn derive(
+    pub fn derive(
         &self,
         func_id: usize,
         inst_id: usize,

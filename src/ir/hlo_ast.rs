@@ -9,7 +9,7 @@ use std::error::Error;
 use std::time::{Duration, Instant};
 
 const REF: &str = "https://ry.sb/tf/xla-op";
-// MOTE: did not use HashSet here because PyO3 does not impl IntoPyResult
+// NOTE: did not use HashSet here because PyO3 does not impl IntoPyResult
 pub type VarPos = (usize, Vec<usize>);
 pub type InstPos = (usize, usize);
 
