@@ -54,7 +54,19 @@ fn test_tree_propagation() -> Result<(), Box<dyn Error>> {
     let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
     ast.cache_all_positional()?;
 
+    let fn_name = "%fused_computation.2271";
+    let p_name = "%param_0.13598";
+    // let f = ast
+    //     .functions
+    //     .iter()
+    //     .filter(|f| f.name == fn_name)
+    //     .next()
+    //     .unwrap();
+    let fid = ast.func_id[fn_name];
+
     let pc = ast_propagate::Context::new(ast);
+    let bfs_result = pc.propagate_bfs(fid, p_name, 1, &HashMap::new())?;
+    println!("{:#?}", bfs_result);
     Ok(())
 }
 
