@@ -1,5 +1,4 @@
 use thiserror::Error;
-use pyo3::prelude::*;
 
 #[derive(Error, Debug)]
 pub enum DeriveError {
@@ -20,7 +19,6 @@ pub enum DeriveError {
     #[error("unknown data store error")]
     Unknown,
 }
-
 
 #[derive(Error, Debug)]
 pub enum PropagationError {

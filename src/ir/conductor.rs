@@ -4,8 +4,8 @@ use crate::ir::hlo_ast::HLORoot;
 use crate::ir::propagate::ast_propagate;
 use pyo3::exceptions;
 use pyo3::prelude::*;
-use std::error::Error;
 use std::collections::HashMap;
+use std::error::Error;
 
 #[pyclass]
 #[derive(Debug, Clone)]
@@ -37,13 +37,26 @@ impl IRConductor {
         Ok(())
     }
 
-    pub fn derive_enum(&self, func_id: usize, inst_id: usize) -> PyResult<Vec<HashMap<String, i8>>> {
+    pub fn derive_enum(
+        &self,
+        func_id: usize,
+        inst_id: usize,
+    ) -> PyResult<Vec<HashMap<String, i8>>> {
         let inst_derive = Derivation::derive(&self.propagate.derive, func_id, inst_id).unwrap();
         Ok(inst_derive.clone())
     }
 
-    pub fn derive_infer(&self, func_id: usize, inst_id: usize, var_name: String, split: i8)-> PyResult<Vec<(HashMap<String, i8>, usize)>> {
-        let inst_derive = self.propagate.derive(func_id, inst_id, &var_name, split).unwrap();
+    pub fn derive_infer(
+        &self,
+        func_id: usize,
+        inst_id: usize,
+        var_name: String,
+        split: i8,
+    ) -> PyResult<Vec<(HashMap<String, i8>, usize)>> {
+        let inst_derive = self
+            .propagate
+            .derive(func_id, inst_id, &var_name, split)
+            .unwrap();
         Ok(inst_derive)
     }
 }
