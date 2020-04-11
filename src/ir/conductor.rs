@@ -37,6 +37,12 @@ impl IRConductor {
         Ok(())
     }
 
+    /// Wrapper for update_fusion_derive_cache
+    pub fn update_fusion_for(&mut self, func_id: usize) -> PyResult<()> {
+        self.propagate.update_fusion_derive_cache(func_id).unwrap();
+        Ok(())
+    }
+
     pub fn derive_enum(
         &self,
         func_id: usize,

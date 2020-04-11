@@ -4,9 +4,9 @@ use HPGO::input::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::time::{Duration, Instant};
 use HPGO::ir::hlo_ast::Param;
+use HPGO::ir::propagate::ast_propagate::Context;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
 use HPGO::ir::*;
-use HPGO::ir::propagate::ast_propagate::Context;
 
 fn get_split_vars() -> Vec<&'static str> {
     return vec![
@@ -764,6 +764,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     f.params.iter().for_each(|p| {
         if split_vars.contains(p.name.as_str()) {
             target_params.push(p.clone());
+            // println!("param: {}", p.name);
         }
     });
     println!(
@@ -771,8 +772,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         target_params.len(),
         split_vars.len()
     );
+
+    p.update_fusion_derive_cache(p.ast.func_id[fn_name])?;
+
     let now = Instant::now();
-    let result = p.propagate_remt(p.ast.func_id[fn_name], &target_params, 0, &HashMap::new())?;
+    let result = p.propagate_remt(
+        p.ast.func_id[fn_name],
+        &target_params,
+        0,
+        &HashMap::new(),
+        vec![],
+    )?;
     println!(
         "[propagation]\t Propagate REMT on AST Root... {}s",
         now.elapsed().as_secs()

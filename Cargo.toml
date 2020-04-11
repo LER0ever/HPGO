@@ -35,6 +35,7 @@ petgraph = "0.5"
 cedarwood = "0.4"
 thiserror = "1.0"
 dashmap = "3.7"
+stacker = "0.1"
 
 [dependencies.pyo3]
 version = "0.9"

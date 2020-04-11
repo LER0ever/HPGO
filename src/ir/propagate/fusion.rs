@@ -5,7 +5,7 @@ use crate::ir::propagate::ast_propagate::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 impl Context {
     pub fn get_fusion_list(&self, func_id: usize) -> Result<Vec<(InstPos, usize)>, Box<dyn Error>> {
@@ -35,7 +35,10 @@ impl Context {
         Ok(result)
     }
 
-    pub fn update_fusion_derive_cache(&mut self, func_id: usize) -> Result<DeriveCache, Box<dyn Error>> {
+    pub fn update_fusion_derive_cache(
+        &mut self,
+        func_id: usize,
+    ) -> Result<DeriveCache, Box<dyn Error>> {
         let fusion_list = self.get_fusion_list(func_id)?;
         let mut now = Instant::now();
         let mut derive_patch: DeriveCache = HashMap::new();

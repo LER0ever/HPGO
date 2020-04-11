@@ -186,7 +186,7 @@ impl<'a> VarGraph3D<'a> {
     pub fn construct_fusion_map(&mut self) -> Result<(), Box<dyn Error>> {
         let now = Instant::now();
         let fis = self.fusion_inst.clone();
-        println!("total fusion len {}", fis.len());
+        println!("[fusion]\t total fusion len {}", fis.len());
         for fi in fis {
             fi.assert_key_in_meta("calls");
             let fn_name: &'a str = fi

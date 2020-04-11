@@ -5,6 +5,7 @@ use log::debug;
 use petgraph::prelude::*;
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use stacker;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
 use std::ops::Deref;
@@ -37,7 +38,7 @@ impl Context {
     ) -> Result<Vec<HashMap<String, HashSet<i8>>>, Box<dyn Error>> {
         let f = &self.ast.functions[func_id];
         let params = f.params.clone();
-        let result = self.propagate_remt(func_id, &params, 0, &HashMap::new())?;
+        let result = self.propagate_remt(func_id, &params, 0, &HashMap::new(), vec![])?;
         Ok(result)
     }
 
@@ -50,13 +51,16 @@ impl Context {
         p_name: &str, // NOTE: only pass parameter here, preferably non-repetitive
         split: i8,
         constraints: &HashMap<String, HashSet<i8>>,
+        debug: bool,
     ) -> Result<Option<(HashMap<String, HashSet<i8>>)>, Box<dyn Error>> {
         // Option<(determined set, undetermined set)>
-
         // make a copy of constraint map, pending return.
         let mut m = constraints.clone();
         // NOTE: check compliance with constraint
         if m.contains_key(p_name) && !m[p_name].contains(&split) {
+            if DEBUG || debug {
+                println!("input param and split don't comply with constraints");
+            }
             return Ok(None); // conflict with constraint
         } else if m.contains_key(p_name) && m[p_name].contains(&split) && m[p_name].len() == 1 {
             // the constraints is already minimal, we've explored this param.
@@ -68,7 +72,6 @@ impl Context {
         } else {
             m.insert(p_name.to_string(), [split].iter().cloned().collect());
         }
-
 
         let f = &self.ast.functions[func_id];
         let mut v_inst_color: HashMap<usize, HashSet<usize>> = HashMap::new();
@@ -84,8 +87,13 @@ impl Context {
         while !q.is_empty() {
             let (v, s) = q.pop_front().unwrap();
             let v_pos = &self.ast.var_pos[&v].1;
-            if DEBUG {
-                println!("\t[bfs]\t ({}, {}) exploring {} positions", v, s, v_pos.len());
+            if DEBUG || debug {
+                println!(
+                    "\t[bfs]\t ({}, {}) exploring {} positions",
+                    v,
+                    s,
+                    v_pos.len()
+                );
             }
             // iterate over all positions of the variable
             for vp in v_pos {
@@ -94,8 +102,8 @@ impl Context {
                 // }
                 let v_derive: Vec<(HashMap<String, i8>, usize)> =
                     self.derive(func_id, *vp, &v, s)?;
-                // if BFS_DEBUG {
-                //     println!("v_derive has {} entries", v_derive.len());
+                // if DEBUG || debug {
+                //     println!("\t\tv_derive for {}, {} @ {} has {} entries", v, s, vp, v_derive.len());
                 // }
                 let mut derive_aggregated: HashMap<String, HashSet<i8>> = HashMap::new();
                 for (d, i) in v_derive {
@@ -125,6 +133,13 @@ impl Context {
                         let d_value = d_v.iter().next().unwrap();
                         let d_kstr = d_k.as_str();
                         if m.contains_key(d_kstr) && !m[d_kstr].contains(d_value) {
+                            if DEBUG || debug {
+                                println!(
+                                    "conflict while bfs({},{})! for {}: {} not in {:?}",
+                                    v, s, d_kstr, d_value, m[d_kstr]
+                                );
+                            }
+
                             // split into conflicting dimension
                             return Ok(None);
                         } else if m.contains_key(d_kstr)
@@ -142,19 +157,24 @@ impl Context {
                             *m.get_mut(d_kstr).unwrap() = d_v.clone();
 
                             if !visited.contains(&(d_k.clone(), *d_value)) {
-                                if DEBUG {
-                                    println!("\t[bfs]\t\t adding ({},{}) to q, m from n to 1", d_k, *d_value);
+                                if DEBUG || debug {
+                                    println!(
+                                        "\t[bfs]\t\t adding ({},{}) to q, from fn {}, reduce m to 1",
+                                        d_k, *d_value, self.ast.functions[func_id].body[*vp].function.name
+                                    );
                                 }
                                 visited.insert((d_k.clone(), *d_value));
                                 q.push_back((d_k, *d_value));
                             }
-
                         } else if !m.contains_key(d_kstr) {
                             m.insert(d_k.clone(), d_v.clone());
 
                             if !visited.contains(&(d_k.clone(), *d_value)) {
-                                if DEBUG {
-                                    println!("\t[bfs]\t\t adding ({},{}) to q, m from 0 to 1", d_k, *d_value);
+                                if DEBUG || debug {
+                                    println!(
+                                        "\t[bfs]\t\t adding ({},{}) to q, from fn {}, new entry m to 1",
+                                        d_k, *d_value, self.ast.functions[func_id].body[*vp].function.name
+                                    );
                                 }
                                 visited.insert((d_k.clone(), *d_value));
                                 q.push_back((d_k, *d_value));
@@ -182,8 +202,8 @@ impl Context {
                                 let d_value = intersected_v.iter().next().unwrap();
 
                                 if !visited.contains(&(d_k.clone(), *d_value)) {
-                                    if DEBUG {
-                                        println!("\t[bfs]\t\t adding ({},{}) to q, m from n to 1 (intersection)", d_k, *d_value);
+                                    if DEBUG || debug {
+                                        println!("\t[bfs]\t\t adding ({},{}) to q, from fn {}, reduce to 1 (intersection)", d_k, *d_value, self.ast.functions[func_id].body[*vp].function.name);
                                     }
                                     visited.insert((d_k.clone(), *d_value));
                                     q.push_back((d_k, *d_value));
@@ -204,19 +224,37 @@ impl Context {
         Ok(Some(m))
     }
 
-    pub fn propagate_remt(
+    pub fn propagate_iemt(
         &self,
         func_id: usize,
         params: &Vec<Param>,
         index: usize,
         m_constraints: &HashMap<String, HashSet<i8>>,
     ) -> Result<Vec<HashMap<String, HashSet<i8>>>, Box<dyn Error>> {
-        // if params.len() > 300 {
+        // NOTE: stack contains (var index within params, var split), constraints map
+        // let stack: Vec<(usize, usize), HashMap<String, HashSet<i8>>> = vec![];
 
+        unimplemented!()
+    }
+
+    pub fn propagate_remt(
+        &self,
+        func_id: usize,
+        params: &Vec<Param>,
+        index: usize,
+        m_constraints: &HashMap<String, HashSet<i8>>,
+        debug_chain: Vec<i8>,
+    ) -> Result<Vec<HashMap<String, HashSet<i8>>>, Box<dyn Error>> {
+        // if params.len() > 300 {
+        //     println!("remt @ {}", index);
         // }
         let mut ret: Vec<HashMap<String, HashSet<i8>>> = vec![];
 
         let bfs_switch = true;
+        let mut debug = false;
+        if params.len() > 300 {
+            debug = true;
+        }
 
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
@@ -247,12 +285,23 @@ impl Context {
             }
         }
 
+        // NOTE: hard code first two var
+        if params.len() > 300 {
+            if index == 0 {
+                dim_list = vec![0];
+            } else if index == 1 {
+                dim_list = vec![-1];
+            } else if index == 2 {
+                dim_list = vec![1];
+            }
+        }
+
         if index + 1 == params.len() {
             ret.par_extend(
                 dim_list
                     .par_iter()
                     .map(|d| {
-                        if DEBUG {
+                        if DEBUG || debug {
                             println!(
                                 "remt! ({}, {}) @ index {}, m.len() = {}",
                                 params[index].name.as_str(),
@@ -261,20 +310,44 @@ impl Context {
                                 m_constraints.len(),
                             );
                         }
+                        let mut chain = debug_chain.clone();
+                        chain.push(*d);
 
                         let bfs_result = self
-                            .propagate_bfs(func_id, param_name, *d, m_constraints)
+                            .propagate_bfs(
+                                func_id,
+                                param_name,
+                                *d,
+                                m_constraints,
+                                params.len() > 300,
+                            )
                             .unwrap();
                         if bfs_result.is_none() {
-                            if DEBUG {
+                            if DEBUG || debug {
                                 println!(" > bfs returns conflict");
+                            } else if params.len() > 300 {
+                                println!("X Conflict @ index {}:{}\n{:?}", index, d, chain);
                             }
 
                             return None;
                         }
                         let result = bfs_result.unwrap();
-                        if DEBUG {
+                        if DEBUG || debug {
                             println!("- result += {:?}", result);
+                        } else if params.len() > 300 {
+                            let mut res: Vec<i8> = vec![];
+                            let mut split_progress = 0;
+                            for p in params.iter() {
+                                if result.contains_key(&p.name) {
+                                    let split =
+                                        result[&p.name].clone().iter().cloned().next().unwrap();
+                                    if split != -1 {
+                                        split_progress += 1;
+                                    }
+                                    res.push(split);
+                                }
+                            }
+                            println!("O solution: {}\n{:?}", split_progress, res);
                         }
                         return Some(result);
                         // ret.push(result);
@@ -290,7 +363,7 @@ impl Context {
             dim_list
                 .par_iter()
                 .flat_map(|d| {
-                    if DEBUG {
+                    if DEBUG || debug {
                         println!(
                             "remt ({}, {}) @ index {}, m.len() = {}",
                             params[index].name.as_str(),
@@ -299,13 +372,23 @@ impl Context {
                             m_constraints.len(),
                         );
                     }
+                    let mut chain = debug_chain.clone();
+                    chain.push(*d);
 
                     let bfs_result = self
-                        .propagate_bfs(func_id, param_name, *d, m_constraints)
+                        .propagate_bfs(func_id, param_name, *d, m_constraints, params.len() > 300)
                         .unwrap();
                     if bfs_result.is_none() {
-                        if DEBUG {
+                        if DEBUG || debug {
                             println!(" > bfs returns conflict");
+                        } else if params.len() > 300 {
+                            println!(
+                                "x Conflict @ index {}:{} - {}\n{:?}",
+                                index,
+                                d,
+                                params[index].name.as_str(),
+                                chain
+                            );
                         }
                         return vec![];
                     }
@@ -313,7 +396,7 @@ impl Context {
 
                     // if params.len() > 300 {
                     let mc = m.clone();
-                    if DEBUG {
+                    if DEBUG || debug {
                         println!(" > {:?}", mc);
                     }
                     // print!(" :");
@@ -324,22 +407,25 @@ impl Context {
                     // }
                     // println!();
                     // }
-                    let sub_res = self.propagate_remt(func_id, params, index + 1, &m).unwrap();
+                    let sub_res = stacker::maybe_grow(32 * 1024, 1024 * 1024, || {
+                        self.propagate_remt(func_id, params, index + 1, &m, chain)
+                            .unwrap()
+                    });
                     let mut sub_ret: Vec<HashMap<String, HashSet<i8>>> = vec![];
                     for ssr in sub_res {
                         let mut m_copied = m.clone();
-                        if DEBUG {
+                        if DEBUG || debug {
                             println!(" intersecting\n  |{:?}\n  |{:?}", m_copied, ssr);
                         }
                         let suc = Self::intersect_with(&mut m_copied, &ssr);
                         if suc {
-                            if DEBUG {
+                            if DEBUG || debug {
                                 println!("  |=> {:?}", m_copied);
                             }
 
                             sub_ret.push(m_copied);
                         } else {
-                            if DEBUG {
+                            if DEBUG || debug {
                                 println!("  |=> Failed");
                             }
                         }
@@ -383,7 +469,10 @@ impl Context {
         split: i8,
     ) -> Result<Vec<(HashMap<String, i8>, usize)>, Box<dyn Error>> {
         let inst_derive = Derivation::derive(&self.derive, func_id, inst_id)?;
-        // println!("inst_derive original: {:?}", inst_derive);
+        // if inst_id == 6100 {
+        //     println!("inst_derive original: {:?}", inst_derive);
+        // }
+
         let mut result: Vec<(HashMap<String, i8>, usize)> = vec![];
         inst_derive.iter().enumerate().for_each(|(i, d)| {
             if d.contains_key(var_name) && d[var_name] == split {
@@ -391,7 +480,10 @@ impl Context {
                 result.push((d.clone(), i));
             }
         });
-        // println!("derive({}, {}, {}, {}) returning {} out of {} results", func_id, inst_id, var_name, split, result.len(), inst_derive.len());
+        // if inst_id == 6100 {
+        //     println!("derive({}, {}, {}, {}) returning {} out of {} results", func_id, inst_id, var_name, split, result.len(), inst_derive.len());
+        // }
+
         Ok(result)
     }
 }

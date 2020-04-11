@@ -173,7 +173,7 @@ impl<'a> VarGraph3D<'a> {
                 .flat_map(|d| {
                     let node = self.get_node_id(param_name, *d);
                     if node.is_none() {
-                        println!("failed to get node_id for ({},{})", param_name, d);
+                        println!("[remt]\t failed to get node_id for ({},{})", param_name, d);
                         return vec![];
                     }
                     let node_id = node.unwrap();
