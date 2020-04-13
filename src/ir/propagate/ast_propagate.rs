@@ -10,6 +10,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
 use std::ops::Deref;
 use std::time::{Duration, Instant};
+use std::io;
+use std::io::Write;
 
 const DEBUG: bool = false;
 
@@ -263,9 +265,9 @@ impl Context {
 
         let bfs_switch = true;
         let mut debug = false;
-        if params.len() > 300 {
-            debug = true;
-        }
+        // if params.len() > 300 {
+        //     debug = true;
+        // }
 
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
@@ -330,14 +332,16 @@ impl Context {
                                 param_name,
                                 *d,
                                 m_constraints,
-                                params.len() > 300,
+                                false,
                             )
                             .unwrap();
                         if bfs_result.is_none() {
                             if DEBUG || debug {
                                 println!(" > bfs returns conflict");
                             } else if params.len() > 300 {
-                                println!("X Conflict @ index {}:{}\n{:?}", index, d, chain);
+                                // println!("X Conflict @ index {}:{}\n{:?}", index, d, chain);
+                                print!("X");
+                                io::stdout().flush().unwrap();
                             }
 
                             return None;
@@ -387,19 +391,21 @@ impl Context {
                     chain.push(*d);
 
                     let bfs_result = self
-                        .propagate_bfs(func_id, param_name, *d, m_constraints, params.len() > 300)
+                        .propagate_bfs(func_id, param_name, *d, m_constraints, false)
                         .unwrap();
                     if bfs_result.is_none() {
                         if DEBUG || debug {
                             println!(" > bfs returns conflict");
                         } else if params.len() > 300 {
-                            println!(
+                            /*println!(
                                 "x Conflict @ index {}:{} - {}\n{:?}",
                                 index,
                                 d,
                                 params[index].name.as_str(),
                                 chain
-                            );
+                            );*/
+                            print!("x");
+                            io::stdout().flush().unwrap();
                         }
                         return vec![];
                     }
@@ -480,18 +486,22 @@ impl Context {
         split: i8,
     ) -> Result<Vec<(HashMap<String, i8>, usize)>, Box<dyn Error>> {
         let inst_derive = Derivation::derive(&self.derive, func_id, inst_id)?;
-        // if inst_id == 6100 {
+        // if func_id == 10206 && inst_id == 29 {
         //     println!("inst_derive original: {:?}", inst_derive);
         // }
 
         let mut result: Vec<(HashMap<String, i8>, usize)> = vec![];
-        inst_derive.iter().enumerate().for_each(|(i, d)| {
+        for (i, d) in inst_derive.iter().enumerate() {
             if d.contains_key(var_name) && d[var_name] == split {
                 // NOTE: we depend on the order of solution being constant here
                 result.push((d.clone(), i));
             }
-        });
-        // if inst_id == 6100 {
+        }
+        // inst_derive.iter().enumerate().for_each(|(i, d)| {
+        //
+        // });
+
+        // if func_id == 10206 && inst_id == 29 {
         //     println!("derive({}, {}, {}, {}) returning {} out of {} results", func_id, inst_id, var_name, split, result.len(), inst_derive.len());
         // }
 

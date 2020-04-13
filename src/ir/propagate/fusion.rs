@@ -3,7 +3,7 @@ use crate::ir::error::DeriveError::*;
 use crate::ir::hlo_ast::InstPos;
 use crate::ir::propagate::ast_propagate::*;
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::time::{Duration, Instant};
 
@@ -60,26 +60,50 @@ impl Context {
             let mut flattened_result: Vec<HashMap<String, i8>> = vec![];
             for m in p_result {
                 // debug!("processing map: {:?}", m);
-                let mut flattened_map: HashMap<String, i8> = HashMap::new();
-                for (k, v) in m {
-                    if &k == fn_return_var {
-                        flattened_map.insert(inst_return_var.to_string(), v.iter().cloned().next().unwrap());
-                    } else {
-                        for (i, p) in f.params.iter().enumerate() {
-                            if k.contains(&p.name) {
-                                if v.len() > 1 {
-                                    println!("[fusion]\t resulting set has more than 1 element, we are losing solution space: inst = {} | k = {}, v = {:?}", inst
-                                        .get_meta_str("calls").unwrap(), k, v);
+
+                // NOTE: here in the map, m[return value] might have multiple values
+                // therefore the return value is what we want to flatten
+                // if nothing goes wrong, the params side should not have any value with len > 1
+                // TODO: handle return value has len > 1
+                let m_ret_val= if !m.contains_key(fn_return_var) {
+                    println!("return value not in map");
+                    [-1].iter().cloned().collect::<HashSet<i8>>()
+                } else {
+                    m[fn_return_var].clone()
+                };
+
+                for return_v in m_ret_val.iter() {
+                    let mut flattened_map: HashMap<String, i8> = HashMap::new();
+                    flattened_map.insert(inst_return_var.to_string(), *return_v);
+                    for (k, v) in m.iter() {
+                        if k == fn_return_var {
+                            // we've added this v above
+                            continue;
+                            // // TODO: v value is lost
+                            // if v.len() > 1 {
+                            //     println!("[fusion]\t resulting set has more than 1 element on the var_name side: inst = {} | k = {}, v = {:?}", inst
+                            //         .get_meta_str("calls").unwrap(), k, v);
+                            // }
+                            // flattened_map.insert(inst_return_var.to_string(), v.iter().cloned().next().unwrap());
+                        } else {
+                            for (i, p) in f.params.iter().enumerate() {
+                                if k.contains(&p.name) {
+                                    if v.len() > 1 {
+                                        println!("[fusion]\t resulting set has more than 1 element on the params side: inst = {} | k = {}, v = {:?}", inst
+                                            .get_meta_str("calls").unwrap(), k, v);
+                                    }
+                                    flattened_map.insert(
+                                        (&inst.function.params.as_ref().unwrap()[i].name).to_string(),
+                                        v.iter().cloned().next().unwrap(),
+                                    );
                                 }
-                                flattened_map.insert(
-                                    (&inst.function.params.as_ref().unwrap()[i].name).to_string(),
-                                    v.iter().cloned().next().unwrap(),
-                                );
                             }
                         }
                     }
+                    flattened_result.push(flattened_map);
                 }
-                flattened_result.push(flattened_map);
+
+
             }
             ((inst_pos.0, inst_pos.1), flattened_result)
         }).collect::<Vec<(InstPos, Vec<HashMap<String, i8>>)>>());

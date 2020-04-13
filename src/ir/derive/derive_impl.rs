@@ -80,10 +80,7 @@ impl<'a> Derivation<'a> {
         let var_name: &'a str = &inst.var_name;
 
         // All Replicate
-        Self::add_keys(
-            &mut result,
-            vec![(first_param, -1i8), (second_param, -1i8), (var_name, -1i8)],
-        )?;
+        Self::add_keys(&mut result, Self::replicate_split(inst)?)?;
 
         // split into contracting dim
         Self::add_keys(
