@@ -71,7 +71,9 @@ fn test_tree_propagation() -> Result<(), Box<dyn Error>> {
     // let fn_name = "%fused_computation.2271";
     // let fn_name = "%fused_computation.4884.clone";
     // let fn_name = "%fused_computation.4969.clone";
-    let fn_name = "%fused_computation.5207.clone";
+    // let fn_name = "%fused_computation.5207.clone";
+    let fn_name = "%fused_computation.2773.clone";
+    // let fn_name = "%fused_computation.4970.clone";
     // let p_name = "%param_0.13598";
     // let f = ast
     //     .functions
@@ -206,7 +208,7 @@ fn test_hlo_derive_elem() -> Result<(), Box<dyn Error>> {
 fn test_hlo_derive_reshape() -> Result<(), Box<dyn Error>> {
     let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
     let ast = hi.ImportFrom("./tests/test_data/hlo/reshape.json")?;
-    let target_inst = &ast.functions[0].body[0];
+    let target_inst = &ast.functions[0].body[2];
     let result = Derivation::d(target_inst)?;
     for x in &result {
         println!("{:?}", x);

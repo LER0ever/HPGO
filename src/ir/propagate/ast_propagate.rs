@@ -102,6 +102,10 @@ impl Context {
                 // }
                 let v_derive: Vec<(HashMap<String, i8>, usize)> =
                     self.derive(func_id, *vp, &v, s)?;
+                if self.ast.functions[func_id].body[*vp].function.name == "fusion" && self.ast.functions[func_id].body[*vp].get_meta_str("calls")? == "%fused_computation.4970.clone" {
+                    println!("fusion 4970, derive: {:?}", v_derive);
+                    println!("fusion 4970, derive_enum: {:?}", Derivation::derive(&self.derive, func_id, *vp))
+                }
                 // if DEBUG || debug {
                 //     println!("\t\tv_derive for {}, {} @ {} has {} entries", v, s, vp, v_derive.len());
                 // }
@@ -118,8 +122,12 @@ impl Context {
                 // if BFS_DEBUG {
                 //     println!("aggregated derive has {} entries", derive_aggregated.len());
                 // }
+                if self.ast.functions[func_id].body[*vp].function.name == "fusion" && self.ast.functions[func_id].body[*vp].get_meta_str("calls")? == "%fused_computation.4970.clone" {
+                    println!("fusion 4970, derive ag: {:?}", derive_aggregated);
+                }
 
                 for (d_k, d_v) in derive_aggregated {
+
                     if d_k == v {
                         // break;
                         continue;
@@ -192,6 +200,9 @@ impl Context {
                             // not in constraint, so all d_v are possible
                             // not pushing it to q
                             m.insert(d_k.clone(), d_v.clone());
+                            if DEBUG || debug {
+                                println!("\t[bfs]\t\t from fn {}, map new entry {}: {:?}",  self.ast.functions[func_id].body[*vp].function.name, d_k, d_v);
+                            }
                         } else {
                             // m contains d_k, performing intersection
                             let intersected_v: HashSet<_> =

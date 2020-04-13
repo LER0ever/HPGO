@@ -4,7 +4,7 @@ use crate::ir::hlo_ast::HLORoot;
 use crate::ir::propagate::ast_propagate;
 use pyo3::exceptions;
 use pyo3::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 
 #[pyclass]

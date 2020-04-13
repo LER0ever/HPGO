@@ -13,7 +13,7 @@ impl<'a> Derivation<'a> {
             "add" | "and" | "divide" | "subtract" | "multiply" | "maximum" | "abs" | "negate"
             | "sine" | "cosine" | "sqrt" | "rsqrt" | "log" | "exponential" | "convert"
             | "compare" | "all-reduce" | "select" => Self::d_elem(inst),
-            "reshape" => Self::d_reshape(inst),
+            "reshape" => Self::d_reshape_alt(inst),
             "parameter" | "constant" | "copy" | "rng" | "iota" | "tuple" => Self::d_identity(inst),
             "reduce" => Self::d_reduce(inst),
             "transpose" => Self::d_transpose(inst),
@@ -285,6 +285,74 @@ impl<'a> Derivation<'a> {
         Ok(result)
     }
 
+    fn d_reshape_alt(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
+        inst.assert_param_len(1);
+        let all_dims: Vec<i32> = inst.get_param(0)?.get_all_dims_index()?;
+        let params_dims = inst.get_param(0)?.get_dims()?;
+        let var_dims = inst.function.return_types[0]
+            .dimensions
+            .as_ref()
+            .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        let mut p_i = 0;
+        let mut v_i = 0;
+        let mut l_prod = 1;
+        let mut r_prod = 1;
+        let mut params_groups: Vec<Vec<i8>> = vec![];
+        let mut var_groups: Vec<Vec<i8>> = vec![];
+        while (p_i < params_dims.len() && v_i < var_dims.len()) {
+            while l_prod < r_prod && v_i < var_dims.len() {
+                l_prod *= var_dims[v_i];
+                let v_1 = var_groups.len() - 1;
+                var_groups[v_1].push(v_i as i8);
+                v_i += 1;
+            }
+            while l_prod > r_prod && p_i < params_dims.len() {
+                r_prod *= params_dims[p_i];
+                let p_1 = params_groups.len() - 1;
+                params_groups[p_1].push(p_i as i8);
+                p_i += 1;
+            }
+            if l_prod == r_prod && v_i < var_dims.len() && p_i < params_dims.len() {
+                var_groups.push(vec![]);
+                params_groups.push(vec![]);
+                l_prod = var_dims[v_i];
+                r_prod = params_dims[p_i];
+                let v_1 = var_groups.len() - 1;
+                var_groups[v_1].push(v_i as i8);
+                let p_1 = params_groups.len() - 1;
+                params_groups[p_1].push(p_i as i8);
+                v_i += 1;
+                p_i += 1;
+            }
+        }
+
+        while p_i < params_dims.len() {
+            let p_1 = params_groups.len() - 1;
+            params_groups[p_1].push(p_i as i8);
+            p_i += 1;
+        }
+        while v_i < var_dims.len() {
+            let v_1 = var_groups.len() - 1;
+            var_groups[v_1].push(v_i as i8);
+            v_i += 1;
+        }
+        let mut result: Vec<HashMap<&'a str, i8>> = vec![];
+        let param: &'a str = &inst.get_param(0)?.name;
+        let var_name: &'a str = &inst.var_name;
+        for (i, x) in var_groups.iter().enumerate() {
+            for dim_var in x {
+                for dim_params in &params_groups[i] {
+                    Self::add_keys(
+                        &mut result,
+                        vec![(param, *dim_params as i8), (var_name, *dim_var as i8)],
+                    )?;
+                }
+            }
+        }
+        Self::add_keys(&mut result, Self::replicate_split(inst)?)?;
+        Ok(result)
+    }
+
     fn d_reduce(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
         inst.assert_param_len(2);
         inst.assert_key_in_meta("dimensions");
@@ -522,6 +590,8 @@ impl<'a> Derivation<'a> {
                 Self::add_keys(&mut result, splits)?;
             }
         }
+
+        Self::add_keys(&mut result, Self::replicate_split(inst)?)?;
 
         Ok(result)
     }
