@@ -13,7 +13,7 @@ impl<'a> Derivation<'a> {
             "add" | "and" | "divide" | "subtract" | "multiply" | "maximum" | "abs" | "negate"
             | "sine" | "cosine" | "sqrt" | "rsqrt" | "log" | "exponential" | "convert"
             | "compare" | "all-reduce" | "select" => Self::d_elem(inst),
-            "reshape" => Self::d_reshape_alt(inst),
+            "reshape" => Self::d_reshape(inst),
             "parameter" | "constant" | "copy" | "rng" | "iota" | "tuple" => Self::d_identity(inst),
             "reduce" => Self::d_reduce(inst),
             "transpose" => Self::d_transpose(inst),
