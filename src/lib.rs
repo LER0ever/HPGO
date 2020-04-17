@@ -2,6 +2,7 @@
 //! This library provides
 
 #![allow(non_snake_case)]
+#![feature(atomic_min_max)]
 
 /// HPGO Hardware Environment: Ethernet, GPU, NVLink, etc.
 pub mod environment;

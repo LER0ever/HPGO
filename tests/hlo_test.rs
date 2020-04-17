@@ -51,10 +51,11 @@ fn test_derive_cache() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_fusion_derive() -> Result<(), Box<dyn Error>> {
     let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
-    let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
+    let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo-no-sharing.json")?;
     ast.cache_all_positional()?;
     let mut pc = ast_propagate::Context::new(ast);
-    let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
+    // let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask";
+    let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_2195__XlaNumResourceArgs_566_.23925";
     let fusion_result = pc.update_fusion_derive_cache(pc.ast.func_id[fn_name])?;
     for x in fusion_result {
         println!("fn {:?} -> {:?}", x.0, x.1)
@@ -65,15 +66,18 @@ fn test_fusion_derive() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_tree_propagation() -> Result<(), Box<dyn Error>> {
     let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
-    let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
+    let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo-no-sharing.json")?;
+    // let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
     ast.cache_all_positional()?;
 
     // let fn_name = "%fused_computation.2271";
     // let fn_name = "%fused_computation.4884.clone";
     // let fn_name = "%fused_computation.4969.clone";
     // let fn_name = "%fused_computation.5207.clone";
-    let fn_name = "%fused_computation.2773.clone";
+    // let fn_name = "%fused_computation.2773.clone";
     // let fn_name = "%fused_computation.4970.clone";
+    // let fn_name = "%fused_computation.1287";
+    let fn_name = "%fused_computation.715";
     // let p_name = "%param_0.13598";
     // let f = ast
     //     .functions
