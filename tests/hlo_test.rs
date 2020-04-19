@@ -76,8 +76,8 @@ fn test_tree_propagation() -> Result<(), Box<dyn Error>> {
     // let fn_name = "%fused_computation.5207.clone";
     // let fn_name = "%fused_computation.2773.clone";
     // let fn_name = "%fused_computation.4970.clone";
-    // let fn_name = "%fused_computation.1287";
-    let fn_name = "%fused_computation.715";
+    let fn_name = "%fused_computation.1290";
+    // let fn_name = "%fused_computation.715";
     // let p_name = "%param_0.13598";
     // let f = ast
     //     .functions
@@ -89,7 +89,7 @@ fn test_tree_propagation() -> Result<(), Box<dyn Error>> {
 
     let params = &ast.functions[fid].params.clone();
     let pc = ast_propagate::Context::new(ast);
-    let remt_result = pc.propagate_remt(fid, &params, 0, &HashMap::new(), vec![])?;
+    let remt_result = pc.propagate_remt(fid, &params, 0, &HashMap::new(), vec![], false)?;
     // let bfs_result = pc.propagate_bfs(fid, p_name, 1, &HashMap::new())?;
     println!("remt returns {} solutions", remt_result.len());
     for (i, r) in remt_result.iter().enumerate() {

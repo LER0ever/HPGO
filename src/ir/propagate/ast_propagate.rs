@@ -73,6 +73,7 @@ impl Context {
             return Ok(Some(m));
         }
         assert_eq!(!m.contains_key(p_name) || m[p_name].contains(&split), true);
+        // NOTE: since we fixed p_name and split, we update the constraint set for p_name
         if m.contains_key(p_name) {
             *m.get_mut(p_name).unwrap() = [split].iter().cloned().collect();
         } else {
@@ -80,11 +81,10 @@ impl Context {
         }
 
         let f = &self.ast.functions[func_id];
-        let mut v_inst_color: HashMap<usize, HashSet<usize>> = HashMap::new();
-        let v_var_split: HashMap<&str, HashSet<i8>> = HashMap::new();
         assert_eq!(self.ast.var_pos[p_name].0, func_id);
 
         // NOTE: bfs start
+        //
         let mut q: VecDeque<(String, i8)> = VecDeque::new();
         let mut visited: HashSet<(String, i8)> = HashSet::new();
 
@@ -557,15 +557,18 @@ impl Context {
         }
 
         // NOTE: hard code first two var
-        // if params.len() > 300 {
-        //     if index == 0 {
-        //         dim_list = vec![0];
-        //     } else if index == 1 {
-        //         dim_list = vec![-1];
-        //     } else if index == 2 {
-        //         dim_list = vec![1];
-        //     }
-        // }
+        if main_task {
+            if index == 0 {
+                println!("using hardcoded solution for index {}", index);
+                dim_list = vec![0];
+            } else if index == 1 {
+                println!("using hardcoded solution for index {}", index);
+                dim_list = vec![-1];
+            } else if index == 2 {
+                println!("using hardcoded solution for index {}", index);
+                dim_list = vec![1];
+            }
+        }
 
         if index + 1 == params.len() {
             dim_list.par_iter().for_each(|d| {
@@ -639,7 +642,7 @@ impl Context {
             let m = bfs_result.unwrap();
 
             stacker::maybe_grow(32 * 1024, 1024 * 1024, || {
-                self.propagate_remt(func_id, params, index + 1, &m, chain, main_task)
+                self.propagate_remtp(func_id, params, index + 1, &m, chain, main_task)
                     .unwrap()
             });
             return;

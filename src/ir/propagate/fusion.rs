@@ -67,7 +67,8 @@ impl Context {
                 // TODO: handle return value has len > 1
                 let m_ret_val= if !m.contains_key(fn_return_var) {
                     println!("return value not in map");
-                    [-1].iter().cloned().collect::<HashSet<i8>>()
+                    let max_dim = f.body[f.body.len() - 1].function.return_types[0].dimensions.as_ref().unwrap().len() as i8;
+                    (-1..max_dim).collect::<HashSet<i8>>()
                 } else {
                     m[fn_return_var].clone()
                 };
