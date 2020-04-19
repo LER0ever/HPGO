@@ -9,7 +9,7 @@ use std::error::Error;
 
 #[pyclass]
 #[derive(Debug, Clone)]
-pub struct IRConductor {
+pub struct Conductor {
     #[pyo3(get)]
     pub ast: HLORoot,
     #[pyo3(get)]
@@ -17,11 +17,11 @@ pub struct IRConductor {
 }
 
 #[pymethods]
-impl IRConductor {
-    /// Construct a new IRConductor for working with HLO/MLIR model planning
+impl Conductor {
+    /// Construct a new Conductor for working with HLO/MLIR model planning
     #[new]
     pub fn new() -> Self {
-        IRConductor {
+        Conductor {
             ast: HLORoot::default(),
             propagate: ast_propagate::Context::default(),
         }
