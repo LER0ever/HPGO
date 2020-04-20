@@ -472,7 +472,7 @@ impl Context {
         if m_constraints.contains_key(param_name) {
             dim_list = m_constraints[param_name].iter().cloned().collect();
         } else {
-            dim_list = params[index].get_all_dims_index()?.map(|x| *x as i8).collect();
+            dim_list = params[index].get_all_dims_index()?.iter().map(|x| *x as i8).collect();
 
             if !dim_list.contains(&-1i8) {
                 dim_list.push(-1i8);
@@ -480,18 +480,18 @@ impl Context {
         }
 
         // NOTE: hard code first two var
-        if main_task {
-            if index == 0 {
-                println!("using hardcoded solution for index {}", index);
-                dim_list = vec![0];
-            } else if index == 1 {
-                println!("using hardcoded solution for index {}", index);
-                dim_list = vec![-1];
-            } else if index == 2 {
-                println!("using hardcoded solution for index {}", index);
-                dim_list = vec![1];
-            }
-        }
+        // if main_task {
+        //     if index == 0 {
+        //         println!("using hardcoded solution for index {}", index);
+        //         dim_list = vec![0];
+        //     } else if index == 1 {
+        //         println!("using hardcoded solution for index {}", index);
+        //         dim_list = vec![-1];
+        //     } else if index == 2 {
+        //         println!("using hardcoded solution for index {}", index);
+        //         dim_list = vec![1];
+        //     }
+        // }
 
         if index + 1 == params.len() {
             dim_list.par_iter().for_each(|d| {
@@ -559,7 +559,7 @@ impl Context {
             let m = bfs_result.unwrap();
 
             stacker::maybe_grow(32 * 1024, 1024 * 1024, || {
-                self.propagate_remtp(func_id, params, index + 1, &m, chain, main_task)
+                self.propagate_remt_keep_best(func_id, params, index + 1, &m, chain)
                     .unwrap()
             });
             return;

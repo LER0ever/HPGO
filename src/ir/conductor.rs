@@ -1,11 +1,12 @@
 use crate::input::{hlo_string::HLOStructuredJsonImporter, HLOModelImporter};
 use crate::ir::derive::Derivation;
-use crate::ir::hlo_ast::HLORoot;
+use crate::ir::hlo_ast::{HLORoot, Param};
 use crate::ir::propagate::ast_propagate;
 use pyo3::exceptions;
 use pyo3::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
+use std::time::{Duration, Instant};
 
 #[pyclass]
 #[derive(Debug, Clone)]
@@ -66,7 +67,34 @@ impl Conductor {
         Ok(inst_derive)
     }
 
-    pub fn propagate_remtp(&self) -> () {
-        unimplemented!()
+    pub fn get_best_split(&self, func_id: usize, params: Vec<String>) -> PyResult<()> {
+        // make sure we've run positional cache, as well as fusion cache
+        assert_eq!(self.ast.var_pos.len() != 0, true);
+        assert_eq!(self.propagate.derive.len() != 0, true);
+
+        let f = &self.ast.functions[func_id];
+        let mut target_params: Vec<Param> = vec![];
+        f.params.iter().for_each(|p| {
+            if params.contains(&p.name) {
+                target_params.push(p.clone());
+            }
+        });
+
+        println!(
+            "[propagate]\t got {} target params out of {} all",
+            target_params.len(),
+            params.len()
+        );
+
+        let now = Instant::now();
+        self.propagate.propagate_remt_keep_best(
+            func_id,
+            &target_params,
+            0,
+            &HashMap::new(),
+            vec![],
+        ).unwrap();
+
+        Ok(())
     }
 }
