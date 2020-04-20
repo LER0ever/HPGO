@@ -1,5 +1,3 @@
-#![feature(atomic_min_max)]
-
 use crate::ir::derive::{Derivation, DeriveCache};
 use crate::ir::error::PropagationError::*;
 use crate::ir::hlo_ast::{HLORoot, Param};
@@ -142,40 +140,11 @@ impl Context {
                         }
                     }
                 }
-                // if BFS_DEBUG {
-                //     println!("aggregated derive has {} entries", derive_aggregated.len());
-                // }
-                if self.ast.functions[func_id].body[*vp].function.name == "fusion"
-                    && self.ast.functions[func_id].body[*vp].get_meta_str("calls")?
-                        == "%fused_computation.4970.clone"
-                {
-                    println!("fusion 4970, derive ag: {:?}", derive_aggregated);
-                }
 
                 for (d_k, d_v) in derive_aggregated {
                     if d_k == v {
                         continue;
                     }
-                    /*
-                    if d_k == v && d_v.contains(&s){
-                        // break;
-                        continue;
-                        // NOTE: this means that we've
-                    }
-                    if d_k == v && !d_v.contains(&s) {
-                        if DEBUG || debug {
-                            println!(
-                                "conflict while bfs({},{})! d_k = v, but s not in d_v {:?}",
-                                v, s, d_v
-                            );
-                        }
-                        return Ok(None);
-                    }
-                    */
-
-                    // if BFS_DEBUG {
-                    //     println!("d_k: {}, d_v: {:?}", d_k, d_v );
-                    // }
 
                     if d_v.len() == 1 {
                         let d_value = d_v.iter().next().unwrap();
@@ -291,6 +260,7 @@ impl Context {
         unimplemented!()
     }
 
+    /// Multi-Threaded Recursive Enumeration with Pruning
     pub fn propagate_remt(
         &self,
         func_id: usize,
@@ -309,23 +279,6 @@ impl Context {
         let mut debug = false;
         // let bfs_debug = params.len() > 150;
         let bfs_debug = false;
-
-        // Max Progress Pruning for main_task
-        if main_task {
-            let mut cur_rep = 0usize;
-            let cur_max = CUR_MAX_PROGRESS.load(Ordering::SeqCst);
-            for s in debug_chain.iter() {
-                if *s == -1 {
-                    cur_rep += 1;
-                }
-            }
-            let max_possible_split = params.len() - cur_rep;
-            if max_possible_split < cur_max {
-                print!(".");
-                io::stdout().flush().unwrap();
-                return Ok(vec![]);
-            }
-        }
 
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
@@ -355,17 +308,6 @@ impl Context {
                 dim_list.push(-1i8);
             }
         }
-
-        // NOTE: hard code first two var
-        // if params.len() > 300 {
-        //     if index == 0 {
-        //         dim_list = vec![0];
-        //     } else if index == 1 {
-        //         dim_list = vec![-1];
-        //     } else if index == 2 {
-        //         dim_list = vec![1];
-        //     }
-        // }
 
         if index + 1 == params.len() {
             ret.par_extend(
@@ -414,7 +356,7 @@ impl Context {
                                     res.push(split);
                                 }
                             }
-                            CUR_MAX_PROGRESS.fetch_max(split_progress, Ordering::SeqCst);
+                            // CUR_MAX_PROGRESS.fetch_max(split_progress, Ordering::SeqCst);
                             println!("\nO solution: {}\n{:?}", split_progress, res);
                         }
                         return Some(result);
@@ -493,64 +435,45 @@ impl Context {
         Ok(ret)
     }
 
-    pub fn propagate_remtp(
+    /// Multi-Threaded Recursive Enumeration with Aggressive Pruning
+    /// Only keeps the best result, print updated best along the way
+    pub fn propagate_remt_keep_best(
         &self,
         func_id: usize,
         params: &Vec<Param>,
         index: usize,
         m_constraints: &HashMap<String, HashSet<i8>>,
         debug_chain: Vec<i8>,
-        main_task: bool,
     ) -> Result<(), Box<dyn Error>> {
-        // if params.len() > 300 {
-        //     println!("remt @ {}", index);
-        // }
+
         let bfs_switch = true;
         let mut debug = false;
         // let bfs_debug = params.len() > 150;
         let bfs_debug = false;
 
-        // Max Progress Pruning for main_task
-        if main_task {
-            let mut cur_rep = 0usize;
-            let cur_max = CUR_MAX_PROGRESS.load(Ordering::SeqCst);
-            for s in debug_chain.iter() {
-                if *s == -1 {
-                    cur_rep += 1;
-                }
+        // Max Progress Pruning
+        let mut cur_rep = 0usize;
+        let cur_max = CUR_MAX_PROGRESS.load(Ordering::SeqCst);
+        for s in debug_chain.iter() {
+            if *s == -1 {
+                cur_rep += 1;
             }
-            let max_possible_split = params.len() - cur_rep;
-            if max_possible_split < cur_max {
-                print!(".");
-                io::stdout().flush().unwrap();
-                return Ok(());
-            }
+        }
+        let max_possible_split = params.len() - cur_rep;
+        if max_possible_split < cur_max {
+            print!(".");
+            io::stdout().flush().unwrap();
+            return Ok(());
         }
 
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
         let param_name = params[index].name.as_str();
         if m_constraints.contains_key(param_name) {
-            debug!(
-                "range constraints: {} -> {}",
-                params[index]
-                    .param_type
-                    .dimensions
-                    .as_ref()
-                    .unwrap_or(&vec![])
-                    .len()
-                    + 1,
-                m_constraints[param_name].len()
-            );
             dim_list = m_constraints[param_name].iter().cloned().collect();
         } else {
-            dim_list = (0..params[index]
-                .param_type
-                .dimensions
-                .as_ref()
-                .unwrap_or(&vec![])
-                .len() as i8)
-                .collect();
+            dim_list = params[index].get_all_dims_index()?.map(|x| *x as i8).collect();
+
             if !dim_list.contains(&-1i8) {
                 dim_list.push(-1i8);
             }
@@ -589,8 +512,6 @@ impl Context {
                     .unwrap();
                 if bfs_result.is_none() {
                     if DEBUG || debug {
-                        println!(" > bfs returns conflict");
-                    } else if main_task {
                         // println!("X Conflict @ index {}:{}\n{:?}", index, d, chain);
                         print!("X");
                         io::stdout().flush().unwrap();
@@ -598,23 +519,21 @@ impl Context {
                     return;
                 }
                 let result = bfs_result.unwrap();
-                if DEBUG || debug {
-                    println!("- result += {:?}", result);
-                } else if main_task {
-                    let mut res: Vec<i8> = vec![];
-                    let mut split_progress = 0usize;
-                    for p in params.iter() {
-                        if result.contains_key(&p.name) {
-                            let split = result[&p.name].clone().iter().cloned().next().unwrap();
-                            if split != -1 {
-                                split_progress += 1;
-                            }
-                            res.push(split);
+
+                let mut res: Vec<i8> = vec![];
+                let mut split_progress = 0usize;
+                for p in params.iter() {
+                    if result.contains_key(&p.name) {
+                        let split = result[&p.name].clone().iter().cloned().next().unwrap();
+                        if split != -1 {
+                            split_progress += 1;
                         }
+                        res.push(split);
                     }
-                    CUR_MAX_PROGRESS.fetch_max(split_progress, Ordering::SeqCst);
-                    println!("\nO solution: {}\n{:?}", split_progress, res);
                 }
+                CUR_MAX_PROGRESS.fetch_max(split_progress, Ordering::SeqCst);
+                println!("\nO solution: {}\n{:?}", split_progress, res);
+
                 return;
                 // ret.push(result);
             });
@@ -632,8 +551,6 @@ impl Context {
                 .unwrap();
             if bfs_result.is_none() {
                 if DEBUG || debug {
-                    println!(" > bfs returns conflict");
-                } else if main_task {
                     print!("x");
                     io::stdout().flush().unwrap();
                 }
@@ -651,6 +568,9 @@ impl Context {
         Ok(())
     }
 
+    /// intersect two HashMap<String, HashSet<i8>>
+    /// returns false if some intersections yields empty set
+    /// returns true and update a otherwise
     fn intersect_with(
         a: &mut HashMap<String, HashSet<i8>>,
         b: &HashMap<String, HashSet<i8>>,
@@ -674,6 +594,7 @@ impl Context {
         true
     }
 
+    /// Derivation Wrapper
     pub fn derive(
         &self,
         func_id: usize,

@@ -65,4 +65,8 @@ impl Conductor {
             .unwrap();
         Ok(inst_derive)
     }
+
+    pub fn propagate_remtp(&self) -> () {
+        unimplemented!()
+    }
 }

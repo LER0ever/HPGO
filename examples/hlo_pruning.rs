@@ -782,6 +782,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         0,
         &HashMap::new(),
         vec![],
+        true,
     )?;
     println!(
         "[propagation]\t Propagate REMT on AST Root... {}s",
