@@ -87,13 +87,11 @@ impl Conductor {
         );
 
         let now = Instant::now();
-        self.propagate.propagate_remt_keep_best(
-            func_id,
-            &target_params,
-            0,
-            &HashMap::new(),
-            vec![],
-        ).unwrap();
+        self.propagate.get_best_split(func_id, &target_params).unwrap();
+        println!(
+            "[propagate]\t Propagate REMT on AST Root... {}s",
+            now.elapsed().as_secs()
+        );
 
         Ok(())
     }

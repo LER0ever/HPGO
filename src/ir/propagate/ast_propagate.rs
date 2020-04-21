@@ -435,6 +435,30 @@ impl Context {
         Ok(ret)
     }
 
+
+    pub fn get_best_split(
+        &self,
+        func_id: usize,
+        params: &Vec<Param>,
+    ) -> Result<(), Box<dyn Error>> {
+        let mut dim_list: Vec<i8>;
+        let param_name = params[0].name.as_str();
+            dim_list = params[0]
+                .get_all_dims_index()?
+                .iter()
+                .map(|x| *x as i8)
+                .collect();
+
+            if !dim_list.contains(&-1i8) {
+                dim_list.push(-1i8);
+            }
+        dim_list.par_iter().for_each(|d| {
+                self.propagate_remt_keep_best(func_id, params,0, *d, &HashMap::new(), vec![])
+                    .unwrap()
+        });
+        Ok(())
+    }
+
     /// Multi-Threaded Recursive Enumeration with Aggressive Pruning
     /// Only keeps the best result, print updated best along the way
     pub fn propagate_remt_keep_best(
@@ -442,43 +466,106 @@ impl Context {
         func_id: usize,
         params: &Vec<Param>,
         index: usize,
+        split: i8,
         m_constraints: &HashMap<String, HashSet<i8>>,
-        debug_chain: Vec<i8>,
+        mut debug_chain: Vec<i8>,
     ) -> Result<(), Box<dyn Error>> {
-
-        let bfs_switch = true;
-        let mut debug = false;
+        let debug = true;
         // let bfs_debug = params.len() > 150;
         let bfs_debug = false;
+        // println!("remt {}, {}", index, split);
+
+        debug_chain.push(split);
 
         // Max Progress Pruning
-        let mut cur_rep = 0usize;
-        let cur_max = CUR_MAX_PROGRESS.load(Ordering::SeqCst);
-        for s in debug_chain.iter() {
-            if *s == -1 {
-                cur_rep += 1;
+        {
+            let mut cur_rep = 0usize;
+            let cur_max = CUR_MAX_PROGRESS.load(Ordering::SeqCst);
+            for s in debug_chain.iter() {
+                if *s == -1 {
+                    cur_rep += 1;
+                }
+            }
+            let max_possible_split = params.len() - cur_rep;
+            if max_possible_split < cur_max {
+                if DEBUG || debug {
+                    print!(".");
+                }
+                io::stdout().flush().unwrap();
+                return Ok(());
             }
         }
-        let max_possible_split = params.len() - cur_rep;
-        if max_possible_split < cur_max {
-            print!(".");
-            io::stdout().flush().unwrap();
+
+        // Perform BFS
+
+        let param_name = params[index].name.as_str();
+        let bfs_result =
+            self.propagate_bfs(func_id, param_name, split, m_constraints, bfs_debug)?;
+        if bfs_result.is_none() {
+            if DEBUG || debug {
+                // println!("X Conflict @ index {}:{}\n{:?}", index, d, chain);
+                if index + 1 == params.len() {
+                    print!("X");
+                } else {
+                    print!("x");
+                }
+                io::stdout().flush().unwrap();
+            }
             return Ok(());
         }
 
-        // construct the solution space for current index
+        let m = bfs_result.unwrap();
+
+        if index + 1 == params.len() {
+            let mut res: Vec<i8> = vec![];
+            let mut split_progress = 0usize;
+            for p in params.iter() {
+                if m.contains_key(&p.name) {
+                    let split = m[&p.name].clone().iter().cloned().next().unwrap();
+                    if split != -1 {
+                        split_progress += 1;
+                    }
+                    res.push(split);
+                }
+            }
+            CUR_MAX_PROGRESS.fetch_max(split_progress, Ordering::SeqCst);
+            println!("\nO solution: {}\n{:?}", split_progress, res);
+            return Ok(());
+        }
+
+        // TODO: distinguish empty set and not yet explored
+        // failsafe:
+        if m_constraints.contains_key(param_name) && !m.contains_key(param_name) {
+            println!("\n[propagate] failsafe triggered.");
+            return Ok(());
+        }
+
+        // construct the solution space for the next index
         let mut dim_list: Vec<i8>;
-        let param_name = params[index].name.as_str();
-        if m_constraints.contains_key(param_name) {
-            dim_list = m_constraints[param_name].iter().cloned().collect();
+        let param_name = params[index + 1].name.as_str();
+        if m.contains_key(param_name) {
+            dim_list = m[param_name].iter().cloned().collect();
         } else {
-            dim_list = params[index].get_all_dims_index()?.iter().map(|x| *x as i8).collect();
+            dim_list = params[index + 1]
+                .get_all_dims_index()?
+                .iter()
+                .map(|x| *x as i8)
+                .collect();
 
             if !dim_list.contains(&-1i8) {
                 dim_list.push(-1i8);
             }
         }
 
+        dim_list.par_iter().for_each(|d| {
+            let chain = debug_chain.clone();
+            stacker::maybe_grow(32 * 1024, 1024 * 1024, || {
+                self.propagate_remt_keep_best(func_id, params, index + 1, *d, &m, chain)
+                    .unwrap()
+            });
+        });
+
+        Ok(())
         // NOTE: hard code first two var
         // if main_task {
         //     if index == 0 {
@@ -492,80 +579,6 @@ impl Context {
         //         dim_list = vec![1];
         //     }
         // }
-
-        if index + 1 == params.len() {
-            dim_list.par_iter().for_each(|d| {
-                if DEBUG || debug {
-                    println!(
-                        "remt! ({}, {}) @ index {}, m.len() = {}",
-                        params[index].name.as_str(),
-                        d,
-                        index,
-                        m_constraints.len(),
-                    );
-                }
-                let mut chain = debug_chain.clone();
-                chain.push(*d);
-
-                let bfs_result = self
-                    .propagate_bfs(func_id, param_name, *d, m_constraints, bfs_debug)
-                    .unwrap();
-                if bfs_result.is_none() {
-                    if DEBUG || debug {
-                        // println!("X Conflict @ index {}:{}\n{:?}", index, d, chain);
-                        print!("X");
-                        io::stdout().flush().unwrap();
-                    }
-                    return;
-                }
-                let result = bfs_result.unwrap();
-
-                let mut res: Vec<i8> = vec![];
-                let mut split_progress = 0usize;
-                for p in params.iter() {
-                    if result.contains_key(&p.name) {
-                        let split = result[&p.name].clone().iter().cloned().next().unwrap();
-                        if split != -1 {
-                            split_progress += 1;
-                        }
-                        res.push(split);
-                    }
-                }
-                CUR_MAX_PROGRESS.fetch_max(split_progress, Ordering::SeqCst);
-                println!("\nO solution: {}\n{:?}", split_progress, res);
-
-                return;
-                // ret.push(result);
-            });
-
-            return Ok(());
-        }
-
-        // recursive enumeration
-        dim_list.par_iter().for_each(|d| {
-            let mut chain = debug_chain.clone();
-            chain.push(*d);
-
-            let bfs_result = self
-                .propagate_bfs(func_id, param_name, *d, m_constraints, bfs_debug)
-                .unwrap();
-            if bfs_result.is_none() {
-                if DEBUG || debug {
-                    print!("x");
-                    io::stdout().flush().unwrap();
-                }
-                return;
-            }
-            let m = bfs_result.unwrap();
-
-            stacker::maybe_grow(32 * 1024, 1024 * 1024, || {
-                self.propagate_remt_keep_best(func_id, params, index + 1, &m, chain)
-                    .unwrap()
-            });
-            return;
-        });
-
-        Ok(())
     }
 
     /// intersect two HashMap<String, HashSet<i8>>

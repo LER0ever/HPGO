@@ -746,15 +746,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
     ast.cache_all_positional()?;
     let mut p = Context::new(ast);
-    // let mut d = derive::Derivation::new_with_ast(&ast);
-    // d.cache_all_derive(&ast)?;
-    // let mut g = VarGraph3D::new(&d);
-    // g.build_from_function("%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.94957.ComputeTask")?;
-    // g.build_from_function("%fused_computation.2271.clone")?;
-
-    // g.build_from_hlo()?;
-    // g.update_graph_for_fusion()?;
-
     let split_vars: HashSet<&'static str> = get_split_vars().iter().cloned().collect();
 
     // let fn_name = "%fused_computation.2271.clone";
@@ -776,26 +767,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     p.update_fusion_derive_cache(p.ast.func_id[fn_name])?;
 
     let now = Instant::now();
-    let result = p.propagate_remt(
+    p.propagate_remt_keep_best(
         p.ast.func_id[fn_name],
         &target_params,
         0,
+        -1,
         &HashMap::new(),
         vec![],
-        true,
     )?;
     println!(
         "[propagation]\t Propagate REMT on AST Root... {}s",
         now.elapsed().as_secs()
     );
-    println!("main returns {} results", result.len());
-    for (i, r) in result.iter().enumerate() {
-        println!("{} :: {:?}", i, r);
-    }
-
-    // print!("{}", g.export_to_dot()?);
-    // print!("Matrix: {:#?}", g.g.adjacency_matrix());
     Ok(())
-    // as long as unwrap succeeds
-    // println!("{:#?}", result);
 }
