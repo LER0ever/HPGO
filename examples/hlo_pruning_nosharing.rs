@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 use HPGO::ir::hlo_ast::Param;
 use HPGO::ir::propagate::ast_propagate::Context;
 use HPGO::ir::propagate::vargraph::VarGraph3D;
+use HPGO::ir::prune::param_priority::prioritized_params;
 use HPGO::ir::*;
 
 fn get_split_vars() -> Vec<&'static str> {
@@ -762,6 +763,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // let fn_name = "%fused_computation.2271.clone";
     let fn_name = "%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_8315__XlaNumResourceArgs_2186_.91317";
     let f = &p.ast.functions[p.ast.func_id[fn_name]];
+    let func_id = p.ast.func_id[fn_name];
     let mut target_params: Vec<Param> = vec![];
     f.params.iter().for_each(|p| {
         if split_vars.contains(p.name.as_str()) {
@@ -775,17 +777,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         split_vars.len()
     );
 
-    p.update_fusion_derive_cache(p.ast.func_id[fn_name])?;
+    let ordered_params = prioritized_params(&p, func_id, &target_params);
+
+    println!(
+        "Prioritized All Params: {} {}",
+        target_params.len() == ordered_params.len(),
+        target_params != ordered_params,
+    );
+
+    p.update_fusion_derive_cache(func_id)?;
 
     let now = Instant::now();
-    p.propagate_remt_keep_best(
-        p.ast.func_id[fn_name],
-        &target_params,
-        0,
-        0,
-        &HashMap::new(),
-        vec![],
-    )?;
+    p.get_best_split(func_id, &ordered_params)?;
     println!(
         "[propagation]\t Propagate REMT on AST Root... {}s",
         now.elapsed().as_secs()
