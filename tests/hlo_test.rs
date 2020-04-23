@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
 use HPGO::ir::propagate::ast_propagate;
-use HPGO::ir::propagate::vargraph::VarGraph3D;
+use HPGO::ir::propagate::vargraph::{VarGraph2D, VarGraph3D};
 use HPGO::ir::*;
 
 #[test]
@@ -165,7 +165,7 @@ fn test_tree_prop_perf() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn test_hlo_export_dot() -> Result<(), Box<dyn Error>> {
+fn test_hlo_export_dot_3d() -> Result<(), Box<dyn Error>> {
     let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
     let ast = hi.ImportFrom("./tests/test_data/hlo/hlo.json")?;
     let mut d = Derivation::new_with_ast(&ast);
@@ -173,6 +173,22 @@ fn test_hlo_export_dot() -> Result<(), Box<dyn Error>> {
     let mut g = VarGraph3D::new(&d);
 
     g.build_from_function("%fused_computation.9.clone")?;
+    print!("{}", g.export_to_dot()?);
+    Ok(())
+    // as long as unwrap succeeds
+    // println!("{:#?}", result);
+}
+
+#[test]
+fn test_hlo_export_dot_2d() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo-no-sharing-transformer-base.json")?;
+    ast.cache_all_positional()?;
+    let d = Derivation::new_with_ast(&ast);
+    // d.cache_all_derive(&ast);
+    let mut g = VarGraph2D::new(&d);
+
+    g.build_from_function("%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_2195__XlaNumResourceArgs_566_.23925")?;
     print!("{}", g.export_to_dot()?);
     Ok(())
     // as long as unwrap succeeds

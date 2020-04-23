@@ -87,7 +87,9 @@ impl Conductor {
         );
 
         let now = Instant::now();
-        self.propagate.get_best_split(func_id, &target_params).unwrap();
+        self.propagate
+            .get_best_split(func_id, &target_params)
+            .unwrap();
         println!(
             "[propagate]\t Propagate REMT on AST Root... {}s",
             now.elapsed().as_secs()

@@ -435,7 +435,6 @@ impl Context {
         Ok(ret)
     }
 
-
     pub fn get_best_split(
         &self,
         func_id: usize,
@@ -443,18 +442,18 @@ impl Context {
     ) -> Result<(), Box<dyn Error>> {
         let mut dim_list: Vec<i8>;
         let param_name = params[0].name.as_str();
-            dim_list = params[0]
-                .get_all_dims_index()?
-                .iter()
-                .map(|x| *x as i8)
-                .collect();
+        dim_list = params[0]
+            .get_all_dims_index()?
+            .iter()
+            .map(|x| *x as i8)
+            .collect();
 
-            if !dim_list.contains(&-1i8) {
-                dim_list.push(-1i8);
-            }
+        if !dim_list.contains(&-1i8) {
+            dim_list.push(-1i8);
+        }
         dim_list.par_iter().for_each(|d| {
-                self.propagate_remt_keep_best(func_id, params,0, *d, &HashMap::new(), vec![])
-                    .unwrap()
+            self.propagate_remt_keep_best(func_id, params, 0, *d, &HashMap::new(), vec![])
+                .unwrap()
         });
         Ok(())
     }

@@ -4,7 +4,7 @@ use crate::ir::hlo_ast::*;
 use itertools::Itertools;
 use log::{debug, info, warn};
 use petgraph::dot::{Config, Dot};
-use petgraph::graph::{UnGraph, DiGraph};
+use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
@@ -19,7 +19,7 @@ pub type EdgeTypeSingle<'a> = (&'a Instruction, EdgeColor<'a>);
 pub type EdgeType = Vec<(i32, i32)>;
 
 pub struct VarGraph2D<'a> {
-    pub graph: DiGraph<&'a str, usize>,
+    pub graph: DiGraph<&'a str, InstPos>,
     pub ast: &'a HLORoot,
     pub d: &'a Derivation<'a>,
     pub node_id: HashMap<&'a str, NodeIndex>,
@@ -28,7 +28,7 @@ pub struct VarGraph2D<'a> {
 impl<'a> VarGraph2D<'a> {
     pub fn new(d: &'a Derivation) -> VarGraph2D<'a> {
         VarGraph2D {
-            graph: DiGraph::<&'a str, usize>::new(),
+            graph: DiGraph::<&'a str, InstPos>::new(),
             ast: d.ast.unwrap(),
             d,
             node_id: HashMap::new(),
@@ -38,60 +38,59 @@ impl<'a> VarGraph2D<'a> {
     /// return the node_id, create one if not exist
     pub fn node_id(&mut self, name: &'a str) -> NodeIndex {
         if !self.node_id.contains_key(&name) {
-            self.node_id
-                .insert(name, self.graph.add_node(name));
+            self.node_id.insert(name, self.graph.add_node(name));
         }
         return self.node_id[&name];
     }
 
+    /// do graph update for every instruction in the function
+    fn func_to_edges(&mut self, f: &'a HLOFunction) -> Result<(), Box<dyn Error>> {
+        // if f.name.contains("XlaCompiledKernel") && !f.name.contains("ComputeTask") {
+        //     return true;
+        // }
+        debug!("Processing fn {}", f.name);
+        f.body
+            .iter()
+            .for_each(|i| self.update_graph_from_inst(i).unwrap());
+        Ok(())
+    }
+
     /// take the result from inst_to_edges and update the global graph
-    pub fn update_graph_from_inst(&mut self, i: &'a Instruction) -> bool {
+    pub fn update_graph_from_inst(&mut self, i: &'a Instruction) -> Result<(), Box<dyn Error>> {
+        if i.function.name == "parameter"
+            || i.function.name == "constant"
+            || i.function.name == "rng"
+            || i.function.name == "iota"
+        {
+            return Ok(());
+        }
+        let var_name = &i.var_name;
+        let var_id = self.node_id(var_name);
+        let params = i.get_all_params()?;
+        for p in params {
+            let ni = self.node_id(&p.name);
+            let e = self.graph.find_edge(ni, var_id);
+            if e.is_none() {
+                self.graph.add_edge(ni, var_id, self.ast.inst_pos[i]);
+            }
+        }
+        Ok(())
+    }
 
-        unimplemented!()
-        // if !self.node_edge_cache.contains_key(i) {
-        //     self.inst_to_edges(i).unwrap();
-        // }
-        // let node_edge_result: Vec<(NodeType<'a>, NodeType<'a>, i32, i32)> =
-        //     self.node_edge_cache[i].iter().map(|x| x.clone()).collect();
-        // // TODO: the above code made a copy of the resulting vec for no good fkn reason
+    pub fn build_from_function(&mut self, fn_name: &str) -> Result<(), Box<dyn Error>> {
+        let now = Instant::now();
+        self.graph.clear();
 
-        // for (ta, tb, tc, td) in node_edge_result {
-        //     // println!("[debug] edge {},{} - {},{}", ta.0, ta.1, tb.0, tb.1);
-        //     let a = self.node_id(ta.0, ta.1);
-        //     let b = self.node_id(tb.0, tb.1);
-        //     let e = self.graph.find_edge(a, b);
-        //     if e.is_none() {
-        //         self.graph.add_edge(a, b, vec![(tc, td)]);
-        //     } else {
-        //         let ew = self.graph.edge_weight_mut(e.unwrap()).unwrap();
-        //         ew.push((tc, td));
-        //     }
-        //     // add to color cover
-        //     if self.color_cover.contains_key(&td) {
-        //         self.color_cover
-        //             .get_mut(&td)
-        //             .unwrap()
-        //             .insert(self.graph.find_edge(a, b).unwrap());
-        //     } else {
-        //         self.color_cover.insert(
-        //             td,
-        //             [self.graph.find_edge(a, b).unwrap()]
-        //                 .iter()
-        //                 .cloned()
-        //                 .collect(),
-        //         );
-        //     }
-        //     // add to color connect
-        //     if self.color_connect.contains_key(&td) {
-        //         self.color_connect.get_mut(&td).unwrap().insert(a);
-        //         self.color_connect.get_mut(&td).unwrap().insert(b);
-        //     } else {
-        //         self.color_connect
-        //             .insert(td, [a, b].iter().cloned().collect());
-        //     }
-        // }
+        let fid = self.ast.func_id[fn_name];
+        let f = &self.ast.functions[fid];
 
-        // true
+        self.func_to_edges(f)?;
+        Ok(())
+    }
+
+    pub fn export_to_dot(&self) -> Result<String, Box<dyn Error>> {
+        let dot = Dot::with_config(&self.graph, &[Config::EdgeNoLabel]); // Config::EdgeNoLabel or Config::EdgeIndexLabel
+        Ok(format!("{:?}", dot))
     }
 }
 
