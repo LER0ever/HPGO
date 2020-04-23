@@ -4,7 +4,7 @@ use crate::ir::hlo_ast::*;
 use itertools::Itertools;
 use log::{debug, info, warn};
 use petgraph::dot::{Config, Dot};
-use petgraph::graph::UnGraph;
+use petgraph::graph::{UnGraph, DiGraph};
 use petgraph::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
@@ -17,6 +17,22 @@ pub type EdgeColor<'a> = &'a HashMap<&'a str, i8>;
 pub type EdgeTypeSingle<'a> = (&'a Instruction, EdgeColor<'a>);
 // pub type EdgeType<'a> = Vec<EdgeTypeSingle<'a>>;
 pub type EdgeType = Vec<(i32, i32)>;
+
+pub struct VarGraph2D<'a> {
+    pub graph: DiGraph<&'a str, usize>,
+    pub ast: &'a HLORoot,
+    pub d: &'a Derivation<'a>,
+}
+
+impl<'a> VarGraph2D<'a> {
+    pub fn new(d: &'a Derivation) -> VarGraph2D<'a> {
+        VarGraph2D {
+            graph: DiGraph::<&'a str, usize>::new(),
+            ast: d.ast.unwrap(),
+            d,
+        }
+    }
+}
 
 pub struct VarGraph3D<'a> {
     pub graph: UnGraph<NodeType<'a>, EdgeType>,
