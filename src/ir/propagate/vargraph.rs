@@ -22,6 +22,7 @@ pub struct VarGraph2D<'a> {
     pub graph: DiGraph<&'a str, usize>,
     pub ast: &'a HLORoot,
     pub d: &'a Derivation<'a>,
+    pub node_id: HashMap<&'a str, NodeIndex>,
 }
 
 impl<'a> VarGraph2D<'a> {
@@ -30,7 +31,67 @@ impl<'a> VarGraph2D<'a> {
             graph: DiGraph::<&'a str, usize>::new(),
             ast: d.ast.unwrap(),
             d,
+            node_id: HashMap::new(),
         }
+    }
+
+    /// return the node_id, create one if not exist
+    pub fn node_id(&mut self, name: &'a str) -> NodeIndex {
+        if !self.node_id.contains_key(&name) {
+            self.node_id
+                .insert(name, self.graph.add_node(name));
+        }
+        return self.node_id[&name];
+    }
+
+    /// take the result from inst_to_edges and update the global graph
+    pub fn update_graph_from_inst(&mut self, i: &'a Instruction) -> bool {
+
+        unimplemented!()
+        // if !self.node_edge_cache.contains_key(i) {
+        //     self.inst_to_edges(i).unwrap();
+        // }
+        // let node_edge_result: Vec<(NodeType<'a>, NodeType<'a>, i32, i32)> =
+        //     self.node_edge_cache[i].iter().map(|x| x.clone()).collect();
+        // // TODO: the above code made a copy of the resulting vec for no good fkn reason
+
+        // for (ta, tb, tc, td) in node_edge_result {
+        //     // println!("[debug] edge {},{} - {},{}", ta.0, ta.1, tb.0, tb.1);
+        //     let a = self.node_id(ta.0, ta.1);
+        //     let b = self.node_id(tb.0, tb.1);
+        //     let e = self.graph.find_edge(a, b);
+        //     if e.is_none() {
+        //         self.graph.add_edge(a, b, vec![(tc, td)]);
+        //     } else {
+        //         let ew = self.graph.edge_weight_mut(e.unwrap()).unwrap();
+        //         ew.push((tc, td));
+        //     }
+        //     // add to color cover
+        //     if self.color_cover.contains_key(&td) {
+        //         self.color_cover
+        //             .get_mut(&td)
+        //             .unwrap()
+        //             .insert(self.graph.find_edge(a, b).unwrap());
+        //     } else {
+        //         self.color_cover.insert(
+        //             td,
+        //             [self.graph.find_edge(a, b).unwrap()]
+        //                 .iter()
+        //                 .cloned()
+        //                 .collect(),
+        //         );
+        //     }
+        //     // add to color connect
+        //     if self.color_connect.contains_key(&td) {
+        //         self.color_connect.get_mut(&td).unwrap().insert(a);
+        //         self.color_connect.get_mut(&td).unwrap().insert(b);
+        //     } else {
+        //         self.color_connect
+        //             .insert(td, [a, b].iter().cloned().collect());
+        //     }
+        // }
+
+        // true
     }
 }
 
