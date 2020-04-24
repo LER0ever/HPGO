@@ -3,6 +3,7 @@ use crate::input::torch_graph_py;
 use crate::layerwise::model::model_perf;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
+use std::time::{Duration, Instant};
 
 const VERBOSE: bool = true;
 
@@ -20,6 +21,8 @@ impl LayerwiseModelImporter for TorchGraphImporter {
         Option<model_perf::ModelPerf>,
         Option<model_perf::ModelStates>,
     ) {
+        debug!("[input]\tImporting Torch Graph txt...");
+        let now = Instant::now();
         let gil = Python::acquire_gil();
         let py = gil.python();
         let graph = PyModule::from_code(
@@ -104,13 +107,13 @@ impl LayerwiseModelImporter for TorchGraphImporter {
                 .extract(py)
                 .unwrap();
             states.push(model_perf::ModelState {
-                id: id,
-                name: name,
-                desc: desc,
-                compute_time: compute_time,
-                activation_size: activation_size,
-                output_activation_size: output_activation_size,
-                parameter_size: parameter_size,
+                id,
+                name,
+                desc,
+                compute_time,
+                activation_size,
+                output_activation_size,
+                parameter_size,
                 stage_id: None,
             });
         }
@@ -122,6 +125,12 @@ impl LayerwiseModelImporter for TorchGraphImporter {
             output_activation_sizes: result.5,
             all_predecessor_ids: result.6,
         };
+
+        println!(
+            "[input]\t Reading from Torch Graph txt... {}ms",
+            now.elapsed().as_millis()
+        );
+
         (Some(perf), Some(states))
     }
 }
