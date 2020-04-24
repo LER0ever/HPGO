@@ -1,0 +1,20 @@
+image: archlinux
+packages:
+  - python
+  - python-pip
+  - rustup
+sources:
+  - https://git.sr.ht/~rongyi/HPGO
+tasks:
+  - setup: |
+      rustup default nightly
+      cargo --version
+      pip3 install maturin
+  - build: |
+      cd HPGO
+      cargo build --release
+      cargo build --examples --release --no-default-features
+      cargo build --tests --no-default-features
+      maturin build --release
+  - test: |
+      cargo test --no-default-features -- --nocapture

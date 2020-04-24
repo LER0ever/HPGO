@@ -1,4 +1,3 @@
-
 use HPGO::environment::*;
 use HPGO::layerwise::parallelism::data_parallel;
 

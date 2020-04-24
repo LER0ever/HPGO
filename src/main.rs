@@ -1,8 +1,5 @@
 #![allow(non_snake_case)]
 
-
-
-
 use std::path::PathBuf;
 use structopt::StructOpt;
 

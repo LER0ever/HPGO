@@ -1,4 +1,3 @@
-
 use HPGO::environment::*;
 
 #[test]

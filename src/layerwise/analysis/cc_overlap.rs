@@ -3,7 +3,6 @@ use crate::layerwise::model::*;
 use crate::layerwise::parallelism::*;
 use rayon::prelude::*;
 
-
 #[derive(Debug)]
 struct DataBlock {
     available_time: f64,

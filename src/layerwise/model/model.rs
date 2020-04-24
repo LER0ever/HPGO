@@ -22,7 +22,7 @@ pub struct Layer {
 }
 
 #[pyclass]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Model {
     #[pyo3(get)]
     pub layers: Vec<Layer>,

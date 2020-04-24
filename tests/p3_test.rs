@@ -1,9 +1,7 @@
-
-
 use rayon::prelude::*;
-use HPGO::layerwise::analysis::*;
 use HPGO::environment::*;
 use HPGO::input::*;
+use HPGO::layerwise::analysis::*;
 use HPGO::layerwise::model::*;
 
 fn t_p3_for(filename: &str, inter_batch: bool) -> cc_overlap::OverlapStats {

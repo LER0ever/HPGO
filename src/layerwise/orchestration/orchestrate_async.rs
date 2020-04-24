@@ -3,8 +3,8 @@ use crate::input::*;
 
 use crate::layerwise::model::model;
 use crate::layerwise::orchestration::{Orchestrate, OrchestrationResult};
-use ordered_float::OrderedFloat;
 use crate::layerwise::parallelism::*;
+use ordered_float::OrderedFloat;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;

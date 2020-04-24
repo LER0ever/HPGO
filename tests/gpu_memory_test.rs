@@ -1,8 +1,6 @@
-
-
 use rayon::prelude::*;
-use HPGO::layerwise::analysis::*;
 use HPGO::input::*;
+use HPGO::layerwise::analysis::*;
 use HPGO::layerwise::model::*;
 
 #[test]

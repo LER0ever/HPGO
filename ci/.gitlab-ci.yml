@@ -25,7 +25,7 @@ maturin-build-dind:
 cargo-doc-build:
   stage: build
   script:
-    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'yum install -y git; rustup default nightly; cargo doc --no-deps' # to target/doc
+    - docker run --rm -v $(pwd):/io --entrypoint '/bin/sh' konstin2/maturin:master -c 'yum install -y git; rustup default nightly; cargo doc --no-deps --document-private-items' # to target/doc
   artifacts:
     name: "$CI_BUILD_NAME-doc"
     paths:
@@ -38,6 +38,7 @@ cargo-doc-deploy:
   only:
     refs:
       - master
+      - hlo-experiments
   script:
     - ls
     - git clone https://LER0ever:$GITLAB_GIT_TOKEN@gitlab.com/rongyi.io/configurations/websites/HPGO.rongyi.io.git
@@ -46,6 +47,7 @@ cargo-doc-deploy:
     - cd HPGO.rongyi.io
     - rm -rf *
     - cp -r ../target/doc/* .
+    - cp ../ci/rust-doc.gitlab-ci.yml .gitlab-ci.yml
     - echo '<!DOCTYPE html><html><head><meta http-equiv="Refresh" content="0; url=/HPGO" /></head><body></body></html>' > index.html
     - git add -A
     - git diff-index --quiet HEAD || git commit -m "HPGO Rust Docs | Auto Deploy | $CI_SERVER_NAME $CI_PIPELINE_ID"
