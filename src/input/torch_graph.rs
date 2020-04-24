@@ -4,6 +4,7 @@ use crate::layerwise::model::model_perf;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use std::time::{Duration, Instant};
+use log::debug;
 
 const VERBOSE: bool = true;
 
