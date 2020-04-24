@@ -34,7 +34,7 @@ fern = "0.5"
 petgraph = "0.5"
 cedarwood = "0.4"
 thiserror = "1.0"
-dashmap = "3.7"
+dashmap = "3.11"
 stacker = "0.1"
 
 [dependencies.pyo3]
