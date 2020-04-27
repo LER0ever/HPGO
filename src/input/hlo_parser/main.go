@@ -16,17 +16,26 @@ import (
 
 var HLOLexer = lexer.Must(ebnf.New(`
 Comment = ("#" | "//") { "\u0000"…"\uffff"-"\n" } .
+
+ConvDimLabel = char char char char "_" char char char char Rightarrow char char char char .
+ConvPadSize = digit ("x" | "_") digit {("x" | "_") digit} .
+
 Ident = (alpha | "_") { "." | "_" | "-" | alpha | digit } .
-String = "\"" {Ident | "/"} "\"" .
+String = "\"" {"'" | Ident | Number | "/" | "," | "$" | "{" | "}" | ":" } "\"" .
 VarName = "%" Ident .
+Boolean = ("true" | "false") .
+
 Number = { "-" } ("." | digit | "inf") {"." | digit} .
 Whitespace = " " | "\t" | "\n" | "\r" .
 Rightarrow = "->" .
 Assign = "=" .
 Punct = "!"…"/" | ":"…"@" | "["…"_" | "{"…"~" .
+char = alpha | digit .
 alpha = "a"…"z" | "A"…"Z" .
 digit = "0"…"9" .
 `))
+
+//SubString = "\\\"" {Ident | "/" | "$" | "{" | "}" | ":" } "\\\"" .
 
 var log = logrus.New()
 
@@ -48,9 +57,9 @@ type Instruction struct {
 }
 
 type FunctionCall struct {
-	ReturnTypes []Type     `(@@ | "(" @@ { "," @@ } ")" )`
-	Name        string     `@Ident`
-	Argument    []Argument `"(" ( @@ { "," @@ } )? ")"`
+	ReturnType Type       `@@`
+	Name       string     `@Ident`
+	Argument   []Argument `"(" ( @@ { "," @@ } )? ")"`
 }
 
 type Meta struct {
@@ -60,15 +69,17 @@ type Meta struct {
 
 type Value struct {
 	Number  int32   `  @Number`
-	String  *string `| (@Ident|@VarName)`
+	String  *string `| (@Ident|@VarName|@String)`
 	Numbers []int32 `| ("{" @Number {"," @Number } "}")`
 	Dicts   []Dict  `| ("{" { @@ } "}")`
 	Slices  []Slice `| ("{" @@ {"," @@ } "}")`
+	Boolean *bool   `| ("{" (@"true" | "false") "}")`
+	Misc    *string `| ( @ConvPadSize | @ConvDimLabel )`
 }
 
 type Dict struct {
 	Key   string `@Ident "="`
-	Value string `@String | @Ident`
+	Value *Value `@@`
 }
 
 type Slice struct {
@@ -87,15 +98,22 @@ type Argument struct {
 }
 
 type Type struct {
-	DataType   string  `@Ident`
-	Dimensions []int32 `"[" [ @Number { "," @Number } ] "]"`
-	Layout     []int32 `("{" [ @Number { "," @Number } ] "}")?`
+	DataType   string  `(   @Ident`
+	Dimensions []int32 `    "[" [ @Number { "," @Number } ] "]"`
+	Layout     []int32 `    ("{" [ @Number { "," @Number } ] "}")?`
+	TupleType  []Type  `)|  "(" @@ { "," @@ } ")"`
+}
+
+func preprocess(s string) string {
+	s = strings.Replace(s, "\\\"", "'", -1)
+	return s
 }
 
 func parse(s string) *HLORoot {
 	parser, err := participle.Build(&HLORoot{},
 		participle.Lexer(HLOLexer),
 		participle.Elide("Comment", "Whitespace"),
+		//participle.UseLookahead(3),
 	)
 
 	if err != nil {
@@ -104,8 +122,11 @@ func parse(s string) *HLORoot {
 	hlo := &HLORoot{}
 
 	l, _ := HLOLexer.Lex(strings.NewReader(s))
-	tokens, _ := lexer.ConsumeAll(l)
-	log.Debugf("%+v\n", tokens)
+	tokens, err := lexer.ConsumeAll(l)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%+v\n", tokens)
 
 	err = parser.Parse(strings.NewReader(s), hlo)
 	if err != nil {
@@ -131,6 +152,7 @@ func main() {
 		_ = fmt.Errorf(err.Error())
 	}
 	text := string(content)
+	text = preprocess(text)
 
 	log.Println("Parsing HLO into AST...")
 	ast := parse(text)
