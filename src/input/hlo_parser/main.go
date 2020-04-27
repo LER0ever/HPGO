@@ -48,17 +48,22 @@ type Instruction struct {
 }
 
 type FunctionCall struct {
-	ReturnTypes []RichType  `(@@ | "(" @@ { "," @@ } ")" )`
-	Name        string      `@Ident`
-	Params      []RichParam `"(" ( @@ { "," @@ } )? ")"`
+	ReturnTypes []Type     `(@@ | "(" @@ { "," @@ } ")" )`
+	Name        string     `@Ident`
+	Argument    []Argument `"(" ( @@ { "," @@ } )? ")"`
 }
 
 type Meta struct {
-	Key        string  `@Ident "="`
-	Value      *string `(@Ident|@VarName|@Number)?`
-	DictValue  []Dict  `("{" { @@ } "}")?`
-	ListNums   []int32 `("{" @Number {"," @Number } "}")?`
-	ListSlices []Slice `("{" @@ {"," @@ } "}")?`
+	Key   string `@Ident "="`
+	Value *Value `@@`
+}
+
+type Value struct {
+	Number  int32   `  @Number`
+	String  *string `| (@Ident|@VarName)`
+	Numbers []int32 `| ("{" @Number {"," @Number } "}")`
+	Dicts   []Dict  `| ("{" { @@ } "}")`
+	Slices  []Slice `| ("{" @@ {"," @@ } "}")`
 }
 
 type Dict struct {
@@ -76,17 +81,12 @@ type Param struct {
 	Type Type   `@@`
 }
 
+type Argument struct {
+	Type Type   `(@@)?`
+	Name string `@VarName | @Number | @Ident`
+}
+
 type Type struct {
-	DataType   string  `@Ident`
-	Dimensions []int32 `"[" [ @Number { "," @Number } ] "]"`
-}
-
-type RichParam struct {
-	Type RichType `(@@)?`
-	Name string   `@VarName | @Number | @Ident`
-}
-
-type RichType struct {
 	DataType   string  `@Ident`
 	Dimensions []int32 `"[" [ @Number { "," @Number } ] "]"`
 	Layout     []int32 `("{" [ @Number { "," @Number } ] "}")?`
@@ -128,7 +128,7 @@ func main() {
 	log.Println("Reading HLO Text File...")
 	content, err := ioutil.ReadFile(hlo_file)
 	if err != nil {
-		fmt.Errorf(err.Error())
+		_ = fmt.Errorf(err.Error())
 	}
 	text := string(content)
 
