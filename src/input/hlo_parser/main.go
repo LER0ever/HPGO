@@ -126,7 +126,7 @@ func parse(s string) *HLORoot {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", tokens)
+	log.Debugf("%+v\n", tokens)
 
 	err = parser.Parse(strings.NewReader(s), hlo)
 	if err != nil {
