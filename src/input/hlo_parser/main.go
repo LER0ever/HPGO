@@ -101,7 +101,7 @@ type Type struct {
 	DataType   string  `(   @Ident`
 	Dimensions []int32 `    "[" [ @Number { "," @Number } ] "]"`
 	Layout     []int32 `    ("{" [ @Number { "," @Number } ] "}")?`
-	TupleType  []Type  `)|  "(" @@ { "," @@ } ")"`
+	TupleType  []Type  `) | "(" @@ { "," @@ } ")"`
 }
 
 func preprocess(s string) string {
