@@ -3,9 +3,11 @@ use pyo3::wrap_pymodule;
 
 pub mod py_ir;
 pub mod py_layerwise;
+pub mod py_utils;
 
 use crate::api::py::py_ir::*;
 use crate::api::py::py_layerwise::*;
+use crate::api::py::py_utils::*;
 
 #[pymodule]
 fn HPGO(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
@@ -17,6 +19,7 @@ fn HPGO(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_wrapped(wrap_pymodule!(Layerwise))?;
     m.add_wrapped(wrap_pymodule!(IR))?;
+    m.add_wrapped(wrap_pymodule!(Utils))?;
 
     Ok(())
 }

@@ -19,4 +19,3 @@ for x in res:
 
 print(res)
 print(res_sum)
-    

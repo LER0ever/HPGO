@@ -181,19 +181,24 @@ pub fn sync_pipeline_speedup_recursive(
         f[0][i] = Some(((f[0][i - 1].unwrap()).1, (f[0][i - 1].unwrap()).1 + F[i]));
     }
 
+    let mut Phi: Vec<u32> = vec![];
+    for i in 0..F.len() {
+        Phi.push((F.len() - i) as u32);
+    }
+
     let mut max_length = 0.0;
     for x in 0..F.len() {
         // Start Double Recursion
         let mut pipeline_end = sync_pipeline_speedup_resursive_helper_b(
+            m_batch as i32 - 1,
+            x as i32,
             &mut f,
             &mut b,
             &F,
             &B,
-            m_batch as i32 - 1,
-            x as i32,
             m_batch as usize,
             F.len(),
-            F.len(),
+            &Phi,
         )
         .1;
         if x % 2 == 0 {
@@ -222,15 +227,15 @@ pub fn sync_pipeline_speedup_recursive(
 }
 
 fn sync_pipeline_speedup_resursive_helper_f(
+    i: i32,
+    x: i32,
     f: &mut Vec<Vec<Option<(f64, f64)>>>,
     b: &mut Vec<Vec<Option<(f64, f64)>>>,
     F: &Vec<f64>,
     B: &Vec<f64>,
-    i: i32,
-    x: i32,
     M: usize,
     S: usize,
-    phi: usize,
+    phi: &Vec<u32>,
 ) -> (f64, f64) {
     if VERBOSE {
         println!("[sync_pipeline]\t Requesting f[{}][{}]", i, x);
@@ -245,10 +250,20 @@ fn sync_pipeline_speedup_resursive_helper_f(
     if f[i as usize][x as usize].is_some() {
         return f[i as usize][x as usize].unwrap();
     }
-    let fm_1 =
-        sync_pipeline_speedup_resursive_helper_b(f, b, F, B, i - phi as i32 + x, x, M, S, phi).1;
-    let fm_2 = sync_pipeline_speedup_resursive_helper_f(f, b, F, B, i - 1, x, M, S, phi).1;
-    let fm_3 = sync_pipeline_speedup_resursive_helper_f(f, b, F, B, i, x - 1, M, S, phi).1;
+    let fm_1 = sync_pipeline_speedup_resursive_helper_b(
+        i - phi[x as usize] as i32,
+        x,
+        f,
+        b,
+        F,
+        B,
+        M,
+        S,
+        phi,
+    )
+    .1;
+    let fm_2 = sync_pipeline_speedup_resursive_helper_f(i - 1, x, f, b, F, B, M, S, phi).1;
+    let fm_3 = sync_pipeline_speedup_resursive_helper_f(i, x - 1, f, b, F, B, M, S, phi).1;
 
     let cur_f = f64::max(fm_1, f64::max(fm_2, fm_3));
     f[i as usize][x as usize] = Some((cur_f, cur_f + F[x as usize]));
@@ -264,15 +279,15 @@ fn sync_pipeline_speedup_resursive_helper_f(
 }
 
 fn sync_pipeline_speedup_resursive_helper_b(
+    i: i32,
+    x: i32,
     f: &mut Vec<Vec<Option<(f64, f64)>>>,
     b: &mut Vec<Vec<Option<(f64, f64)>>>,
     F: &Vec<f64>,
     B: &Vec<f64>,
-    i: i32,
-    x: i32,
     M: usize,
     S: usize,
-    phi: usize,
+    phi: &Vec<u32>,
 ) -> (f64, f64) {
     if VERBOSE {
         println!("[sync_pipeline]\t Requesting b[{}][{}]", i, x);
@@ -287,13 +302,22 @@ fn sync_pipeline_speedup_resursive_helper_b(
     if b[i as usize][x as usize].is_some() {
         return b[i as usize][x as usize].unwrap();
     }
-    let bm_1 = sync_pipeline_speedup_resursive_helper_b(f, b, F, B, i, x + 1, M, S, phi).1;
-    // let bm_2 = sync_pipeline_speedup_resursive_helper_b(f, b, F, B, i - 1, x, M, S, phi).1;
-    let bm_3 =
-        sync_pipeline_speedup_resursive_helper_f(f, b, F, B, i + phi as i32 - x - 1, x, M, S, phi)
-            .1;
+    let bm_1 = sync_pipeline_speedup_resursive_helper_b(i, x + 1, f, b, F, B, M, S, phi).1;
+    let bm_2 = sync_pipeline_speedup_resursive_helper_b(i - 1, x, f, b, F, B, M, S, phi).1;
+    let bm_3 = sync_pipeline_speedup_resursive_helper_f(
+        i + phi[x as usize] as i32 - 1,
+        x,
+        f,
+        b,
+        F,
+        B,
+        M,
+        S,
+        phi,
+    )
+    .1;
 
-    let cur_b = f64::max(bm_1, bm_3);
+    let cur_b = f64::max(bm_1, f64::max(bm_2, bm_3));
     b[i as usize][x as usize] = Some((cur_b, cur_b + B[x as usize]));
 
     if VERBOSE {
@@ -304,4 +328,50 @@ fn sync_pipeline_speedup_resursive_helper_b(
     }
 
     return b[i as usize][x as usize].unwrap();
+}
+
+pub fn sync_pipeline_length_recursive(
+    F: Vec<f64>,         // Forward Time for Stage i
+    B: Vec<f64>,         // Backward Time for Stage i
+    M: u32,              // Number of Microbatches
+    Phi: Vec<u32>,       // Initial Forward Batch for Stage i
+    AllReduce: Vec<f64>, // AllReduce **time** for Stage i
+) -> f64 {
+    assert_eq!(F.len(), B.len(), "F and B array has different length!");
+    assert_eq!(F.len(), Phi.len(), "F and Phi array has different length!");
+    let S = F.len();
+
+    // Initialize f and b matrix
+    let mut f: Vec<Vec<Option<(f64, f64)>>> = vec![vec![None; S]; M as usize];
+    let mut b: Vec<Vec<Option<(f64, f64)>>> = vec![vec![None; S]; M as usize];
+
+    // Fill f[0][i] with
+    f[0][0] = Some((0.0, F[0]));
+    for i in 1..S {
+        f[0][i] = Some(((f[0][i - 1].unwrap()).1, (f[0][i - 1].unwrap()).1 + F[i]));
+    }
+
+    let mut max_length = 0.0;
+    // Iterate over Stage id X
+    for x in 0..S {
+        // Start Double Recursion
+        let mut pipeline_end = sync_pipeline_speedup_resursive_helper_b(
+            M as i32 - 1,
+            x as i32,
+            &mut f,
+            &mut b,
+            &F,
+            &B,
+            M as usize,
+            S,
+            &Phi,
+        )
+        .1;
+        pipeline_end += AllReduce[x];
+        if pipeline_end > max_length {
+            max_length = pipeline_end;
+        }
+    }
+
+    max_length
 }

@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
 use HPGO::ir::propagate::ast_propagate;
-use HPGO::ir::propagate::vargraph::{VarGraph2D, VarGraph3D, InstGraph2D};
+use HPGO::ir::propagate::vargraph::{InstGraph2D, VarGraph2D, VarGraph3D};
 use HPGO::ir::*;
 
 #[test]

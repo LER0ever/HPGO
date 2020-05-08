@@ -149,10 +149,11 @@ impl<'a> InstGraph2D<'a> {
                     || target_inst.function.name == "constant"
                     || target_inst.function.name == "rng"
                     || target_inst.function.name == "iota"
-                    || target_inst.function.name == "tuple" {
+                    || target_inst.function.name == "tuple"
+                {
                     continue;
                 }
-                if target_inst.var_name == p.name{
+                if target_inst.var_name == p.name {
                     let ni = self.node_id((fid, vp));
                     let e = self.graph.find_edge(ni, inst_node_id);
                     if e.is_none() {
@@ -160,7 +161,6 @@ impl<'a> InstGraph2D<'a> {
                     }
                 }
             }
-
         }
         Ok(())
     }
