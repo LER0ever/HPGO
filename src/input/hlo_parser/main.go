@@ -44,10 +44,11 @@ type HLORoot struct {
 }
 
 type HLOFunction struct {
-	Name        string        `("ENTRY")? @VarName`
-	Params      []Param       `"(" [ @@ { "," @@ } ] ")"`
-	ReturnTypes []Type        `"->" ( "(" [ @@ { "," @@ } ] ")" | @@)`
-	Body        []Instruction `"{" @@ {@@} "}"`
+	Name       string        `("ENTRY")? @VarName`
+	Params     []Param       `"(" [ @@ { "," @@ } ] ")"`
+	ReturnType Type          `"->" @@`
+	Body       []Instruction `"{" @@ {@@} "}"`
+	// ReturnTypes []Type        `"->" ( "(" [ @@ { "," @@ } ] ")" | @@)`
 }
 
 type Instruction struct {

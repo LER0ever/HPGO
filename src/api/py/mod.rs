@@ -4,6 +4,7 @@ use pyo3::wrap_pymodule;
 pub mod py_ir;
 pub mod py_layerwise;
 pub mod py_utils;
+pub mod py_environment;
 
 use crate::api::py::py_ir::*;
 use crate::api::py::py_layerwise::*;
