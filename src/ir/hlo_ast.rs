@@ -347,6 +347,23 @@ impl Instruction {
         Ok(&params[i])
     }
 
+    /// get the return dims of a function call
+    pub fn get_return_dims(&self) -> Result<&Vec<i32>, Box<dyn Error>> {
+        let dims: &Vec<i32> = self
+            .function
+            .return_type
+            .dimensions
+            .as_ref()
+            .ok_or(OptionNone("inst.return_type.dims".into()))?;
+        Ok(dims)
+    }
+
+    /// get the return type dimension list, from 0 to len(return_type.dimensions)
+    pub fn get_return_dims_index(&self) -> Result<Vec<i32>, Box<dyn Error>> {
+        let all_dims: Vec<i32> = (0..self.get_return_dims().unwrap_or(&vec![]).len() as i32).collect();
+        Ok(all_dims)
+    }
+
     pub fn get_meta_vec(&self, key: &str) -> Result<&Vec<i32>, Box<dyn Error>> {
         Ok(self
             .meta
