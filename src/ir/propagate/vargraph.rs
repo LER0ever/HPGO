@@ -2,13 +2,12 @@ use crate::ir::derive::Derivation;
 use crate::ir::error::DeriveError::{MetaKeyNotFound, OptionNone};
 use crate::ir::hlo_ast::*;
 use itertools::Itertools;
-use log::{debug, info, warn};
+use log::debug;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::prelude::*;
 use rayon::prelude::*;
-use std::cell::RefCell;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::time::Instant;
 
@@ -79,7 +78,6 @@ impl<'a> VarGraph2D<'a> {
     }
 
     pub fn build_from_function(&mut self, fn_name: &str) -> Result<(), Box<dyn Error>> {
-        let now = Instant::now();
         self.graph.clear();
 
         let fid = self.ast.func_id[fn_name];
@@ -137,7 +135,7 @@ impl<'a> InstGraph2D<'a> {
         {
             return Ok(());
         }
-        let var_name = &i.var_name;
+        let _var_name = &i.var_name;
         let inst_node_id = self.node_id(self.ast.inst_pos[&i]);
         let params = i.get_all_params()?;
         for p in params {
@@ -166,7 +164,6 @@ impl<'a> InstGraph2D<'a> {
     }
 
     pub fn build_from_function(&mut self, fn_name: &str) -> Result<(), Box<dyn Error>> {
-        let now = Instant::now();
         self.graph.clear();
 
         let fid = self.ast.func_id[fn_name];
@@ -360,7 +357,8 @@ impl<'a> VarGraph3D<'a> {
                 .iter()
                 .find(|x| x.key == "calls")
                 .ok_or(MetaKeyNotFound("calls".into()))?
-                .str_value
+                .value
+                .string
                 .as_ref()
                 .unwrap();
             let F = self
@@ -390,7 +388,7 @@ impl<'a> VarGraph3D<'a> {
                                     println!("resulting set has more than 1 element, we are losing solution space: inst = {:?} | k = {}, v = {:?}", fi, k, v);
                                 }
                                 flattened_map.insert(
-                                    &fi.function.params.as_ref().unwrap()[i].name,
+                                    &fi.function.args.as_ref().unwrap()[i].name,
                                     v.iter().cloned().next().unwrap(),
                                 );
                             }

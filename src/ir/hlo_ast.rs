@@ -4,9 +4,9 @@ use log::debug;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::error::Error;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 const REF: &str = "https://ry.sb/tf/xla-op";
 // NOTE: did not use HashSet here because PyO3 does not impl IntoPyResult
@@ -126,7 +126,6 @@ pub struct Value {
     #[serde(rename(deserialize = "Misc"))]
     pub misc: Option<String>,
 }
-
 
 #[pyclass]
 #[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
@@ -360,7 +359,8 @@ impl Instruction {
 
     /// get the return type dimension list, from 0 to len(return_type.dimensions)
     pub fn get_return_dims_index(&self) -> Result<Vec<i32>, Box<dyn Error>> {
-        let all_dims: Vec<i32> = (0..self.get_return_dims().unwrap_or(&vec![]).len() as i32).collect();
+        let all_dims: Vec<i32> =
+            (0..self.get_return_dims().unwrap_or(&vec![]).len() as i32).collect();
         Ok(all_dims)
     }
 
@@ -372,7 +372,8 @@ impl Instruction {
             .par_iter()
             .find_any(|x| x.key == key)
             .ok_or(MetaKeyNotFound(key.into()))?
-            .value.numbers
+            .value
+            .numbers
             .as_ref()
             .ok_or(MetaValueNotFound("num_list".into()))?)
     }
@@ -385,7 +386,8 @@ impl Instruction {
             .par_iter()
             .find_any(|x| x.key == key)
             .ok_or(MetaKeyNotFound(key.into()))?
-            .value.string
+            .value
+            .string
             .clone()
             .ok_or(MetaValueNotFound("str_value".into()))?)
     }

@@ -1,8 +1,6 @@
 use crate::ir::derive::{Derivation, DeriveCache};
-use crate::ir::error::PropagationError::*;
 use crate::ir::hlo_ast::{HLORoot, Param};
 use log::debug;
-use petgraph::prelude::*;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use stacker;
@@ -10,9 +8,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
 use std::io;
 use std::io::Write;
-use std::ops::Deref;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 const DEBUG: bool = false;
 static CUR_MAX_PROGRESS: AtomicUsize = AtomicUsize::new(0);
@@ -28,7 +25,7 @@ pub struct Context {
 impl Context {
     pub fn new(ast: HLORoot) -> Self {
         assert_eq!(ast.inst_pos.len() > 0, true);
-        let mut d = Derivation::new_with_ast(&ast);
+        let d = Derivation::new_with_ast(&ast);
         let cache_result = d.cache_export().unwrap();
         Context {
             ast,
@@ -56,7 +53,7 @@ impl Context {
         split: i8,
         constraints: &HashMap<String, HashSet<i8>>,
         debug: bool,
-    ) -> Result<Option<(HashMap<String, HashSet<i8>>)>, Box<dyn Error>> {
+    ) -> Result<Option<HashMap<String, HashSet<i8>>>, Box<dyn Error>> {
         // Option<(determined set, undetermined set)>
         // make a copy of constraint map, pending return.
         let mut m = constraints.clone();
@@ -247,19 +244,6 @@ impl Context {
         Ok(Some(m))
     }
 
-    pub fn propagate_iemt(
-        &self,
-        func_id: usize,
-        params: &Vec<Param>,
-        index: usize,
-        m_constraints: &HashMap<String, HashSet<i8>>,
-    ) -> Result<Vec<HashMap<String, HashSet<i8>>>, Box<dyn Error>> {
-        // NOTE: stack contains (var index within params, var split), constraints map
-        // let stack: Vec<(usize, usize), HashMap<String, HashSet<i8>>> = vec![];
-
-        unimplemented!()
-    }
-
     /// Multi-Threaded Recursive Enumeration with Pruning
     pub fn propagate_remt(
         &self,
@@ -275,8 +259,8 @@ impl Context {
         // }
         let mut ret: Vec<HashMap<String, HashSet<i8>>> = vec![];
 
-        let bfs_switch = true;
-        let mut debug = false;
+        // let bfs_switch = true;
+        let debug = false;
         // let bfs_debug = params.len() > 150;
         let bfs_debug = false;
 
@@ -441,7 +425,7 @@ impl Context {
         params: &Vec<Param>,
     ) -> Result<(), Box<dyn Error>> {
         let mut dim_list: Vec<i8>;
-        let param_name = params[0].name.as_str();
+        // let param_name = params[0].name.as_str();
         dim_list = params[0]
             .get_all_dims_index()?
             .iter()

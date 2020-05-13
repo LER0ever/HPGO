@@ -3,13 +3,19 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 #[pyfunction]
-fn pipeline_length_recursive(F: Vec<f64>, B: Vec<f64>, AllReduce: Vec<f64>, M: u32, mut Phi: Option<Vec<u32>>) -> PyResult<f64> {
+fn pipeline_length_recursive(
+    F: Vec<f64>,
+    B: Vec<f64>,
+    AllReduce: Vec<f64>,
+    M: u32,
+    mut Phi: Option<Vec<u32>>,
+) -> PyResult<f64> {
     // Phi default to 3,2,1...
     if Phi.is_none() {
         let S = F.len();
         let mut phi: Vec<u32> = vec![];
         for i in 0..S {
-            phi.push((S-i+1) as u32);
+            phi.push((S - i + 1) as u32);
         }
         Phi = Some(phi)
     }

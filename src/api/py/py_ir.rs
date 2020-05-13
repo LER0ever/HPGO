@@ -1,5 +1,4 @@
 use crate::ir::conductor::Conductor;
-use crate::ir::hlo_ast::HLORoot;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 

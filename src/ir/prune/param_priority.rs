@@ -1,8 +1,8 @@
-use crate::ir::hlo_ast::{HLORoot, Param};
+use crate::ir::hlo_ast::Param;
 use crate::ir::propagate::ast_propagate::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 pub fn prioritized_params(ctx: &Context, func_id: usize, params: &Vec<Param>) -> Vec<Param> {
     let now = Instant::now();

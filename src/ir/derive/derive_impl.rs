@@ -152,8 +152,7 @@ impl<'a> Derivation<'a> {
         inst.get_all_params()?.par_iter().for_each(|x| {
             assert_eq!(
                 x.get_dims().unwrap_or(&vec![]),
-                inst.get_return_dims()
-                    .unwrap_or(&vec![])
+                inst.get_return_dims().unwrap_or(&vec![])
             );
         });
 
@@ -277,6 +276,7 @@ impl<'a> Derivation<'a> {
         Ok(result)
     }
 
+    #[allow(dead_code)]
     fn d_reshape_alt(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
         inst.assert_param_len(1);
         let all_dims: Vec<i32> = inst.get_param(0)?.get_all_dims_index()?;
@@ -292,7 +292,7 @@ impl<'a> Derivation<'a> {
         let mut r_prod = 1;
         let mut params_groups: Vec<Vec<i8>> = vec![];
         let mut var_groups: Vec<Vec<i8>> = vec![];
-        while (p_i < params_dims.len() && v_i < var_dims.len()) {
+        while p_i < params_dims.len() && v_i < var_dims.len() {
             while l_prod < r_prod && v_i < var_dims.len() {
                 l_prod *= var_dims[v_i];
                 let v_1 = var_groups.len() - 1;
@@ -617,10 +617,7 @@ impl<'a> Derivation<'a> {
 
         // NOTE: ad-hoc impl
         assert_eq!(inst.get_param(0)?.get_dims()?.len(), 1);
-        assert_eq!(
-            inst.get_return_dims()?.len(),
-            2
-        );
+        assert_eq!(inst.get_return_dims()?.len(), 2);
         let var_name: &'a str = &inst.var_name;
         let mut result: Vec<HashMap<&'a str, i8>> = vec![];
 

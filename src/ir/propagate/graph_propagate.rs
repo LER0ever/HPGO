@@ -1,17 +1,13 @@
-use crate::ir::error::PropagationError::*;
-use crate::ir::hlo_ast::{HLOFunction, Instruction, Param};
+use crate::ir::hlo_ast::{HLOFunction, Param};
 use crate::ir::propagate::vargraph::*;
 use log::debug;
 use petgraph::prelude::*;
 use rayon::prelude::*;
-use std::cell::RefCell;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
 use std::error::Error;
-use std::io;
-use std::io::Write;
 
-const VERBOSE_THRESHOLD: usize = 1000;
-const DFS_RETURN_THRESHOLD: usize = 9000;
+// const VERBOSE_THRESHOLD: usize = 1000;
+// const DFS_RETURN_THRESHOLD: usize = 9000;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct State<'a> {
@@ -46,20 +42,6 @@ impl<'a> State<'a> {
 }
 
 impl<'a> VarGraph3D<'a> {
-    fn merge_with(a: &mut BTreeMap<&'a str, BTreeSet<i8>>, b: &BTreeMap<&'a str, BTreeSet<i8>>) {
-        for (k, v) in b {
-            if a.contains_key(k) {
-                debug!("map: adding {:?} to ({}, {:?})", v, k, a[k]);
-                let new_set: BTreeSet<i8> = a[k].union(&v).cloned().collect();
-                *a.get_mut(k).unwrap() = new_set;
-                debug!("map: now {} -> {:?}", k, a[k]);
-            } else {
-                debug!("map: new {} -> {:?}", k, v);
-                a.insert(k, v.clone());
-            }
-        }
-    }
-
     fn intersect_with(
         a: &mut BTreeMap<&'a str, BTreeSet<i8>>,
         b: &BTreeMap<&'a str, BTreeSet<i8>>,
@@ -108,8 +90,6 @@ impl<'a> VarGraph3D<'a> {
             );
         }
         let mut ret: Vec<BTreeMap<&'a str, BTreeSet<i8>>> = vec![];
-
-        let bfs_switch = true;
 
         // construct the solution space for current index
         let mut dim_list: Vec<i8>;
@@ -484,6 +464,7 @@ impl<'a> VarGraph3D<'a> {
     //     }
     // }
 
+    #[allow(dead_code)]
     pub fn propagate_bsids(
         &self,
         f: NodeIndex,
@@ -491,6 +472,7 @@ impl<'a> VarGraph3D<'a> {
         verbose: bool,
     ) {
         // IDS globals
+        #[allow(unused_mut)]
         let mut m: BTreeMap<&'a str, BTreeSet<i8>> = BTreeMap::new();
         let mut q: VecDeque<State<'a>> = VecDeque::new();
         let mut v: HashSet<NodeType<'a>> = HashSet::new();
