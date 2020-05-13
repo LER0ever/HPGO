@@ -10,9 +10,9 @@ impl<'a> Derivation<'a> {
     pub fn d(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
         match inst.function.name.as_str() {
             "dot" => Self::d_matmul(inst),
-            "add" | "and" | "divide" | "subtract" | "multiply" | "maximum" | "abs" | "negate"
-            | "sine" | "cosine" | "sqrt" | "rsqrt" | "log" | "exponential" | "convert"
-            | "compare" | "all-reduce" | "select" => Self::d_elem(inst),
+            "add" | "and" | "divide" | "subtract" | "multiply" | "maximum" | "minimum"
+            | "abs" | "negate" | "sine" | "cosine" | "sqrt" | "rsqrt" | "log" | "exponential"
+            | "convert" | "compare" | "all-reduce" | "select" => Self::d_elem(inst),
             "reshape" => Self::d_reshape(inst),
             "parameter" | "constant" | "copy" | "rng" | "iota" | "tuple" => Self::d_identity(inst),
             "reduce" => Self::d_reduce(inst),

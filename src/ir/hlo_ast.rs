@@ -45,7 +45,7 @@ pub struct HLOFunction {
     #[serde(rename(deserialize = "Params"))]
     pub params: Vec<Param>,
     #[pyo3(get)]
-    #[serde(rename(deserialize = "ReturnTypes"))]
+    #[serde(rename(deserialize = "ReturnType"))]
     pub return_type: Type,
     #[pyo3(get)]
     #[serde(rename(deserialize = "Body"))]
