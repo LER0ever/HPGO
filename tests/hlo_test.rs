@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use HPGO::input::*;
 use HPGO::ir::derive::Derivation;
 use HPGO::ir::propagate::ast_propagate;
-use HPGO::ir::propagate::vargraph::{VarGraph2D, VarGraph3D};
+use HPGO::ir::propagate::vargraph::{InstGraph2D, VarGraph2D, VarGraph3D};
 use HPGO::ir::*;
 
 #[test]
@@ -187,6 +187,22 @@ fn test_hlo_export_dot_2d() -> Result<(), Box<dyn Error>> {
     let d = Derivation::new_with_ast(&ast);
     // d.cache_all_derive(&ast);
     let mut g = VarGraph2D::new(&d);
+
+    g.build_from_function("%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_2195__XlaNumResourceArgs_566_.23925")?;
+    print!("{}", g.export_to_dot()?);
+    Ok(())
+    // as long as unwrap succeeds
+    // println!("{:#?}", result);
+}
+
+#[test]
+fn test_hlo_export_dot_inst() -> Result<(), Box<dyn Error>> {
+    let hi: hlo_string::HLOStructuredJsonImporter = HLOModelImporter::new();
+    // let mut ast = hi.ImportFrom("./tests/test_data/hlo/hlo-no-sharing-transformer-base.json")?;
+    let mut ast = hi.ImportFrom("./lab/vgg19_hlo.json")?;
+    ast.cache_all_positional()?;
+    // d.cache_all_derive(&ast);
+    let mut g = InstGraph2D::new(&ast);
 
     g.build_from_function("%cluster_0__XlaCompiledKernel_true__XlaNumConstantArgs_2195__XlaNumResourceArgs_566_.23925")?;
     print!("{}", g.export_to_dot()?);

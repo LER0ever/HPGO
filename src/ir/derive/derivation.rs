@@ -3,7 +3,7 @@ use crate::ir::hlo_ast::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 pub type Split<'a> = (&'a str, i8);
 pub type DeriveCache = HashMap<InstPos, Vec<HashMap<String, i8>>>;

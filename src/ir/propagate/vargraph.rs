@@ -2,13 +2,12 @@ use crate::ir::derive::Derivation;
 use crate::ir::error::DeriveError::{MetaKeyNotFound, OptionNone};
 use crate::ir::hlo_ast::*;
 use itertools::Itertools;
-use log::{debug, info, warn};
+use log::debug;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::{DiGraph, UnGraph};
 use petgraph::prelude::*;
 use rayon::prelude::*;
-use std::cell::RefCell;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::time::Instant;
 
@@ -61,6 +60,7 @@ impl<'a> VarGraph2D<'a> {
             || i.function.name == "constant"
             || i.function.name == "rng"
             || i.function.name == "iota"
+            || i.function.name == "tuple"
         {
             return Ok(());
         }
@@ -78,7 +78,92 @@ impl<'a> VarGraph2D<'a> {
     }
 
     pub fn build_from_function(&mut self, fn_name: &str) -> Result<(), Box<dyn Error>> {
-        let now = Instant::now();
+        self.graph.clear();
+
+        let fid = self.ast.func_id[fn_name];
+        let f = &self.ast.functions[fid];
+
+        self.func_to_edges(f)?;
+        Ok(())
+    }
+
+    pub fn export_to_dot(&self) -> Result<String, Box<dyn Error>> {
+        let dot = Dot::with_config(&self.graph, &[Config::EdgeNoLabel]); // Config::EdgeNoLabel or Config::EdgeIndexLabel
+        Ok(format!("{:?}", dot))
+    }
+}
+
+pub struct InstGraph2D<'a> {
+    pub graph: DiGraph<InstPos, InstPos>,
+    pub ast: &'a HLORoot,
+    pub node_id: HashMap<InstPos, NodeIndex>,
+}
+
+impl<'a> InstGraph2D<'a> {
+    pub fn new(ast: &'a HLORoot) -> InstGraph2D<'a> {
+        InstGraph2D {
+            graph: DiGraph::<InstPos, InstPos>::new(),
+            ast: ast,
+            node_id: HashMap::new(),
+        }
+    }
+
+    /// return the node_id, create one if not exist
+    pub fn node_id(&mut self, iid: InstPos) -> NodeIndex {
+        if !self.node_id.contains_key(&iid) {
+            self.node_id.insert(iid, self.graph.add_node(iid));
+        }
+        return self.node_id[&iid];
+    }
+
+    /// do graph update for every instruction in the function
+    fn func_to_edges(&mut self, f: &'a HLOFunction) -> Result<(), Box<dyn Error>> {
+        debug!("Processing fn {}", f.name);
+        f.body
+            .iter()
+            .for_each(|i| self.update_graph_from_inst(i).unwrap());
+        Ok(())
+    }
+
+    /// take the result from inst_to_edges and update the global graph
+    pub fn update_graph_from_inst(&mut self, i: &'a Instruction) -> Result<(), Box<dyn Error>> {
+        if i.function.name == "parameter"
+            || i.function.name == "constant"
+            || i.function.name == "rng"
+            || i.function.name == "iota"
+            || i.function.name == "tuple"
+        {
+            return Ok(());
+        }
+        let _var_name = &i.var_name;
+        let inst_node_id = self.node_id(self.ast.inst_pos[&i]);
+        let params = i.get_all_params()?;
+        for p in params {
+            let fid = self.ast.var_pos[&p.name].0;
+            let vpos = self.ast.var_pos[&p.name].1.clone();
+            for vp in vpos {
+                let target_inst = &self.ast.functions[fid].body[vp];
+                if target_inst.function.name == "parameter"
+                    || target_inst.function.name == "constant"
+                    || target_inst.function.name == "rng"
+                    || target_inst.function.name == "iota"
+                    || target_inst.function.name == "tuple"
+                {
+                    continue;
+                }
+                if target_inst.var_name == p.name {
+                    let ni = self.node_id((fid, vp));
+                    let e = self.graph.find_edge(ni, inst_node_id);
+                    if e.is_none() {
+                        self.graph.add_edge(ni, inst_node_id, self.ast.inst_pos[i]);
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn build_from_function(&mut self, fn_name: &str) -> Result<(), Box<dyn Error>> {
         self.graph.clear();
 
         let fid = self.ast.func_id[fn_name];
@@ -272,7 +357,8 @@ impl<'a> VarGraph3D<'a> {
                 .iter()
                 .find(|x| x.key == "calls")
                 .ok_or(MetaKeyNotFound("calls".into()))?
-                .str_value
+                .value
+                .string
                 .as_ref()
                 .unwrap();
             let F = self
@@ -302,7 +388,7 @@ impl<'a> VarGraph3D<'a> {
                                     println!("resulting set has more than 1 element, we are losing solution space: inst = {:?} | k = {}, v = {:?}", fi, k, v);
                                 }
                                 flattened_map.insert(
-                                    &fi.function.params.as_ref().unwrap()[i].name,
+                                    &fi.function.args.as_ref().unwrap()[i].name,
                                     v.iter().cloned().next().unwrap(),
                                 );
                             }

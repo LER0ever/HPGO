@@ -2,11 +2,9 @@ use crate::input::{hlo_string::HLOStructuredJsonImporter, HLOModelImporter};
 use crate::ir::derive::Derivation;
 use crate::ir::hlo_ast::{HLORoot, Param};
 use crate::ir::propagate::ast_propagate;
-use pyo3::exceptions;
 use pyo3::prelude::*;
-use std::collections::{HashMap, HashSet};
-use std::error::Error;
-use std::time::{Duration, Instant};
+use std::collections::HashMap;
+use std::time::Instant;
 
 #[pyclass]
 #[derive(Debug, Clone)]

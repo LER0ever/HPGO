@@ -2,14 +2,15 @@ use super::HLOModelImporter;
 use crate::ir::hlo_ast;
 
 use crate::ir::hlo_ast::HLORoot;
-use log::{debug, info};
+use log::debug;
 use rayon::prelude::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
+#[allow(dead_code)]
 const VERBOSE: bool = true;
 
 pub struct HLOStructuredJsonImporter {}

@@ -16,17 +16,26 @@ import (
 
 var HLOLexer = lexer.Must(ebnf.New(`
 Comment = ("#" | "//") { "\u0000"…"\uffff"-"\n" } .
+
+ConvDimLabel = char char char char "_" char char char char Rightarrow char char char char .
+ConvPadSize = digit ("x" | "_") digit {("x" | "_") digit} .
+
 Ident = (alpha | "_") { "." | "_" | "-" | alpha | digit } .
-String = "\"" {Ident | "/"} "\"" .
+String = "\"" {"'" | Ident | Number | "/" | "," | "$" | "{" | "}" | ":" } "\"" .
 VarName = "%" Ident .
+Boolean = ("true" | "false") .
+
 Number = { "-" } ("." | digit | "inf") {"." | digit} .
 Whitespace = " " | "\t" | "\n" | "\r" .
 Rightarrow = "->" .
 Assign = "=" .
 Punct = "!"…"/" | ":"…"@" | "["…"_" | "{"…"~" .
+char = alpha | digit .
 alpha = "a"…"z" | "A"…"Z" .
 digit = "0"…"9" .
 `))
+
+//SubString = "\\\"" {Ident | "/" | "$" | "{" | "}" | ":" } "\\\"" .
 
 var log = logrus.New()
 
@@ -35,10 +44,11 @@ type HLORoot struct {
 }
 
 type HLOFunction struct {
-	Name        string        `("ENTRY")? @VarName`
-	Params      []Param       `"(" [ @@ { "," @@ } ] ")"`
-	ReturnTypes []Type        `"->" ( "(" [ @@ { "," @@ } ] ")" | @@)`
-	Body        []Instruction `"{" @@ {@@} "}"`
+	Name       string        `("ENTRY")? @VarName`
+	Params     []Param       `"(" [ @@ { "," @@ } ] ")"`
+	ReturnType Type          `"->" @@`
+	Body       []Instruction `"{" @@ {@@} "}"`
+	// ReturnTypes []Type        `"->" ( "(" [ @@ { "," @@ } ] ")" | @@)`
 }
 
 type Instruction struct {
@@ -48,22 +58,29 @@ type Instruction struct {
 }
 
 type FunctionCall struct {
-	ReturnTypes []RichType  `(@@ | "(" @@ { "," @@ } ")" )`
-	Name        string      `@Ident`
-	Params      []RichParam `"(" ( @@ { "," @@ } )? ")"`
+	ReturnType Type       `@@`
+	Name       string     `@Ident`
+	Argument   []Argument `"(" ( @@ { "," @@ } )? ")"`
 }
 
 type Meta struct {
-	Key        string  `@Ident "="`
-	Value      *string `(@Ident|@VarName|@Number)?`
-	DictValue  []Dict  `("{" { @@ } "}")?`
-	ListNums   []int32 `("{" @Number {"," @Number } "}")?`
-	ListSlices []Slice `("{" @@ {"," @@ } "}")?`
+	Key   string `@Ident "="`
+	Value *Value `@@`
+}
+
+type Value struct {
+	Number  int32   `  @Number`
+	String  *string `| (@Ident|@VarName|@String)`
+	Numbers []int32 `| ("{" @Number {"," @Number } "}")`
+	Dicts   []Dict  `| ("{" { @@ } "}")`
+	Slices  []Slice `| ("{" @@ {"," @@ } "}")`
+	Boolean *bool   `| ("{" (@"true" | "false") "}")`
+	Misc    *string `| ( @ConvPadSize | @ConvDimLabel )`
 }
 
 type Dict struct {
 	Key   string `@Ident "="`
-	Value string `@String | @Ident`
+	Value *Value `@@`
 }
 
 type Slice struct {
@@ -76,26 +93,28 @@ type Param struct {
 	Type Type   `@@`
 }
 
+type Argument struct {
+	Type Type   `(@@)?`
+	Name string `@VarName | @Number | @Ident`
+}
+
 type Type struct {
-	DataType   string  `@Ident`
-	Dimensions []int32 `"[" [ @Number { "," @Number } ] "]"`
+	DataType   string  `(   @Ident`
+	Dimensions []int32 `    "[" [ @Number { "," @Number } ] "]"`
+	Layout     []int32 `    ("{" [ @Number { "," @Number } ] "}")?`
+	TupleType  []Type  `) | "(" @@ { "," @@ } ")"`
 }
 
-type RichParam struct {
-	Type RichType `(@@)?`
-	Name string   `@VarName | @Number | @Ident`
-}
-
-type RichType struct {
-	DataType   string  `@Ident`
-	Dimensions []int32 `"[" [ @Number { "," @Number } ] "]"`
-	Layout     []int32 `("{" [ @Number { "," @Number } ] "}")?`
+func preprocess(s string) string {
+	s = strings.Replace(s, "\\\"", "'", -1)
+	return s
 }
 
 func parse(s string) *HLORoot {
 	parser, err := participle.Build(&HLORoot{},
 		participle.Lexer(HLOLexer),
 		participle.Elide("Comment", "Whitespace"),
+		//participle.UseLookahead(3),
 	)
 
 	if err != nil {
@@ -104,7 +123,10 @@ func parse(s string) *HLORoot {
 	hlo := &HLORoot{}
 
 	l, _ := HLOLexer.Lex(strings.NewReader(s))
-	tokens, _ := lexer.ConsumeAll(l)
+	tokens, err := lexer.ConsumeAll(l)
+	if err != nil {
+		panic(err)
+	}
 	log.Debugf("%+v\n", tokens)
 
 	err = parser.Parse(strings.NewReader(s), hlo)
@@ -128,9 +150,10 @@ func main() {
 	log.Println("Reading HLO Text File...")
 	content, err := ioutil.ReadFile(hlo_file)
 	if err != nil {
-		fmt.Errorf(err.Error())
+		_ = fmt.Errorf(err.Error())
 	}
 	text := string(content)
+	text = preprocess(text)
 
 	log.Println("Parsing HLO into AST...")
 	ast := parse(text)

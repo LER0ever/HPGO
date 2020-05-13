@@ -4,9 +4,9 @@ use log::debug;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::error::Error;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 const REF: &str = "https://ry.sb/tf/xla-op";
 // NOTE: did not use HashSet here because PyO3 does not impl IntoPyResult
@@ -46,7 +46,7 @@ pub struct HLOFunction {
     pub params: Vec<Param>,
     #[pyo3(get)]
     #[serde(rename(deserialize = "ReturnTypes"))]
-    pub return_types: Vec<Type>,
+    pub return_type: Type,
     #[pyo3(get)]
     #[serde(rename(deserialize = "Body"))]
     pub body: Vec<Instruction>,
@@ -70,14 +70,14 @@ pub struct Instruction {
 #[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct FunctionCall {
     #[pyo3(get)]
-    #[serde(rename(deserialize = "ReturnTypes"))]
-    pub return_types: Vec<RichType>,
+    #[serde(rename(deserialize = "ReturnType"))]
+    pub return_type: Type,
     #[pyo3(get)]
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
     #[pyo3(get)]
-    #[serde(rename(deserialize = "Params"))]
-    pub params: Option<Vec<RichParam>>,
+    #[serde(rename(deserialize = "Argument"))]
+    pub args: Option<Vec<Argument>>,
 }
 
 #[pyclass]
@@ -88,16 +88,43 @@ pub struct Meta {
     pub key: String,
     #[pyo3(get)]
     #[serde(rename(deserialize = "Value"))]
-    pub str_value: Option<String>,
+    pub value: Value,
+    // pub str_value: Option<String>,
+    // #[pyo3(get)]
+    // #[serde(rename(deserialize = "DictValue"))]
+    // pub dict_value: Option<Vec<Dict>>,
+    // #[pyo3(get)]
+    // #[serde(rename(deserialize = "ListNums"))]
+    // pub num_list: Option<Vec<i32>>,
+    // #[pyo3(get)]
+    // #[serde(rename(deserialize = "ListSlices"))]
+    // pub slice_list: Option<Vec<Slice>>,
+}
+
+#[pyclass]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
+pub struct Value {
     #[pyo3(get)]
-    #[serde(rename(deserialize = "DictValue"))]
-    pub dict_value: Option<Vec<Dict>>,
+    #[serde(rename(deserialize = "Number"))]
+    pub number: Option<i32>,
     #[pyo3(get)]
-    #[serde(rename(deserialize = "ListNums"))]
-    pub num_list: Option<Vec<i32>>,
+    #[serde(rename(deserialize = "String"))]
+    pub string: Option<String>,
     #[pyo3(get)]
-    #[serde(rename(deserialize = "ListSlices"))]
-    pub slice_list: Option<Vec<Slice>>,
+    #[serde(rename(deserialize = "Numbers"))]
+    pub numbers: Option<Vec<i32>>,
+    #[pyo3(get)]
+    #[serde(rename(deserialize = "Dicts"))]
+    pub dicts: Option<Vec<Dict>>,
+    #[pyo3(get)]
+    #[serde(rename(deserialize = "Slices"))]
+    pub slices: Option<Vec<Slice>>,
+    #[pyo3(get)]
+    #[serde(rename(deserialize = "Boolean"))]
+    pub boolean: Option<bool>,
+    #[pyo3(get)]
+    #[serde(rename(deserialize = "Misc"))]
+    pub misc: Option<String>,
 }
 
 #[pyclass]
@@ -108,7 +135,7 @@ pub struct Dict {
     pub key: String,
     #[pyo3(get)]
     #[serde(rename(deserialize = "Value"))]
-    pub value: String,
+    pub value: Value,
 }
 
 #[pyclass]
@@ -135,21 +162,10 @@ pub struct Param {
 
 #[pyclass]
 #[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
-pub struct Type {
-    #[pyo3(get)]
-    #[serde(rename(deserialize = "DataType"))]
-    pub data_type: String,
-    #[pyo3(get)]
-    #[serde(rename(deserialize = "Dimensions"))]
-    pub dimensions: Option<Vec<i32>>,
-}
-
-#[pyclass]
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
-pub struct RichParam {
+pub struct Argument {
     #[pyo3(get)]
     #[serde(rename(deserialize = "Type"))]
-    pub param_type: RichType,
+    pub param_type: Type,
     #[pyo3(get)]
     #[serde(rename(deserialize = "Name"))]
     pub name: String,
@@ -157,7 +173,7 @@ pub struct RichParam {
 
 #[pyclass]
 #[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
-pub struct RichType {
+pub struct Type {
     #[pyo3(get)]
     #[serde(rename(deserialize = "DataType"))]
     pub data_type: String,
@@ -167,6 +183,9 @@ pub struct RichType {
     #[pyo3(get)]
     #[serde(rename(deserialize = "Layout"))]
     pub layout: Option<Vec<i32>>,
+    #[pyo3(get)]
+    #[serde(rename(deserialize = "TupleType"))]
+    pub typle_type: Option<Vec<Type>>,
 }
 
 impl HLORoot {
@@ -289,7 +308,7 @@ impl Instruction {
     #[inline]
     pub fn assert_param_len(&self, l: usize) {
         assert_eq!(
-            self.function.params.as_ref().unwrap().len(),
+            self.function.args.as_ref().unwrap().len(),
             l,
             "{} does not take more than 2 operands, ref: {}",
             self.function.name,
@@ -308,23 +327,41 @@ impl Instruction {
     }
 
     #[inline]
-    pub fn get_all_params(&self) -> Result<&Vec<RichParam>, Box<dyn Error>> {
+    pub fn get_all_params(&self) -> Result<&Vec<Argument>, Box<dyn Error>> {
         let params = self
             .function
-            .params
+            .args
             .as_ref()
             .ok_or(OptionNone("inst.fn.params".into()))?;
         Ok(&params)
     }
 
     #[inline]
-    pub fn get_param(&self, i: usize) -> Result<&RichParam, Box<dyn Error>> {
+    pub fn get_param(&self, i: usize) -> Result<&Argument, Box<dyn Error>> {
         let params = self
             .function
-            .params
+            .args
             .as_ref()
             .ok_or(OptionNone("inst.fn.params".into()))?;
         Ok(&params[i])
+    }
+
+    /// get the return dims of a function call
+    pub fn get_return_dims(&self) -> Result<&Vec<i32>, Box<dyn Error>> {
+        let dims: &Vec<i32> = self
+            .function
+            .return_type
+            .dimensions
+            .as_ref()
+            .ok_or(OptionNone("inst.return_type.dims".into()))?;
+        Ok(dims)
+    }
+
+    /// get the return type dimension list, from 0 to len(return_type.dimensions)
+    pub fn get_return_dims_index(&self) -> Result<Vec<i32>, Box<dyn Error>> {
+        let all_dims: Vec<i32> =
+            (0..self.get_return_dims().unwrap_or(&vec![]).len() as i32).collect();
+        Ok(all_dims)
     }
 
     pub fn get_meta_vec(&self, key: &str) -> Result<&Vec<i32>, Box<dyn Error>> {
@@ -335,7 +372,8 @@ impl Instruction {
             .par_iter()
             .find_any(|x| x.key == key)
             .ok_or(MetaKeyNotFound(key.into()))?
-            .num_list
+            .value
+            .numbers
             .as_ref()
             .ok_or(MetaValueNotFound("num_list".into()))?)
     }
@@ -348,13 +386,14 @@ impl Instruction {
             .par_iter()
             .find_any(|x| x.key == key)
             .ok_or(MetaKeyNotFound(key.into()))?
-            .str_value
+            .value
+            .string
             .clone()
             .ok_or(MetaValueNotFound("str_value".into()))?)
     }
 }
 
-impl RichParam {
+impl Argument {
     pub fn get_all_dims_index(&self) -> Result<Vec<i32>, Box<dyn Error>> {
         let all_dims: Vec<i32> = (0..self.get_dims().unwrap_or(&vec![]).len() as i32).collect();
         Ok(all_dims)

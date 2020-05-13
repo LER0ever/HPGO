@@ -1,10 +1,10 @@
 use super::LayerwiseModelImporter;
 use crate::input::torch_graph_py;
 use crate::layerwise::model::model_perf;
+use log::debug;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
-use std::time::{Duration, Instant};
-use log::debug;
+use std::time::Instant;
 
 const VERBOSE: bool = true;
 

@@ -61,12 +61,7 @@ impl<'a> Derivation<'a> {
             rhs_batch_dims = Some(inst.get_meta_vec("rhs_batch_dims")?);
         }
 
-        let all_dims: Vec<i32> = (0..(inst.function.return_types[0]
-            .dimensions
-            .as_ref()
-            .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?
-            .len()) as i32)
-            .collect();
+        let all_dims: Vec<i32> = inst.get_return_dims_index()?;
         let mat_dims: Vec<i32> = all_dims
             .par_iter()
             .filter(|x| !lhs_batch_dims.unwrap_or(&vec![]).contains(x))
@@ -157,10 +152,7 @@ impl<'a> Derivation<'a> {
         inst.get_all_params()?.par_iter().for_each(|x| {
             assert_eq!(
                 x.get_dims().unwrap_or(&vec![]),
-                inst.function.return_types[0]
-                    .dimensions
-                    .as_ref()
-                    .unwrap_or(&vec![])
+                inst.get_return_dims().unwrap_or(&vec![])
             );
         });
 
@@ -168,12 +160,13 @@ impl<'a> Derivation<'a> {
         let params = inst.get_all_params()?;
         let var_name: &'a str = &inst.var_name;
 
-        let mut all_dims: Vec<i32> = (0..inst.function.return_types[0]
-            .dimensions
-            .as_ref()
-            .unwrap_or(&vec![])
-            .len() as i32)
-            .collect();
+        // let mut all_dims: Vec<i32> = (0..inst.function.return_types[0]
+        //     .dimensions
+        //     .as_ref()
+        //     .unwrap_or(&vec![])
+        //     .len() as i32)
+        //     .collect();
+        let mut all_dims: Vec<i32> = inst.get_return_dims_index()?;
         all_dims.push(-1);
 
         // iterate over all dimensions index, including -1 for replication
@@ -192,10 +185,11 @@ impl<'a> Derivation<'a> {
         inst.assert_param_len(1);
         let all_dims: Vec<i32> = inst.get_param(0)?.get_all_dims_index()?;
         let before_dims = inst.get_param(0)?.get_dims()?;
-        let after_dims = inst.function.return_types[0]
-            .dimensions
-            .as_ref()
-            .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        // let after_dims = inst.function.return_types[0]
+        //     .dimensions
+        //     .as_ref()
+        //     .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        let after_dims = inst.get_return_dims()?;
         let (l_dims, r_dims): (&Vec<i32>, &Vec<i32>);
         if before_dims.len() < after_dims.len() {
             l_dims = before_dims;
@@ -282,21 +276,23 @@ impl<'a> Derivation<'a> {
         Ok(result)
     }
 
+    #[allow(dead_code)]
     fn d_reshape_alt(inst: &'a Instruction) -> Result<Vec<HashMap<&'a str, i8>>, Box<dyn Error>> {
         inst.assert_param_len(1);
         let all_dims: Vec<i32> = inst.get_param(0)?.get_all_dims_index()?;
         let params_dims = inst.get_param(0)?.get_dims()?;
-        let var_dims = inst.function.return_types[0]
-            .dimensions
-            .as_ref()
-            .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        // let var_dims = inst.function.return_types[0]
+        //     .dimensions
+        //     .as_ref()
+        //     .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        let var_dims = inst.get_return_dims()?;
         let mut p_i = 0;
         let mut v_i = 0;
         let mut l_prod = 1;
         let mut r_prod = 1;
         let mut params_groups: Vec<Vec<i8>> = vec![];
         let mut var_groups: Vec<Vec<i8>> = vec![];
-        while (p_i < params_dims.len() && v_i < var_dims.len()) {
+        while p_i < params_dims.len() && v_i < var_dims.len() {
             while l_prod < r_prod && v_i < var_dims.len() {
                 l_prod *= var_dims[v_i];
                 let v_1 = var_groups.len() - 1;
@@ -557,10 +553,11 @@ impl<'a> Derivation<'a> {
         let var_name: &'a str = &inst.var_name;
         let params = inst.get_all_params()?;
         let param_dims = params[0].get_dims()?;
-        let output_dims = inst.function.return_types[0]
-            .dimensions
-            .as_ref()
-            .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        // let output_dims = inst.function.return_types[0]
+        //     .dimensions
+        //     .as_ref()
+        //     .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        let output_dims = inst.get_return_dims()?;
         assert_eq!(param_dims.len(), output_dims.len());
 
         let mut result: Vec<HashMap<&'a str, i8>> = vec![];
@@ -620,14 +617,7 @@ impl<'a> Derivation<'a> {
 
         // NOTE: ad-hoc impl
         assert_eq!(inst.get_param(0)?.get_dims()?.len(), 1);
-        assert_eq!(
-            inst.function.return_types[0]
-                .dimensions
-                .as_ref()
-                .unwrap_or(&vec![])
-                .len(),
-            2
-        );
+        assert_eq!(inst.get_return_dims()?.len(), 2);
         let var_name: &'a str = &inst.var_name;
         let mut result: Vec<HashMap<&'a str, i8>> = vec![];
 
@@ -653,10 +643,10 @@ impl<'a> Derivation<'a> {
             .get_meta_vec("dimensions")
             .unwrap_or(&empty_placeholder);
 
-        let output_dims = inst.function.return_types[0]
-            .dimensions
-            .as_ref()
-            .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
+        // let output_dims = inst.function.return_types[0]
+        //     .dimensions
+        //     .as_ref()
+        //     .ok_or(OptionNone("inst.fn.return_type.dimensions".into()))?;
         assert_eq!(
             inst.get_param(0)?
                 .get_dims()
@@ -665,7 +655,7 @@ impl<'a> Derivation<'a> {
             standby_dims.len()
         );
         let var_name: &'a str = &inst.var_name;
-        let all_dims: Vec<i32> = (0..output_dims.len() as i32).collect();
+        let all_dims: Vec<i32> = inst.get_return_dims_index()?;
         for d in all_dims.iter() {
             if standby_dims.contains(d) {
                 let index_at_param = standby_dims.iter().position(|x| *x == *d).unwrap();
@@ -711,12 +701,7 @@ impl<'a> Derivation<'a> {
         let mut result: Vec<HashMap<&'a str, i8>> = vec![];
         let var_name: &'a str = &inst.var_name;
 
-        let mut all_dims: Vec<i32> = (0..inst.function.return_types[0]
-            .dimensions
-            .as_ref()
-            .unwrap_or(&vec![])
-            .len() as i32)
-            .collect();
+        let mut all_dims: Vec<i32> = inst.get_return_dims_index()?;
         all_dims.push(-1);
 
         // iterate over all dimensions index, including -1 for replication

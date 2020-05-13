@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const VERBOSE: bool = true;
 
-pub type bitset = Vec<bool>;
+pub type Bitset = Vec<bool>;
 
 #[derive(Debug)]
 pub struct MatrixCell {
@@ -19,11 +19,11 @@ pub struct MatrixCell {
     pub current_maxmin_block: Option<f64>,
     pub optimal_split: Option<(u32, u32)>,
     pub num_gpus_used: Option<u32>,
-    pub availability_bitset: bitset,
+    pub availability_bitset: Bitset,
     pub gpu_ids: BTreeSet<u32>,
 }
 
-pub type Matrix = Vec<Vec<RefCell<BTreeMap<bitset, MatrixCell>>>>;
+pub type Matrix = Vec<Vec<RefCell<BTreeMap<Bitset, MatrixCell>>>>;
 
 /// Orchestration result returned by SyncConductor
 #[pyclass]
@@ -90,7 +90,7 @@ impl SyncOrchestrate {
 
         // Initialize ctx matrix
         for _ in 0..compute_times[0].len() {
-            let mut row_a: Vec<RefCell<BTreeMap<bitset, MatrixCell>>> = vec![];
+            let mut row_a: Vec<RefCell<BTreeMap<Bitset, MatrixCell>>> = vec![];
             for _ in 0..num_machines {
                 // let mut bt = ;
                 row_a.push(RefCell::new(BTreeMap::new()));
@@ -99,8 +99,8 @@ impl SyncOrchestrate {
         }
 
         // Bitset placeholder
-        let mut ph: bitset = vec![];
-        let mut empty: bitset = vec![];
+        let mut ph: Bitset = vec![];
+        let mut empty: Bitset = vec![];
         for _ in 0..num_machines * rp + 1 {
             ph.push(true);
         }
@@ -213,8 +213,8 @@ impl SyncOrchestrate {
         let total_compute_time = compute_times[0][compute_times[0].len() - 1];
 
         // Bitset placeholder
-        let mut ph: bitset = vec![];
-        let mut empty: bitset = vec![];
+        let mut ph: Bitset = vec![];
+        let mut empty: Bitset = vec![];
         for _ in 0..num_machines * rp + 1 {
             ph.push(true);
         }
@@ -481,7 +481,7 @@ impl SyncOrchestrate {
         rp: u32,
     ) -> Vec<(u32, u32, u32, BTreeSet<u32>)> {
         let mut res: Vec<(u32, u32, u32, BTreeSet<u32>)> = vec![];
-        let mut ph: bitset = vec![];
+        let mut ph: Bitset = vec![];
         for _ in 0..num_machines * rp + 1 {
             ph.push(true);
         }
@@ -531,7 +531,7 @@ impl SyncOrchestrate {
         let A = self.compute_plan_sync(i, rp, straight);
         println!("Planning Done");
 
-        let mut ph: bitset = vec![];
+        let mut ph: Bitset = vec![];
         for _ in 0..i * rp + 1 {
             ph.push(true);
         }

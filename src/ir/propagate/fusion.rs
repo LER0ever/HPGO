@@ -1,11 +1,10 @@
 use crate::ir::derive::DeriveCache;
-use crate::ir::error::DeriveError::*;
 use crate::ir::hlo_ast::InstPos;
 use crate::ir::propagate::ast_propagate::*;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 impl Context {
     pub fn get_fusion_list(&self, func_id: usize) -> Result<Vec<(InstPos, usize)>, Box<dyn Error>> {
@@ -45,7 +44,7 @@ impl Context {
         derive_patch.par_extend(fusion_list.par_iter().map(|(inst_pos, func_id)| {
             let f = &self.ast.functions[*func_id];
             let inst = &self.ast.functions[inst_pos.0].body[inst_pos.1];
-            let inst_params_option = &inst.function.params;
+            let inst_params_option = &inst.function.args;
             assert_eq!(inst_params_option.is_some(), true);
             let inst_params = inst_params_option.as_ref().unwrap();
             let fn_params = &f.params;
@@ -67,7 +66,7 @@ impl Context {
                 // TODO: handle return value has len > 1
                 let m_ret_val= if !m.contains_key(fn_return_var) {
                     println!("return value not in map");
-                    let max_dim = f.body[f.body.len() - 1].function.return_types[0].dimensions.as_ref().unwrap().len() as i8;
+                    let max_dim = f.body[f.body.len() - 1].function.return_type.dimensions.as_ref().unwrap().len() as i8;
                     (-1..max_dim).collect::<HashSet<i8>>()
                 } else {
                     m[fn_return_var].clone()
@@ -94,7 +93,7 @@ impl Context {
                                             .get_meta_str("calls").unwrap(), k, v);
                                     }
                                     flattened_map.insert(
-                                        (&inst.function.params.as_ref().unwrap()[i].name).to_string(),
+                                        (&inst.function.args.as_ref().unwrap()[i].name).to_string(),
                                         v.iter().cloned().next().unwrap(),
                                     );
                                 }
