@@ -25,7 +25,7 @@ String = "\"" {"'" | Ident | Number | "/" | "," | "$" | "{" | "}" | ":" } "\"" .
 VarName = "%" Ident .
 Boolean = ("true" | "false") .
 
-Number = { "-" } ("." | digit | "inf") {"." | digit} .
+Number = { "-" } ("." | digit | "inf") {"." | digit} [ "e" [ "-" | "+" ] { digit }].
 Whitespace = " " | "\t" | "\n" | "\r" .
 Rightarrow = "->" .
 Assign = "=" .

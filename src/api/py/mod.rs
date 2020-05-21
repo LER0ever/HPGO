@@ -13,6 +13,7 @@ use crate::api::py::py_utils::*;
 #[pymodule]
 fn HPGO(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("__title__", "HPGO")?;
+    m.add("__package__", "HPGO")?;
     m.add("__doc__", "Hybrid Parallelism Global Orchestration")?;
     m.add("__author__", "Yi Rong <hi@rongyi.io>")?;
     m.add("__copyright__", "Copyright 2020 Yi Rong")?;
