@@ -52,6 +52,21 @@ pub fn sync_pipeline_speedup_analytical(
                 i,
                 compute_times[p[i].0 as usize][p[i].1 as usize] / p[i].2 as f64 / rp as f64
             );
+            if i != p.len() - 1 {
+                let cut_activations =
+                    output_activation_sizes[(p[i].1 - 1) as usize] / rp as f64 / m_batch as f64;
+                println!(
+                    "[sync_pipeline]\t  cut_activations for stage {} ~ {} = {}, with original value = {}",
+                    i,
+                    i + 1,
+                    cut_activations,
+                    output_activation_sizes[(p[i].1 - 1) as usize]
+                );
+                println!(
+                    "[sync_pipeline]\t  time needed for transmission = {}",
+                    split_concat::split_concat_all2all_time(d, &p[i].3, &p[i + 1].3, cut_activations)
+                );
+            }
         }
     }
 
@@ -61,7 +76,8 @@ pub fn sync_pipeline_speedup_analytical(
 
     if VERBOSE {
         println!(
-            "[sync_pipeline]\t block_time = {} | total/rp/m_batch = {}",
+            "[sync_pipeline]\t pipeline_time = {} | block_time = {} | total/rp/m_batch = {}",
+            pipeline_time,
             block_time,
             total_compute_time / rp as f64 / m_batch as f64
         );
@@ -75,19 +91,19 @@ pub fn sync_pipeline_speedup_analytical(
     for i in 0..p.len() - 1 {
         let cut_activations =
             output_activation_sizes[(p[i].1 - 1) as usize] / rp as f64 / m_batch as f64;
-        if VERBOSE {
-            println!(
-                "[sync_pipeline]\t cut_activations for stage {} ~ {} = {}, with original value = {}",
-                i,
-                i + 1,
-                cut_activations,
-                output_activation_sizes[(p[i].1 - 1) as usize]
-            );
-            println!(
-                "[sync_pipeline] time needed for transmission = {}",
-                split_concat::split_concat_all2all_time(d, &p[i].3, &p[i + 1].3, cut_activations)
-            );
-        }
+        // if VERBOSE {
+        //     println!(
+        //         "[sync_pipeline]\t cut_activations for stage {} ~ {} = {}, with original value = {}",
+        //         i,
+        //         i + 1,
+        //         cut_activations,
+        //         output_activation_sizes[(p[i].1 - 1) as usize]
+        //     );
+        //     println!(
+        //         "[sync_pipeline] time needed for transmission = {}",
+        //         split_concat::split_concat_all2all_time(d, &p[i].3, &p[i + 1].3, cut_activations)
+        //     );
+        // }
         pipeline_length_with_activations +=
             split_concat::split_concat_all2all_time(d, &p[i].3, &p[i + 1].3, cut_activations);
     }

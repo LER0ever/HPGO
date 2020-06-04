@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use std::time::Instant;
 
-const VERBOSE: bool = true;
+const VERBOSE: bool = false;
 
 pub struct TorchGraphImporter {}
 
