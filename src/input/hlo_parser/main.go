@@ -21,7 +21,8 @@ Ident = (alpha | "_") { "." | "_" | "-" | alpha | digit } .
 String = "\"" { "\u0000"…"\uffff"-"\""-"\\" | "\\" any } "\"" .
 VarName = "%" Ident .
 Boolean = ("true" | "false") .
-Number = { "-" } ("." | digit | "inf") {"." | digit} [ "e" [ "-" | "+" ] { digit } ] .
+Scientific = Number [ "e" [ "-" | "+" ] { digit } ] .
+Number = { "-" } ("." | digit | "inf") {"." | digit} .
 Whitespace = " " | "\t" | "\n" | "\r" .
 Rightarrow = "->" .
 Assign = "=" .
@@ -72,12 +73,13 @@ type Meta struct {
 }
 
 type Value struct {
-	Number  int32   `  @Number`
-	String  *string `| (@Ident|@VarName|@String)`
-	Numbers []int32 `| ("{" @Number {"," @Number } "}")`
-	Dicts   []Dict  `| ("{" { @@ } "}")`
-	Slices  []Slice `| ("{" @@ {"," @@ } "}")`
-	Boolean *bool   `| ("{" (@"true" | "false") "}")`
+	Number     int32   `  @Number`
+	Scientific string  `| @Scientific`
+	String     *string `| (@Ident|@VarName|@String)`
+	Numbers    []int32 `| ("{" @Number {"," @Number } "}")`
+	Dicts      []Dict  `| ("{" { @@ } "}")`
+	Slices     []Slice `| ("{" @@ {"," @@ } "}")`
+	Boolean    *bool   `| ("{" (@"true" | "false") "}")`
 	//Misc    *string `| ( @ConvPadSize | @ConvDimLabel )`
 }
 
@@ -97,7 +99,7 @@ type Param struct {
 }
 
 type Argument struct {
-	Type Type   `(@@)?`
+	Type  Type   `(@@)?`
 	Value *Value `@@`
 	//Name string `@VarName | @Number | @Ident`
 }
