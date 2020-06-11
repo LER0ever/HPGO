@@ -103,9 +103,8 @@ type Param struct {
 }
 
 type Argument struct {
-	Type Type   `(@@)?`
-	Name *Value `@@`
-	//Name string `@VarName | @Number | @Ident`
+	Type  Type   `(@@)?`
+	Value *Value `@@`
 }
 
 type Type struct {
@@ -116,7 +115,7 @@ type Type struct {
 }
 
 func preprocess(s string) string {
-	s = strings.Replace(s, "\\\"", "'", -1) // NOTE: we replace every "\"\"" pattern with "''"
+	s = strings.Replace(s, "\\\"", "'", -1)   // NOTE: we replace every "\"\"" pattern with "''"
 	s = strings.Replace(s, "{...}", "{}", -1) // NOTE: we replace dummy placeholder {...} with empty {}
 	return s
 }
@@ -138,7 +137,7 @@ func parse(s string) *HLORoot {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", tokens)
+	log.Debugf("%+v\n", tokens)
 
 	err = parser.Parse(strings.NewReader(s), hlo)
 	if err != nil {
