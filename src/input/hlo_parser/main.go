@@ -116,7 +116,8 @@ type Type struct {
 }
 
 func preprocess(s string) string {
-	s = strings.Replace(s, "\\\"", "'", -1)
+	s = strings.Replace(s, "\\\"", "'", -1) // NOTE: we replace every "\"\"" pattern with "''"
+	s = strings.Replace(s, "{...}", "{}", -1) // NOTE: we replace dummy placeholder {...} with empty {}
 	return s
 }
 
