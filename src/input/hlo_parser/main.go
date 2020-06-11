@@ -17,27 +17,27 @@ import (
 var HLOLexer = lexer.Must(ebnf.New(`
 Comment = ("#" | "//") { "\u0000"…"\uffff"-"\n" } .
 
+ConvDimLabel = char char char char "_" char char char char Rightarrow char char char char .
+ConvPadSize = digit ("x" | "_") digit {("x" | "_") digit} .
+
 Ident = (alpha | "_") { "." | "_" | "-" | alpha | digit } .
 String = "\"" { "\u0000"…"\uffff"-"\""-"\\" | "\\" any } "\"" .
 VarName = "%" Ident .
 Boolean = ("true" | "false") .
-Scientific = Number [ "e" [ "-" | "+" ] { digit } ] .
-Number = { "-" } ("." | digit | "inf") {"." | digit} .
+Scientific = [ "-" ] ( ({ digit } { "." | digit } "e" ( "-" | "+" ) { digit }) | "inf") .
+Float = [ "-" ] { digit } "." digit { digit } .
+Number = [ "-" ] digit { digit } .
 Whitespace = " " | "\t" | "\n" | "\r" .
 Rightarrow = "->" .
 Assign = "=" .
 Punct = "!"…"/" | ":"…"@" | "["…"_" | "{"…"~" .
+BeforeComma = { "\u0000"…"\uffff"-"," } .
 
 char = alpha | digit .
 alpha = "a"…"z" | "A"…"Z" .
 digit = "0"…"9" .
 any = "\u0000"…"\uffff" .
 `))
-
-/*
-ConvDimLabel = char char char char "_" char char char char Rightarrow char char char char .
-ConvPadSize = digit ("x" | "_") digit {("x" | "_") digit} .
-*/
 
 //SubString = "\\\"" {Ident | "/" | "$" | "{" | "}" | ":" } "\\\"" .
 
@@ -73,14 +73,18 @@ type Meta struct {
 }
 
 type Value struct {
-	Number     int32   `  @Number`
-	Scientific string  `| @Scientific`
-	String     *string `| (@Ident|@VarName|@String)`
-	Numbers    []int32 `| ("{" @Number {"," @Number } "}")`
-	Dicts      []Dict  `| ("{" { @@ } "}")`
-	Slices     []Slice `| ("{" @@ {"," @@ } "}")`
-	Boolean    *bool   `| ("{" (@"true" | "false") "}")`
-	//Misc    *string `| ( @ConvPadSize | @ConvDimLabel )`
+	Integer    *int32    `  @Number`
+	Float      *float64  `| @Float`
+	Scientific *string   `| @Scientific`
+	String     *string   `| (@Ident|@VarName|@String)`
+	Integers   []int32   `| ("{" @Number {"," @Number } "}")`
+	Floats     []float64 `| ("{" @Float {"," @Float } "}")`
+	Dicts      []Dict    `| ("{" { @@ } "}")`
+	Slices     []Slice   `| ("{" @@ {"," @@ } "}")`
+	Boolean    *bool     `| ("{" (@"true" | "false") "}")`
+	Types      []Type    `| ("{" @@ {"," @@ } "}")`
+	Collection []Value   `| ("{" @@ {"," @@ } "}")`
+	Misc       *string   `| ( @ConvPadSize | @ConvDimLabel | @BeforeComma )`
 }
 
 type Dict struct {
