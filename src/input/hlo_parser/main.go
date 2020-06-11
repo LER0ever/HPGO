@@ -17,23 +17,26 @@ import (
 var HLOLexer = lexer.Must(ebnf.New(`
 Comment = ("#" | "//") { "\u0000"…"\uffff"-"\n" } .
 
-ConvDimLabel = char char char char "_" char char char char Rightarrow char char char char .
-ConvPadSize = digit ("x" | "_") digit {("x" | "_") digit} .
-
 Ident = (alpha | "_") { "." | "_" | "-" | alpha | digit } .
-String = "\"" {"'" | Ident | Number | "/" | "," | "$" | "{" | "}" | ":" } "\"" .
+String = "\"" { "\u0000"…"\uffff"-"\""-"\\" | "\\" any } "\"" .
 VarName = "%" Ident .
 Boolean = ("true" | "false") .
-
-Number = { "-" } ("." | digit | "inf") {"." | digit} [ "e" [ "-" | "+" ] { digit }].
+Number = { "-" } ("." | digit | "inf") {"." | digit} [ "e" [ "-" | "+" ] { digit } ] .
 Whitespace = " " | "\t" | "\n" | "\r" .
 Rightarrow = "->" .
 Assign = "=" .
 Punct = "!"…"/" | ":"…"@" | "["…"_" | "{"…"~" .
+
 char = alpha | digit .
 alpha = "a"…"z" | "A"…"Z" .
 digit = "0"…"9" .
+any = "\u0000"…"\uffff" .
 `))
+
+/*
+ConvDimLabel = char char char char "_" char char char char Rightarrow char char char char .
+ConvPadSize = digit ("x" | "_") digit {("x" | "_") digit} .
+*/
 
 //SubString = "\\\"" {Ident | "/" | "$" | "{" | "}" | ":" } "\\\"" .
 
@@ -75,7 +78,7 @@ type Value struct {
 	Dicts   []Dict  `| ("{" { @@ } "}")`
 	Slices  []Slice `| ("{" @@ {"," @@ } "}")`
 	Boolean *bool   `| ("{" (@"true" | "false") "}")`
-	Misc    *string `| ( @ConvPadSize | @ConvDimLabel )`
+	//Misc    *string `| ( @ConvPadSize | @ConvDimLabel )`
 }
 
 type Dict struct {
@@ -95,7 +98,8 @@ type Param struct {
 
 type Argument struct {
 	Type Type   `(@@)?`
-	Name string `@VarName | @Number | @Ident`
+	Value *Value `@@`
+	//Name string `@VarName | @Number | @Ident`
 }
 
 type Type struct {
@@ -127,7 +131,7 @@ func parse(s string) *HLORoot {
 	if err != nil {
 		panic(err)
 	}
-	log.Debugf("%+v\n", tokens)
+	fmt.Printf("%+v\n", tokens)
 
 	err = parser.Parse(strings.NewReader(s), hlo)
 	if err != nil {
