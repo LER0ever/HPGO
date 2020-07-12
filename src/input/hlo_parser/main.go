@@ -103,8 +103,8 @@ type Param struct {
 }
 
 type Argument struct {
-	Type  Type   `(@@)?`
-	Value *Value `@@`
+	Type Type   `(@@)?`
+	Name *Value `@@`
 }
 
 type Type struct {
