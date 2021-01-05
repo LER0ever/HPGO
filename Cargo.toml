@@ -38,7 +38,7 @@ dashmap = "3.7"
 stacker = "0.1"
 
 [dependencies.pyo3]
-version = "0.10"
+version = "0.13"
 [features]
 extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
